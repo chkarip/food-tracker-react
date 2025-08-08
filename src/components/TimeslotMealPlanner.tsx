@@ -18,7 +18,6 @@ import ExternalNutritionInput from './ExternalNutritionInput';
 import SaveLoadPlan from './SaveLoadPlan';
 import MealCostDisplay from './MealCostDisplay';
 import { SelectedFood, ExternalNutrition } from '../types/nutrition';
-import { DailyPlanDocument } from '../types/firebase';
 import { calculateTotalMacros } from '../utils/nutritionCalculations';
 
 interface TimeslotData {
@@ -120,13 +119,6 @@ const TimeslotMealPlanner: React.FC<TimeslotMealPlannerProps> = () => {
       externalNutrition: nutrition
     });
   }, [getCurrentTimeslotId, updateTimeslotData]);
-
-  const handleLoadPlan = useCallback((plan: DailyPlanDocument) => {
-    setTimeslotData({
-      '6pm': plan.timeslots['6pm'] || { selectedFoods: [], externalNutrition: { protein: 0, fats: 0, carbs: 0, calories: 0 } },
-      '9:30pm': plan.timeslots['9:30pm'] || { selectedFoods: [], externalNutrition: { protein: 0, fats: 0, carbs: 0, calories: 0 } }
-    });
-  }, []);
 
   const handleSwapFood = useCallback((index: number) => {
     const currentTimeslotId = getCurrentTimeslotId();
@@ -241,7 +233,6 @@ const TimeslotMealPlanner: React.FC<TimeslotMealPlannerProps> = () => {
                 </Typography>
                 <SaveLoadPlan
                   timeslotData={timeslotData}
-                  onLoadPlan={handleLoadPlan}
                 />
               </CardContent>
             </Card>

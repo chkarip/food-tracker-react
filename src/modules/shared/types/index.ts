@@ -40,6 +40,7 @@ export interface CalendarEvent {
   title: string;
   completed: boolean;
   priority?: 'low' | 'medium' | 'high';
+  workoutId?: string; // For scheduled workouts
 }
 
 export interface CalendarDay {
@@ -48,6 +49,7 @@ export interface CalendarDay {
   isToday: boolean;
   hasEvents: boolean;
   events: CalendarEvent[];
+  scheduledTasks?: string[]; // Tasks from scheduledActivities collection
   moduleData: {
     food?: {
       hasMealPlan: boolean;

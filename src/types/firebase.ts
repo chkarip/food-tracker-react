@@ -1,3 +1,41 @@
+/**
+ * firebase.ts - Core Data Type Definitions
+ * 
+ * BUSINESS PURPOSE:
+ * Defines the complete data structure for the food tracking application including:
+ * - Firebase document interfaces for all collections
+ * - Type safety for meal planning, workout scheduling, and activity tracking
+ * - Consistent data models across all application modules
+ * - Integration points between different program systems
+ * 
+ * KEY BUSINESS DATA MODELS:
+ * 1. MEAL PLANNING TYPES:
+ *    - MealPlanDocument: Complete meal plans with 6pm/9:30pm timeslots
+ *    - TimeslotMealData: Food selections and external nutrition per timeslot
+ *    - DailyPlanDocument: Legacy meal plan structure for backward compatibility
+ * 
+ * 2. WORKOUT SYSTEM TYPES:
+ *    - ScheduledWorkoutDocument: Complete workout specifications with exercises
+ *    - Exercise specifications: Sets, reps, weight, rest periods, muscle groups
+ *    - Workout status tracking: scheduled → completed/skipped
+ * 
+ * 3. UNIFIED SCHEDULING TYPES:
+ *    - ScheduledActivitiesDocument: Central task scheduling for calendar integration
+ *    - Task arrays: meal-6pm, meal-9:30pm, gym-workout, morning routine
+ *    - Activity status: active, completed, cancelled
+ * 
+ * 4. TRACKING & ANALYTICS TYPES:
+ *    - ActivityHistoryDocument: Completion tracking for all program activities
+ *    - UserPreferences: Macro targets and program configuration
+ *    - TimeslotsDocument: Meal timing and scheduling data
+ * 
+ * BUSINESS VALUE:
+ * - Ensures data consistency across all application modules
+ * - Provides type safety for complex nutrition and fitness calculations
+ * - Enables seamless integration between meal planning, workout scheduling, and calendar systems
+ * - Supports program analytics through structured activity tracking
+ * - Maintains data integrity across Firebase collections
+ */
 import { Timestamp } from 'firebase/firestore';
 import { SelectedFood, ExternalNutrition } from './nutrition';
 
@@ -31,6 +69,29 @@ export interface DailyPlanDocument {
     '9:30pm': boolean;
     'gym': boolean;
     'morning': boolean;
+  };
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+
+// New: Clean meal plan document (no gym/morning properties)
+export interface MealPlanDocument {
+  id?: string;
+  userId: string;
+  date: string; // YYYY-MM-DD format
+  timeslots: {
+    '6pm': TimeslotMealData;
+    '9:30pm': TimeslotMealData;
+  };
+  totalMacros: {
+    protein: number;
+    fats: number;
+    carbs: number;
+    calories: number;
+  };
+  completionStatus?: {
+    '6pm': boolean;
+    '9:30pm': boolean;
   };
   createdAt: Timestamp;
   updatedAt: Timestamp;
@@ -90,17 +151,41 @@ export interface TimeslotsDocument {
   updatedAt: Timestamp;
 }
 
-// Simplified DailyPlan - now just tracks scheduled activities, not detailed meal data
+// Simplified ScheduledActivities - tracks tasks with flexible task names
 export interface ScheduledActivitiesDocument {
   id?: string;
   userId: string;
   date: string; // YYYY-MM-DD format
-  scheduledActivities: {
-    'meal-6pm': boolean;
-    'meal-9:30pm': boolean;
-    'gym': boolean;
-    'morning': boolean;
-  };
+  status: 'active' | 'completed' | 'cancelled';
+  tasks: string[]; // Array of task names: ['meal-6pm', 'gym', 'morning', etc.]
   createdAt: Timestamp;
   updatedAt: Timestamp;
+}
+
+// Scheduled Workouts collection for gym functionality
+export interface ScheduledWorkoutDocument {
+  id?: string;
+  userId: string;
+  name: string;
+  workoutType: 'Lower A' | 'Lower B' | 'Upper A' | 'Upper B';
+  exercises: Array<{
+    id: string;
+    exerciseId: string;
+    name: string;
+    primaryMuscle: string;
+    equipment: string;
+    kg: number;
+    sets: number;
+    reps: number;
+    rest: number;
+    notes: string;
+    order: number;
+  }>;
+  scheduledDate: string; // YYYY-MM-DD format
+  estimatedDuration: number; // minutes
+  notes: string;
+  status: 'scheduled' | 'completed' | 'skipped';
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+  completedAt?: Timestamp;
 }

@@ -17,8 +17,7 @@ Previously, activity grids were scattered across multiple components with hardco
 ```
 src/
 ├── components/
-│   ├── ActivityGrid.tsx           # Main reusable component
-│   └── ActivityGridDemo.tsx       # Demo showing customization options
+│   └── ActivityGrid.tsx           # Main reusable component
 ├── config/
 │   └── activityGridConfig.ts      # Global configuration & presets
 └── modules/shared/components/
@@ -233,8 +232,8 @@ Possible future additions:
 
 ## 📝 Examples
 
-See `ActivityGridDemo.tsx` for live examples of all presets and customization options.
+Check the configuration file and this documentation for examples of all presets and customization options.
 
 ---
 
-**Need help?** Check the demo component or configuration file for examples!
+**Need help?** Check the configuration file for examples!

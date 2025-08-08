@@ -1,3 +1,41 @@
+/**
+ * FoodTrack.tsx - Comprehensive Food Tracking & Meal Planning Interface
+ * 
+ * BUSINESS PURPOSE:
+ * Central food program interface that provides:
+ * - Daily meal planning with precise macro nutrition tracking
+ * - Food database integration with portion calculations
+ * - External nutrition input for foods eaten outside the program
+ * - Real-time macro progress tracking against daily targets
+ * - Calendar integration for meal scheduling and consistency
+ * 
+ * KEY BUSINESS LOGIC:
+ * 1. DUAL-TIMESLOT SYSTEM: Manages 6pm and 9:30pm meals with separate food selections
+ * 2. MACRO CALCULATION ENGINE: Real-time calculation of protein, fats, carbs, calories from food portions
+ * 3. EXTERNAL NUTRITION INTEGRATION: Allows input of additional macros from foods outside the program
+ * 4. TARGET TRACKING: Visual progress bars showing macro achievement vs daily targets
+ * 5. CALENDAR INTEGRATION: Saves meal plans and registers meal tasks in scheduledActivities
+ * 
+ * CORE MEAL PLANNING FEATURES:
+ * - Food Selector: Browse and select from comprehensive food database
+ * - Portion Calculator: Precise portion sizing with real-time macro updates
+ * - External Nutrition: Input system for additional foods (restaurant meals, snacks)
+ * - Macro Progress: Visual indicators showing progress toward daily macro targets
+ * - Save/Load System: Meal plan persistence with calendar integration
+ * 
+ * DAILY MACRO TARGETS:
+ * - Protein: 125g
+ * - Fats: 61g
+ * - Carbohydrates: 287g
+ * - Calories: 2100-2200 kcal
+ * 
+ * BUSINESS VALUE:
+ * - Enables precise macro nutrition tracking for health/fitness goals
+ * - Supports consistent meal planning through detailed food database
+ * - Provides real-time feedback on macro achievement
+ * - Integrates with calendar system for comprehensive program management
+ * - Maintains historical meal data for program optimization and adherence analysis
+ */
 import React, { useState, useEffect } from 'react';
 import {
   Box,
@@ -39,7 +77,7 @@ import {
 } from '@mui/icons-material';
 import FoodHistoryAnalytics from './FoodHistoryAnalytics';
 import { useAuth } from '../contexts/AuthContext';
-import { getRecentDailyPlans, deleteDailyPlan } from '../services/firestoreService';
+import { getRecentDailyPlans, deleteDailyPlan } from '../services/firebase';
 import { DailyPlanDocument } from '../types/firebase';
 import { FOOD_DATABASE } from '../data/foodDatabase';
 import foodHistoryService from '../services/foodHistoryService';

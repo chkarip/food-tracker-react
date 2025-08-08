@@ -13,7 +13,7 @@ import {
   deleteDoc
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
-import { DailyPlanDocument, UserPreferences, FoodHistory, ActivityHistoryDocument, TimeslotsDocument, ScheduledActivitiesDocument } from '../types/firebase';
+import { DailyPlanDocument, UserPreferences, FoodHistory, ActivityHistoryDocument, TimeslotsDocument, ScheduledActivitiesDocument, ScheduledWorkoutDocument } from '../types/firebase';
 import { SelectedFood, ExternalNutrition } from '../types/nutrition';
 import { calculateTotalMacros } from '../utils/nutritionCalculations';
 
@@ -23,6 +23,7 @@ const FOOD_HISTORY_COLLECTION = 'foodHistory';
 const ACTIVITY_HISTORY_COLLECTION = 'activityHistory';
 const TIMESLOTS_COLLECTION = 'timeslots';
 const SCHEDULED_ACTIVITIES_COLLECTION = 'scheduledActivities';
+const SCHEDULED_WORKOUTS_COLLECTION = 'scheduledWorkouts';
 
 // Helper to format date as YYYY-MM-DD (timezone-safe)
 const formatDate = (date: Date): string => {
@@ -763,26 +764,36 @@ export const saveScheduledActivities = async (
     
     console.log('📅 Saving scheduled activities:', { userId, date: planDate, activities });
     
+    // Convert boolean activities to tasks array
+    const newTasks: string[] = [];
+    Object.entries(activities).forEach(([task, scheduled]) => {
+      if (scheduled) {
+        newTasks.push(task);
+      }
+    });
+    
     // Get existing scheduled activities to merge
     const existingDoc = await getDoc(doc(db, SCHEDULED_ACTIVITIES_COLLECTION, docId));
-    let existingActivities = {
-      'meal-6pm': false,
-      'meal-9:30pm': false,
-      'gym': false,
-      'morning': false
-    };
+    let existingTasks: string[] = [];
+    let status = 'active';
     
     if (existingDoc.exists()) {
-      existingActivities = existingDoc.data().scheduledActivities || existingActivities;
+      const data = existingDoc.data();
+      existingTasks = data.tasks || [];
+      status = data.status || 'active';
     }
+    
+    // Merge tasks - remove old meal/gym/morning tasks and add new ones
+    const filteredExistingTasks = existingTasks.filter(task => 
+      !['meal-6pm', 'meal-9:30pm', 'gym', 'morning'].includes(task)
+    );
+    const allTasks = [...filteredExistingTasks, ...newTasks];
     
     const scheduledData: Omit<ScheduledActivitiesDocument, 'id'> = {
       userId,
       date: planDate,
-      scheduledActivities: {
-        ...existingActivities,
-        ...activities
-      },
+      status: status as 'active' | 'completed' | 'cancelled',
+      tasks: allTasks,
       createdAt: existingDoc.exists() ? existingDoc.data().createdAt : Timestamp.now(),
       updatedAt: Timestamp.now()
     };
@@ -850,5 +861,42 @@ export const getScheduledActivitiesForMonth = async (
   } catch (error: any) {
     console.error('❌ Get scheduled activities for month error:', error);
     throw new Error(`Failed to get scheduled activities: ${error.message}`);
+  }
+};
+
+// Get scheduled workouts for calendar integration
+export const getScheduledWorkoutsForMonth = async (
+  userId: string, 
+  year: number, 
+  month: number // 0-based month
+): Promise<ScheduledWorkoutDocument[]> => {
+  try {
+    const startOfMonth = new Date(year, month, 1);
+    const endOfMonth = new Date(year, month + 1, 0);
+    
+    const startDateString = formatDate(startOfMonth);
+    const endDateString = formatDate(endOfMonth);
+    
+    console.log('🔍 Getting scheduled workouts for calendar:', { userId, year, month, startDateString, endDateString });
+    
+    const q = query(
+      collection(db, SCHEDULED_WORKOUTS_COLLECTION),
+      where('userId', '==', userId),
+      where('scheduledDate', '>=', startDateString),
+      where('scheduledDate', '<=', endDateString),
+      orderBy('scheduledDate', 'asc')
+    );
+    
+    const querySnapshot = await getDocs(q);
+    const results = querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    })) as ScheduledWorkoutDocument[];
+    
+    console.log('  📊 Calendar scheduled workouts found:', results.length);
+    return results.sort((a, b) => a.scheduledDate.localeCompare(b.scheduledDate));
+  } catch (error: any) {
+    console.error('❌ Get calendar scheduled workouts error:', error);
+    throw new Error(`Failed to get calendar scheduled workouts: ${error.message}`);
   }
 };

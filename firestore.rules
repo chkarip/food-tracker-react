@@ -1,7 +1,20 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow read/write access only to the owner's email
+    // Public read access to exercises and workout splits, authenticated write
+    match /exercises/{document} {
+      allow read: if true;
+      allow write: if request.auth != null
+        && request.auth.token.email == "chriskaripian@gmail.com";
+    }
+    
+    match /workoutSplits/{document} {
+      allow read: if true;
+      allow write: if request.auth != null
+        && request.auth.token.email == "chriskaripian@gmail.com";
+    }
+    
+    // All other documents require owner access
     match /{document=**} {
       allow read, write: if request.auth != null
         && request.auth.token.email == "chriskaripian@gmail.com";

@@ -1,3 +1,36 @@
+/**
+ * foodDatabase.ts - Comprehensive Food & Nutrition Database
+ * 
+ * BUSINESS PURPOSE:
+ * Core nutrition database for the food tracking program containing:
+ * - 14 carefully selected foods optimized for macro targets (125g protein, 61g fats, 287g carbs)
+ * - Precise nutrition data per 100g for weight-based foods
+ * - Per-unit nutrition data for count-based foods (eggs, wraps, tuna cans)
+ * - Cost tracking for budget-conscious meal planning
+ * - Integration with macro calculation engine
+ * 
+ * KEY BUSINESS LOGIC:
+ * 1. MACRO-OPTIMIZED FOOD SELECTION: Foods chosen to efficiently meet daily macro targets
+ * 2. DUAL MEASUREMENT SYSTEMS: 
+ *    - Weight foods (100g basis): Greek yogurt, chicken breast, rice, lentils, oats, etc.
+ *    - Unit foods (per item): Eggs, tortilla wraps, canned tuna
+ * 3. COMPREHENSIVE NUTRITION DATA: Protein, fats, carbs, calories, fiber for all foods
+ * 4. COST INTEGRATION: Price tracking for budget optimization and meal cost calculations
+ * 
+ * CURRENT FOOD SELECTION (14 FOODS):
+ * - Protein Sources: Greek yogurt, chicken breast, eggs, canned tuna, whey isolate
+ * - Complex Carbs: Dry rice, dry lentils, bulk oats, oatmeal
+ * - Healthy Fats: Peanut butter, almonds/walnuts, dark chocolate 74%
+ * - Convenience: Tortilla wraps, edamame
+ * - Removed: Chia seeds (program optimization)
+ * 
+ * BUSINESS VALUE:
+ * - Enables precise macro nutrition tracking for health/fitness goals
+ * - Supports consistent meal planning through curated food selection
+ * - Provides accurate portion calculations for macro target achievement
+ * - Enables budget-conscious meal planning through cost tracking
+ * - Maintains program simplicity while ensuring nutritional completeness
+ */
 import { FoodItem, MacroTargets } from '../types/nutrition';
 
 // Daily macro targets

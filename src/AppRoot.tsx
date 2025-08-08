@@ -1,3 +1,35 @@
+/**
+ * AppRoot.tsx - Main Application Entry Point & Routing System
+ * 
+ * BUSINESS PURPOSE:
+ * Root component that orchestrates a comprehensive task scheduling and tracking application:
+ * - Firebase authentication and user session management
+ * - Application routing between dashboard, task modules, and activity tracking
+ * - Global theme and Material-UI configuration
+ * - Error boundaries and loading state management
+ * - Progressive Web App (PWA) configuration for mobile task management
+ * 
+ * KEY BUSINESS LOGIC:
+ * 1. AUTHENTICATION FLOW: Manages user login/logout with Firebase Auth
+ * 2. ROUTE PROTECTION: Ensures authenticated access to all task management features
+ * 3. MODULE NAVIGATION: Routes between dashboard, food tasks, gym tasks, finance tasks, and custom activities
+ * 4. THEME MANAGEMENT: Dual-theme support (light/dark mode) with user preferences
+ * 5. PWA CAPABILITIES: Offline support and mobile app-like experience for on-the-go task management
+ * 
+ * APPLICATION ARCHITECTURE:
+ * - Dashboard: Central hub with calendar and comprehensive task overview
+ * - Food Module: Nutrition and meal planning tasks (one of many task categories)
+ * - Gym Module: Workout and fitness activity scheduling and tracking
+ * - Finance Module: Budget and expense tracking tasks
+ * - Custom Tasks: User-defined activities and goals (expandable system)
+ * 
+ * BUSINESS VALUE:
+ * - Provides unified platform for scheduling and tracking ANY type of recurring activity
+ * - Ensures secure, authenticated access to personal productivity and goal-tracking data
+ * - Enables seamless navigation between different life management modules
+ * - Supports consistent user experience across all task categories
+ * - Maintains user preferences and long-term activity tracking for goal achievement
+ */
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import {
@@ -10,7 +42,7 @@ import {
 import Layout from './components/MainLayout';
 import DashboardPage from './pages/DashboardPage';
 import FoodTrackerPage from './pages/FoodTrackerPage';
-import GymPage from './modules/gym/pages/GymPage';
+import GymPage from './components/GymPage';
 import FinancePage from './modules/finance/pages/FinancePage';
 import AuthGuard from './components/AuthGuard';
 import { AuthProvider } from './contexts/AuthContext';

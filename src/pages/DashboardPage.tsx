@@ -1,53 +1,66 @@
+/**
+ * DashboardPage.tsx - Central Task Management Dashboard & Calendar System
+ * 
+ * BUSINESS PURPOSE:
+ * This is the central command center for comprehensive task scheduling and tracking:
+ * - A monthly calendar view showing ALL scheduled activities across all life areas
+ * - Real-time task completion tracking and streak analytics
+ * - Unified scheduling interface for any type of recurring activity or goal
+ * - Multi-module integration for food, gym, finance, and custom task categories
+ * 
+ * KEY BUSINESS LOGIC:
+ * 1. UNIFIED TASK ARCHITECTURE: Centralizes ALL user activities regardless of category
+ *    (meals, workouts, financial goals, habits, projects, etc.) in one calendar view
+ * 2. VISUAL TASK MANAGEMENT: Shows scheduled activities as colored pills on calendar days
+ * 3. COMPLETION TRACKING: Monitors task completion rates and maintains streak information
+ * 4. MODULE STATISTICS: Displays progress across all activity categories (food, gym, finance, custom)
+ * 5. FLEXIBLE SCHEDULING: Supports any recurring pattern or one-time scheduled activities
+ * 
+ * DATA FLOW:
+ * - Aggregates scheduled activities from ALL modules (food, gym, finance, custom tasks)
+ * - Generates calendar view with task pills from unified scheduledActivities collection
+ * - Handles task scheduling/unscheduling across any activity type
+ * - Opens detailed day modal showing activities from ALL categories
+ * 
+ * BUSINESS VALUE:
+ * - Centralizes entire life management in one intuitive calendar interface
+ * - Provides visual feedback on goal achievement and activity consistency across all areas
+ * - Enables easy scheduling and tracking of ANY type of activity or goal
+ * - Supports data-driven life optimization through comprehensive analytics
+ * - Scales to accommodate unlimited task categories and custom activities
+ */
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   Box,
   Container,
   Typography,
-  Card,
-  CardContent,
-  Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  IconButton,
-  Chip,
   alpha,
   useTheme
 } from '@mui/material';
-import {
-  ChevronLeft as ChevronLeftIcon,
-  ChevronRight as ChevronRightIcon,
-  Today as TodayIcon,
-  Restaurant as FoodIcon,
-  FitnessCenter as GymIcon,
-  Close as CloseIcon,
-  CheckCircle as CheckCircleIcon,
-  RadioButtonUnchecked as RadioButtonUncheckedIcon
-} from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { ActivityCard } from '../components/Activity';
+import Calendar from '../components/Calendar';
+import DayModal from '../components/DayModal';
 import { useModuleStats } from '../modules/shared/hooks/useModuleStats';
 import { CalendarDay, CalendarEvent, ActivityData } from '../modules/shared/types';
 import { 
-  getDailyPlansForMonth, 
+  getDailyPlansForMonth,
   getActivityHistoryForMonth,
   getScheduledActivitiesForMonth,
   loadTimeslots,
-  saveActivityHistory,
-  saveDailyPlan
-} from '../services/firestoreService';
-import { DailyPlanDocument, ActivityHistoryDocument, ScheduledActivitiesDocument, TimeslotsDocument } from '../types/firebase';
+  getScheduledWorkoutsForMonth
+} from '../services/firebase';
+import { DailyPlanDocument, ActivityHistoryDocument, ScheduledActivitiesDocument, ScheduledWorkoutDocument, TimeslotsDocument } from '../types/firebase';
 
 const DashboardPage: React.FC = () => {
-  const theme = useTheme();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState<CalendarDay | null>(null);
   const [mealPlans, setMealPlans] = useState<DailyPlanDocument[]>([]);
   const [scheduledActivities, setScheduledActivities] = useState<ScheduledActivitiesDocument[]>([]);
+  const [scheduledWorkouts, setScheduledWorkouts] = useState<ScheduledWorkoutDocument[]>([]);
   const [activityHistory, setActivityHistory] = useState<ActivityHistoryDocument[]>([]);
   const [selectedDayTimeslots, setSelectedDayTimeslots] = useState<TimeslotsDocument | null>(null);
   const [loading, setLoading] = useState(false);
@@ -147,6 +160,13 @@ const DashboardPage: React.FC = () => {
         currentDate.getMonth()
       );
       
+      // Load scheduled workouts
+      const workouts = await getScheduledWorkoutsForMonth(
+        user.uid,
+        currentDate.getFullYear(),
+        currentDate.getMonth()
+      );
+      
       // Load activity history for the same month
       const history = await getActivityHistoryForMonth(
         user.uid,
@@ -156,10 +176,12 @@ const DashboardPage: React.FC = () => {
       
       console.log('🎯 DashboardPage: Loaded plans:', plans.length, 'plans');
       console.log('🎯 DashboardPage: Loaded scheduled activities:', activities.length, 'activities');
+      console.log('🎯 DashboardPage: Loaded scheduled workouts:', workouts.length, 'workouts');
       console.log('🎯 DashboardPage: Loaded activity history:', history.length, 'records');
       
       setMealPlans(plans);
       setScheduledActivities(activities);
+      setScheduledWorkouts(workouts);
       setActivityHistory(history);
     } catch (error) {
       console.error('❌ Error loading data:', error);
@@ -233,7 +255,12 @@ const DashboardPage: React.FC = () => {
       const isWeekday = dayDate.getDay() !== 0; // Not Sunday
       
       // Find meal plan and scheduled activities for this day
-      const dayKey = dayDate.toISOString().split('T')[0];
+      // Use local date to avoid timezone issues
+      const year = dayDate.getFullYear();
+      const month_num = (dayDate.getMonth() + 1).toString().padStart(2, '0');
+      const day_num = dayDate.getDate().toString().padStart(2, '0');
+      const dayKey = `${year}-${month_num}-${day_num}`;
+      
       const mealPlan = mealPlans.find(plan => plan.date === dayKey);
       const scheduledActivity = scheduledActivities.find(activity => activity.date === dayKey);
       
@@ -248,10 +275,11 @@ const DashboardPage: React.FC = () => {
       const events: CalendarEvent[] = [];
       
       // Food events - check scheduled activities first, then fallback to meal plans
-      const has6pmScheduled = scheduledActivity?.scheduledActivities?.['meal-6pm'] || false;
-      const has930pmScheduled = scheduledActivity?.scheduledActivities?.['meal-9:30pm'] || false;
-      const hasGymScheduled = scheduledActivity?.scheduledActivities?.['gym'] || false;
-      const hasMorningScheduled = scheduledActivity?.scheduledActivities?.['morning'] || false;
+      const scheduledTasks = scheduledActivity?.tasks || [];
+      const has6pmScheduled = scheduledTasks.includes('meal-6pm');
+      const has930pmScheduled = scheduledTasks.includes('meal-9:30pm');
+      const hasGymScheduled = scheduledTasks.includes('gym');
+      const hasMorningScheduled = scheduledTasks.includes('morning');
       
       // Fallback to meal plans for backward compatibility
       const has6pmPlan = mealPlan?.timeslots?.['6pm']?.selectedFoods && mealPlan.timeslots['6pm'].selectedFoods.length > 0;
@@ -275,8 +303,20 @@ const DashboardPage: React.FC = () => {
         });
       }
       
+      // Check for scheduled workouts for this day
+      const dayWorkouts = scheduledWorkouts.filter(workout => workout.scheduledDate === dayKey);
+      
       // Show gym session if scheduled or has activity history
-      if (hasGymScheduled || activityMap.has('gym') || (isCurrentMonth && isWeekday && !isPastDay)) {
+      if (dayWorkouts.length > 0) {
+        dayWorkouts.forEach(workout => {
+          events.push({ 
+            type: 'gym', 
+            title: `${workout.workoutType} (${workout.exercises.length} exercises)`, 
+            completed: workout.status === 'completed',
+            workoutId: workout.id
+          });
+        });
+      } else if (hasGymScheduled || activityMap.has('gym') || (isCurrentMonth && isWeekday && !isPastDay)) {
         events.push({ 
           type: 'gym', 
           title: 'Gym Session', 
@@ -311,6 +351,7 @@ const DashboardPage: React.FC = () => {
         isToday,
         hasEvents: events.length > 0,
         events,
+        scheduledTasks: scheduledTasks, // Add scheduled tasks from scheduledActivities collection
         moduleData: {
           food: (has6pmScheduled || has930pmScheduled || has6pmPlan || has930pmPlan || activityMap.has('6pm') || activityMap.has('9:30pm')) ? {
             hasMealPlan: Boolean(has6pmScheduled || has930pmScheduled || has6pmPlan || has930pmPlan),
@@ -343,7 +384,7 @@ const DashboardPage: React.FC = () => {
 
   const calendarDays = useMemo(() => {
     return generateCalendarDays(currentDate);
-  }, [currentDate, mealPlans, scheduledActivities, activityHistory, calendarRefresh]); // Include all data sources
+  }, [currentDate, mealPlans, scheduledActivities, scheduledWorkouts, activityHistory, calendarRefresh]); // Include all data sources
 
   const navigateMonth = (direction: 'prev' | 'next') => {
     const newDate = new Date(currentDate);
@@ -363,21 +404,13 @@ const DashboardPage: React.FC = () => {
     // Load detailed timeslots for the selected day
     console.log('🔍 Loading timeslots for selected day:', day.date.toISOString().split('T')[0]);
     try {
-      const timeslots = await loadTimeslots(user.uid, day.date);
+      const dayDateString = day.date.toISOString().split('T')[0];
+      const timeslots = await loadTimeslots(user.uid, dayDateString);
       setSelectedDayTimeslots(timeslots);
       console.log('✅ Timeslots loaded:', !!timeslots);
     } catch (error) {
       console.error('❌ Error loading timeslots:', error);
       setSelectedDayTimeslots(null);
-    }
-  };
-
-  const getEventIcon = (type: string) => {
-    switch (type) {
-      case 'food': return '🍽️';
-      case 'gym': return '💪';
-      case 'finance': return '💰';
-      default: return '📅';
     }
   };
 
@@ -392,12 +425,28 @@ const DashboardPage: React.FC = () => {
     setSelectedDay(null);
   };
 
-  const handleTaskToggle = async (activityType: '6pm' | '9:30pm' | 'gym' | 'morning', completed: boolean) => {
+  const handleCreateWorkout = () => {
+    if (selectedDay) {
+      navigate(`/gym?date=${formatDate(selectedDay.date)}`);
+    }
+    setSelectedDay(null);
+  };
+
+  const handleCreateMorning = () => {
+    // TODO: Navigate to morning routine page when implemented
+    console.log('Morning routine creation not yet implemented');
+    setSelectedDay(null);
+  };
+
+  const handleToggleSchedule = async (
+    taskType: 'meal-6pm' | 'meal-9:30pm' | 'gym' | 'morning', 
+    scheduled: boolean
+  ) => {
     if (!user || !selectedDay) return;
     
-    console.log('🎯 DashboardPage: Task toggle initiated:', { 
-      activityType, 
-      completed, 
+    console.log('🎯 DashboardPage: Schedule toggle:', { 
+      taskType, 
+      scheduled, 
       userId: user.uid,
       date: selectedDay.date.toISOString().split('T')[0]
     });
@@ -405,102 +454,55 @@ const DashboardPage: React.FC = () => {
     try {
       const dayKey = selectedDay.date.toISOString().split('T')[0];
       
-      console.log('📊 Saving to activity history...');
-      // Save to activity history
-      await saveActivityHistory(user.uid, dayKey, activityType, completed);
-      console.log('✅ Activity history saved successfully');
+      // Save to scheduled activities
+      const { saveScheduledActivities } = await import('../services/firebase');
       
-      // Immediately update local state for instant UI feedback
-      const newActivityRecord = {
-        id: `${user.uid}_${dayKey}_${activityType}`,
-        userId: user.uid,
-        activityType,
-        date: dayKey,
-        completed,
-        createdAt: new Date() as any,
-        updatedAt: new Date() as any
-      };
+      // Convert task type to array format and normalize task names
+      const taskName = taskType === 'gym' ? 'gym-workout' : taskType;
+      const tasksToAdd = scheduled ? [taskName] : [];
       
-      // Update activity history state immediately
-      setActivityHistory(prev => {
-        const filtered = prev.filter(a => !(a.date === dayKey && a.activityType === activityType));
-        return [...filtered, newActivityRecord];
+      await saveScheduledActivities(user.uid, tasksToAdd, selectedDay.date);
+      console.log('✅ Scheduled activities updated');
+      
+      // Update local state immediately
+      setScheduledActivities(prev => {
+        const existing = prev.find(activity => activity.date === dayKey);
+        
+        if (existing) {
+          // Update existing
+          const updatedTasks = scheduled 
+            ? Array.from(new Set([...existing.tasks, taskName])) // Add normalized task name if not already present
+            : existing.tasks.filter(task => task !== taskName); // Remove normalized task name
+          
+          return prev.map(activity => 
+            activity.date === dayKey 
+              ? {
+                  ...activity,
+                  tasks: updatedTasks
+                }
+              : activity
+          );
+        } else {
+          // Create new entry
+          return [...prev, {
+            userId: user.uid,
+            date: dayKey,
+            status: 'active' as const,
+            tasks: scheduled ? [taskName] : [], // Use normalized task name
+            createdAt: null as any, // Will be set by Firebase
+            updatedAt: null as any  // Will be set by Firebase
+          }];
+        }
       });
       
-      console.log('✅ Local activity history updated immediately');
-      
-      // For food activities (6pm/9:30pm), also ensure meal plan exists if completing
-      if ((activityType === '6pm' || activityType === '9:30pm') && completed) {
-        const existingPlan = mealPlans.find(plan => plan.date === dayKey);
-        
-        if (!existingPlan) {
-          // Create a minimal meal plan entry for the specific timeslot
-          const minimalPlan = {
-            '6pm': {
-              selectedFoods: activityType === '6pm' ? [{ name: 'Quick Meal', amount: 1 }] : [],
-              externalNutrition: { protein: 0, fats: 0, carbs: 0, calories: 0 }
-            },
-            '9:30pm': {
-              selectedFoods: activityType === '9:30pm' ? [{ name: 'Quick Meal', amount: 1 }] : [],
-              externalNutrition: { protein: 0, fats: 0, carbs: 0, calories: 0 }
-            }
-          };
-          
-          console.log('Creating minimal meal plan for food activity completion');
-          await saveDailyPlan(user.uid, minimalPlan, selectedDay.date);
-          console.log('✅ Minimal meal plan created');
-          
-          // Refresh meal plans after creating new one
-          await loadMealPlans();
-        }
-      }
-      
-      // Update the selected day with the new data
-      const updatedCalendarDays = generateCalendarDays(currentDate);
-      const updatedDay = updatedCalendarDays.find(d => 
-        d.date.toDateString() === selectedDay.date.toDateString()
-      );
-      if (updatedDay) {
-        setSelectedDay(updatedDay);
-        console.log('✅ Selected day updated');
-      }
-      
-      // Force calendar refresh to show updated completion status
+      // Force calendar refresh to show updated scheduling status
       setCalendarRefresh(prev => prev + 1);
       console.log('✅ Calendar refresh triggered');
       
     } catch (error) {
-      console.error('❌ Error updating activity completion:', error);
-      // Show user-friendly error message
-      alert(`Failed to update task: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error('❌ Error updating scheduled activities:', error);
     }
   };
-
-  // Helper function to get activity completion status from activity history
-  const getActivityStatus = (activityType: '6pm' | '9:30pm' | 'gym' | 'morning'): boolean => {
-    if (!selectedDay) {
-      console.log('❌ getActivityStatus: No selected day');
-      return false;
-    }
-    
-    const dayKey = selectedDay.date.toISOString().split('T')[0];
-    const dayActivities = activityHistory.filter(activity => activity.date === dayKey);
-    const activity = dayActivities.find(a => a.activityType === activityType);
-    
-    console.log('🔍 getActivityStatus:', { 
-      activityType, 
-      dayKey, 
-      totalActivities: activityHistory.length, 
-      dayActivities: dayActivities.length,
-      foundActivity: !!activity,
-      completed: activity?.completed || false 
-    });
-    
-    return activity?.completed || false;
-  };
-
-  const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  const monthYear = currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
   return (
     <Container maxWidth="xl" sx={{ py: 3 }}>
@@ -548,404 +550,24 @@ const DashboardPage: React.FC = () => {
       </Box>
 
       {/* Calendar */}
-      <Card sx={{ borderRadius: 4 }}>
-        <CardContent sx={{ p: 3 }}>
-          {/* Calendar Header */}
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
-            <Typography variant="h5" sx={{ fontWeight: 600 }}>
-              {monthYear}
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 1 }}>
-              <Button
-                variant="outlined"
-                size="small"
-                startIcon={<TodayIcon />}
-                onClick={goToToday}
-              >
-                Today
-              </Button>
-              <IconButton onClick={() => navigateMonth('prev')}>
-                <ChevronLeftIcon />
-              </IconButton>
-              <IconButton onClick={() => navigateMonth('next')}>
-                <ChevronRightIcon />
-              </IconButton>
-            </Box>
-          </Box>
+      <Calendar
+        currentDate={currentDate}
+        calendarDays={calendarDays}
+        onNavigateMonth={navigateMonth}
+        onGoToToday={goToToday}
+        onDayClick={handleDayClick}
+      />
 
-          {/* Calendar Grid */}
-          <Box sx={{ mb: 2 }}>
-            {/* Week days header */}
-            <Box sx={{ 
-              display: 'grid', 
-              gridTemplateColumns: 'repeat(7, 1fr)',
-              gap: 1, 
-              mb: 1 
-            }}>
-              {weekDays.map((day) => (
-                <Typography
-                  key={day}
-                  variant="body2"
-                  sx={{
-                    textAlign: 'center',
-                    fontWeight: 600,
-                    color: 'text.secondary',
-                    py: 1
-                  }}
-                >
-                  {day}
-                </Typography>
-              ))}
-            </Box>
-
-            {/* Calendar days */}
-            <Box sx={{ 
-              display: 'grid', 
-              gridTemplateColumns: 'repeat(7, 1fr)',
-              gap: 1 
-            }}>
-              {calendarDays.map((day: CalendarDay, index: number) => (
-                <Card
-                  key={index}
-                  sx={{
-                    minHeight: 80,
-                    cursor: day.isCurrentMonth ? 'pointer' : 'default',
-                    opacity: day.isCurrentMonth ? 1 : 0.4,
-                    bgcolor: day.isToday ? alpha(theme.palette.primary.main, 0.1) : 'background.paper',
-                    borderColor: day.isToday ? 'primary.main' : 'divider',
-                    '&:hover': day.isCurrentMonth ? {
-                      bgcolor: alpha(theme.palette.primary.main, 0.05),
-                    } : {}
-                  }}
-                  onClick={() => handleDayClick(day)}
-                >
-                  <CardContent sx={{ p: 1 }}>
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        fontWeight: day.isToday ? 600 : 400,
-                        color: day.isToday ? 'primary.main' : 'text.primary',
-                        mb: 0.5
-                      }}
-                    >
-                      {day.date.getDate()}
-                    </Typography>
-                    
-                    {/* Event indicators */}
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                      {day.events.slice(0, 3).map((event: any, eventIndex: number) => (
-                        <Box
-                          key={eventIndex}
-                          sx={{
-                            minWidth: 16,
-                            height: 16,
-                            borderRadius: 1,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '0.6rem',
-                            bgcolor: event.completed 
-                              ? event.type === 'food' ? 'success.main'
-                              : event.type === 'gym' ? 'warning.main'
-                              : event.type === 'finance' ? 'info.main'
-                              : 'secondary.main'
-                              : alpha(theme.palette.text.secondary, 0.3),
-                            color: event.completed ? 'white' : 'text.secondary',
-                            border: event.completed ? 'none' : `1px dashed ${theme.palette.text.secondary}`,
-                            opacity: event.completed ? 1 : 0.7,
-                          }}
-                        >
-                          {getEventIcon(event.type)}
-                        </Box>
-                      ))}
-                      {day.events.length > 3 && (
-                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.6rem', alignSelf: 'center' }}>
-                          +{day.events.length - 3}
-                        </Typography>
-                      )}
-                    </Box>
-                  </CardContent>
-                </Card>
-              ))}
-            </Box>
-          </Box>
-        </CardContent>
-      </Card>
-
-      {/* Day Detail Dialog */}
-      <Dialog
-        open={!!selectedDay}
+      {/* Day Detail Modal */}
+      <DayModal
+        selectedDay={selectedDay}
+        scheduledActivities={scheduledActivities}
         onClose={() => setSelectedDay(null)}
-        maxWidth="md"
-        fullWidth
-      >
-        {selectedDay && (
-          <>
-            <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Box>
-                <Typography variant="h6">
-                  {selectedDay.date.toLocaleDateString('en-US', { 
-                    weekday: 'long', 
-                    year: 'numeric',
-                    month: 'long', 
-                    day: 'numeric' 
-                  })}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {(() => {
-                    const completedTasks = selectedDay.events.filter(e => e.completed).length;
-                    const totalTasks = selectedDay.events.length;
-                    return totalTasks > 0 
-                      ? `${completedTasks}/${totalTasks} tasks completed`
-                      : 'No tasks scheduled';
-                  })()}
-                </Typography>
-              </Box>
-              <IconButton onClick={() => setSelectedDay(null)}>
-                <CloseIcon />
-              </IconButton>
-            </DialogTitle>
-            
-            <DialogContent>
-              {/* Always show task scheduling options */}
-              <Box sx={{ mb: 3 }}>
-                <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  📅 Daily Tasks
-                </Typography>
-                
-                {/* Find meal plan for this day */}
-                {(() => {
-                  const dayKey = selectedDay.date.toISOString().split('T')[0];
-                  const mealPlan = mealPlans.find(plan => plan.date === dayKey);
-                  const scheduledActivity = scheduledActivities.find(activity => activity.date === dayKey);
-                  
-                  // Use loaded timeslots or fallback to meal plan timeslots
-                  const timeslots = selectedDayTimeslots?.timeslots || mealPlan?.timeslots;
-                  const totalMacros = selectedDayTimeslots?.totalMacros || mealPlan?.totalMacros;
-                  
-                  console.log('🔍 Modal data sources:', {
-                    hasSelectedDayTimeslots: !!selectedDayTimeslots,
-                    hasMealPlan: !!mealPlan,
-                    hasScheduledActivity: !!scheduledActivity,
-                    hasTimeslots: !!timeslots
-                  });
-                  
-                  return (
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                      {/* Meal Plan Section */}
-                      {timeslots ? (
-                        <>
-                          <Typography variant="subtitle1" sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 2, mb: 1 }}>
-                            <FoodIcon color="primary" />
-                            Meal Plan
-                          </Typography>
-                          
-                          {/* 6:00 PM Timeslot */}
-                          {timeslots['6pm'] && timeslots['6pm'].selectedFoods.length > 0 && (
-                            <Card variant="outlined">
-                              <CardContent>
-                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                                  <Typography variant="subtitle2" fontWeight="bold">
-                                    🌅 6:00 PM - Afternoon Meal
-                                  </Typography>
-                                  <Chip
-                                    icon={getActivityStatus('6pm') ? <CheckCircleIcon /> : <RadioButtonUncheckedIcon />}
-                                    label={getActivityStatus('6pm') ? 'Completed' : 'Pending'}
-                                    color={getActivityStatus('6pm') ? 'success' : 'default'}
-                                    size="small"
-                                    clickable
-                                    onClick={() => handleTaskToggle('6pm', !getActivityStatus('6pm'))}
-                                  />
-                                </Box>
-                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, ml: 2 }}>
-                                  {timeslots['6pm'].selectedFoods.map((food: any, index: number) => (
-                                    <Typography key={index} variant="body2" color="text.secondary">
-                                      • {food.name} - {food.amount}{['Eggs', 'Tortilla wrap', 'Canned tuna'].some(unitFood => food.name.includes(unitFood)) ? ' unit(s)' : 'g'}
-                                    </Typography>
-                                  ))}
-                                </Box>
-                              </CardContent>
-                            </Card>
-                          )}
-
-                          {/* 9:30 PM Timeslot */}
-                          {timeslots['9:30pm'] && timeslots['9:30pm'].selectedFoods.length > 0 && (
-                            <Card variant="outlined">
-                              <CardContent>
-                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                                  <Typography variant="subtitle2" fontWeight="bold">
-                                    🌙 9:30 PM - Evening Meal
-                                  </Typography>
-                                  <Chip
-                                    icon={getActivityStatus('9:30pm') ? <CheckCircleIcon /> : <RadioButtonUncheckedIcon />}
-                                    label={getActivityStatus('9:30pm') ? 'Completed' : 'Pending'}
-                                    color={getActivityStatus('9:30pm') ? 'success' : 'default'}
-                                    size="small"
-                                    clickable
-                                    onClick={() => handleTaskToggle('9:30pm', !getActivityStatus('9:30pm'))}
-                                  />
-                                </Box>
-                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, ml: 2 }}>
-                                  {timeslots['9:30pm'].selectedFoods.map((food: any, index: number) => (
-                                    <Typography key={index} variant="body2" color="text.secondary">
-                                      • {food.name} - {food.amount}{['Eggs', 'Tortilla wrap', 'Canned tuna'].some(unitFood => food.name.includes(unitFood)) ? ' unit(s)' : 'g'}
-                                    </Typography>
-                                  ))}
-                                </Box>
-                              </CardContent>
-                            </Card>
-                          )}
-                        </>
-                      ) : (
-                        <Box>
-                          <Card variant="outlined" sx={{ bgcolor: 'grey.50', mb: 2 }}>
-                            <CardContent>
-                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                  <FoodIcon color="disabled" />
-                                  <Typography variant="subtitle2" color="text.secondary">
-                                    No detailed meal plan found
-                                  </Typography>
-                                </Box>
-                                <Button
-                                  variant="outlined"
-                                  size="small"
-                                  startIcon={<FoodIcon />}
-                                  onClick={handleCreateMealPlan}
-                                >
-                                  Plan Meals
-                                </Button>
-                              </Box>
-                            </CardContent>
-                          </Card>
-                          
-                          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                            Or mark meals as completed without detailed planning:
-                          </Typography>
-                          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 2 }}>
-                            <Chip
-                              icon={getActivityStatus('6pm') ? <CheckCircleIcon /> : <RadioButtonUncheckedIcon />}
-                              label="6pm Meal"
-                              color={getActivityStatus('6pm') ? 'success' : 'default'}
-                              size="small"
-                              clickable
-                              onClick={() => handleTaskToggle('6pm', !getActivityStatus('6pm'))}
-                            />
-                            <Chip
-                              icon={getActivityStatus('9:30pm') ? <CheckCircleIcon /> : <RadioButtonUncheckedIcon />}
-                              label="9:30pm Meal"
-                              color={getActivityStatus('9:30pm') ? 'success' : 'default'}
-                              size="small"
-                              clickable
-                              onClick={() => handleTaskToggle('9:30pm', !getActivityStatus('9:30pm'))}
-                            />
-                          </Box>
-                        </Box>
-                      )}
-
-                      {/* Other Tasks Section */}
-                      <Typography variant="subtitle1" sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 2, mb: 1 }}>
-                        🎯 Other Activities
-                      </Typography>
-
-                      {/* Gym Session */}
-                      <Card variant="outlined">
-                        <CardContent>
-                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                              <GymIcon color="warning" />
-                              <Typography variant="subtitle2" fontWeight="bold">
-                                Gym Session
-                              </Typography>
-                              {scheduledActivity?.scheduledActivities?.['gym'] && (
-                                <Chip label="Scheduled" size="small" color="info" variant="outlined" />
-                              )}
-                            </Box>
-                            <Chip
-                              icon={getActivityStatus('gym') ? <CheckCircleIcon /> : <RadioButtonUncheckedIcon />}
-                              label={getActivityStatus('gym') ? 'Completed' : 'Pending'}
-                              color={getActivityStatus('gym') ? 'success' : 'default'}
-                              size="small"
-                              clickable
-                              onClick={() => handleTaskToggle('gym', !getActivityStatus('gym'))}
-                            />
-                          </Box>
-                          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                            Daily workout session
-                          </Typography>
-                        </CardContent>
-                      </Card>
-
-                      {/* Daily Summary */}
-                      {totalMacros && (
-                        <Card variant="outlined" sx={{ bgcolor: 'primary.50', mt: 2 }}>
-                          <CardContent>
-                            <Typography variant="subtitle2" gutterBottom>Daily Nutrition Totals</Typography>
-                            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                              <Chip label={`${Math.round(totalMacros.calories)} kcal`} size="small" />
-                              <Chip label={`${Math.round(totalMacros.protein)}g protein`} size="small" />
-                              <Chip label={`${Math.round(totalMacros.carbs)}g carbs`} size="small" />
-                              <Chip label={`${Math.round(totalMacros.fats)}g fats`} size="small" />
-                            </Box>
-                          </CardContent>
-                        </Card>
-                      )}
-                    </Box>
-                  );
-                })()}
-              </Box>
-            </DialogContent>
-            
-            <DialogActions>
-              <Button onClick={() => setSelectedDay(null)}>
-                Close
-              </Button>
-              <Button 
-                variant="outlined" 
-                onClick={() => {
-                  const dayKey = selectedDay?.date.toISOString().split('T')[0];
-                  const mealPlan = mealPlans.find(plan => plan.date === dayKey);
-                  const scheduledActivity = scheduledActivities.find(activity => activity.date === dayKey);
-                  
-                  console.log('🔍 Debug Info:', {
-                    selectedDay: dayKey,
-                    activityHistoryCount: activityHistory.length,
-                    activityHistoryForDay: activityHistory.filter(a => a.date === dayKey),
-                    user: user?.uid,
-                    mealPlansCount: mealPlans.length,
-                    mealPlanForDay: mealPlan,
-                    scheduledActivitiesCount: scheduledActivities.length,
-                    scheduledActivityForDay: scheduledActivity,
-                    selectedDayTimeslots: selectedDayTimeslots,
-                    hasTimeslots: !!(selectedDayTimeslots?.timeslots || mealPlan?.timeslots),
-                    moduleDataFood: selectedDay?.moduleData?.food
-                  });
-                }}
-              >
-                Debug
-              </Button>
-              {!selectedDay.moduleData.food?.hasMealPlan && (
-                <Button
-                  variant="contained"
-                  startIcon={<FoodIcon />}
-                  onClick={handleCreateMealPlan}
-                >
-                  Plan Meals
-                </Button>
-              )}
-              {selectedDay.moduleData.food?.hasMealPlan && (
-                <Button
-                  variant="outlined"
-                  startIcon={<FoodIcon />}
-                  onClick={handleCreateMealPlan}
-                >
-                  Edit Meals
-                </Button>
-              )}
-            </DialogActions>
-          </>
-        )}
-      </Dialog>
+        onCreateMealPlan={handleCreateMealPlan}
+        onCreateWorkout={handleCreateWorkout}
+        onCreateMorning={handleCreateMorning}
+        onToggleSchedule={handleToggleSchedule}
+      />
     </Container>
   );
 };
