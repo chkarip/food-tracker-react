@@ -9,7 +9,7 @@
  * - Direct navigation to program planning interfaces
  * 
  * KEY BUSINESS LOGIC:
- * 1. ACTIVITY SCHEDULING: Toggle switches for meal-6pm, meal-9:30pm, gym-workout, morning routine
+ * 1. ACTIVITY SCHEDULING: Toggle switches for meal-6pm, meal-9:30pm, gym-workout
  * 2. DETAILED DATA LOADING: Fetches specific program details from mealPlans and scheduledWorkouts collections
  * 3. PROGRAM PREVIEW: Shows meal ingredients, macros, workout exercises without full edit mode
  * 4. UNIFIED SCHEDULING: Updates both detailed collections and scheduledActivities for calendar display
@@ -53,7 +53,6 @@ import {
   Restaurant as FoodIcon,
   FitnessCenter as GymIcon,
   Close as CloseIcon,
-  LightMode as MorningIcon,
   Add as AddIcon,
   ExpandMore as ExpandMoreIcon,
   Schedule as TimeIcon
@@ -69,8 +68,7 @@ interface DayModalProps {
   onClose: () => void;
   onCreateMealPlan: () => void;
   onCreateWorkout: () => void;
-  onCreateMorning: () => void;
-  onToggleSchedule: (taskType: 'meal-6pm' | 'meal-9:30pm' | 'gym' | 'morning', scheduled: boolean) => void;
+  onToggleSchedule: (taskType: 'meal-6pm' | 'meal-9:30pm' | 'gym', scheduled: boolean) => void;
 }
 
 const DayModal: React.FC<DayModalProps> = ({
@@ -79,7 +77,6 @@ const DayModal: React.FC<DayModalProps> = ({
   onClose,
   onCreateMealPlan,
   onCreateWorkout,
-  onCreateMorning,
   onToggleSchedule
 }) => {
   const { user } = useAuth();
@@ -148,8 +145,7 @@ const DayModal: React.FC<DayModalProps> = ({
   const scheduled = {
     'meal-6pm': scheduledTasks.includes('meal-6pm'),
     'meal-9:30pm': scheduledTasks.includes('meal-9:30pm'),
-    'gym': scheduledTasks.includes('gym-workout'), // Fix: check for 'gym-workout' task
-    'morning': scheduledTasks.includes('morning')
+    'gym': scheduledTasks.includes('gym-workout') // Fix: check for 'gym-workout' task
   };
 
   return (
@@ -384,7 +380,6 @@ const DayModal: React.FC<DayModalProps> = ({
                         <Stack spacing={1.5}>
                           {scheduledWorkout.exercises
                             .sort((a, b) => a.order - b.order)
-                            .slice(0, 5) // Show first 5 exercises
                             .map((exercise) => (
                             <Box 
                               key={exercise.id}
@@ -410,11 +405,6 @@ const DayModal: React.FC<DayModalProps> = ({
                               )}
                             </Box>
                           ))}
-                          {scheduledWorkout.exercises.length > 5 && (
-                            <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center' }}>
-                              ... and {scheduledWorkout.exercises.length - 5} more exercises
-                            </Typography>
-                          )}
                         </Stack>
                       </Box>
                       
@@ -435,34 +425,6 @@ const DayModal: React.FC<DayModalProps> = ({
             </CardContent>
           </Card>
 
-          {/* Morning Routine */}
-          <Card variant="outlined">
-            <CardContent>
-              <Typography variant="subtitle1" sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                <MorningIcon color="info" />
-                Morning Routine
-              </Typography>
-              
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={scheduled.morning}
-                      onChange={(e) => onToggleSchedule('morning', e.target.checked)}
-                      color="info"
-                    />
-                  }
-                  label="Morning Activities Scheduled"
-                />
-                {scheduled.morning && (
-                  <Button size="small" variant="outlined" onClick={onCreateMorning}>
-                    Plan Morning
-                  </Button>
-                )}
-              </Box>
-            </CardContent>
-          </Card>
-
           {/* Summary */}
           {Object.values(scheduled).some(Boolean) && (
             <Card variant="outlined" sx={{ 
@@ -476,7 +438,6 @@ const DayModal: React.FC<DayModalProps> = ({
                   {scheduled['meal-6pm'] && <Chip label="6PM Meal" size="small" color="primary" />}
                   {scheduled['meal-9:30pm'] && <Chip label="9:30PM Meal" size="small" color="primary" />}
                   {scheduled.gym && <Chip label="Gym" size="small" color="warning" />}
-                  {scheduled.morning && <Chip label="Morning" size="small" color="info" />}
                 </Box>
               </CardContent>
             </Card>

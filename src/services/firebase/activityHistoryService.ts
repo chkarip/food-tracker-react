@@ -15,7 +15,7 @@ import { formatDate, COLLECTIONS, createTimestamp } from './utils';
 export const saveActivityHistory = async (
   userId: string,
   date: string, // YYYY-MM-DD format
-  activityType: '6pm' | '9:30pm' | 'gym' | 'morning',
+  activityType: '6pm' | '9:30pm' | 'gym',
   completed: boolean
 ): Promise<void> => {
   try {
@@ -47,7 +47,7 @@ export const saveActivityHistory = async (
 // Get last 100 days of activity history for a specific activity type
 export const getLast100DaysHistory = async (
   userId: string,
-  activityType: '6pm' | '9:30pm' | 'gym' | 'morning'
+  activityType: '6pm' | '9:30pm' | 'gym'
 ): Promise<ActivityHistoryDocument[]> => {
   try {
     console.log('📊 Firestore DEBUG - getLast100DaysHistory:');
@@ -95,7 +95,7 @@ export const getLast100DaysHistory = async (
 // Generate 100-day history array with missing days filled as incomplete
 export const generate100DayHistory = async (
   userId: string,
-  activityType: '6pm' | '9:30pm' | 'gym' | 'morning'
+  activityType: '6pm' | '9:30pm' | 'gym'
 ): Promise<{ date: string; completed: boolean; isToday: boolean }[]> => {
   try {
     const historyRecords = await getLast100DaysHistory(userId, activityType);

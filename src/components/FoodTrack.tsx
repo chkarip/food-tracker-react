@@ -113,7 +113,6 @@ interface DayProgram {
     '6pm': boolean;
     '9:30pm': boolean;
     'gym': boolean;
-    'morning': boolean;
   };
 }
 
@@ -188,7 +187,7 @@ const FoodTrack: React.FC = () => {
           // Check if day is completed (at least one activity completed)
           const isCompleted = plan.completionStatus && 
             (plan.completionStatus['6pm'] || plan.completionStatus['9:30pm'] || 
-             plan.completionStatus['gym'] || plan.completionStatus['morning']);
+             plan.completionStatus['gym']);
 
           return {
             date: plan.date,

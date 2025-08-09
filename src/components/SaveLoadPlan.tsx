@@ -78,11 +78,11 @@ const SaveLoadPlan: React.FC<SaveLoadPlanProps> = ({
         newTasks.push('meal-9:30pm');
       }
       
-      // Get existing scheduled activities to preserve gym/morning tasks
+      // Get existing scheduled activities to preserve gym tasks
       const existing = await loadScheduledActivities(user.uid, localDate);
       const existingTasks = existing?.tasks || [];
       
-      // Build new tasks array - keep existing gym/morning, update meals based on plan
+                  // Build new tasks array - keep existing gym, update meals based on plan
       const finalTasks = [...existingTasks.filter(task => !task.startsWith('meal-')), ...newTasks];
       
       await saveScheduledActivities(user.uid, finalTasks, localDate);
@@ -128,7 +128,7 @@ const SaveLoadPlan: React.FC<SaveLoadPlanProps> = ({
             const existing = await loadScheduledActivities(user.uid, currentDate);
             const existingTasks = existing?.tasks || [];
             
-            // Build new tasks array - keep existing gym/morning, update meals based on plan
+            // Build new tasks array - keep existing gym, update meals based on plan
             const newTasks = [...existingTasks.filter(task => !task.startsWith('meal-'))]; // Remove old meal tasks
             
             // Add meal tasks based on current plan

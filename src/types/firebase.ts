@@ -21,7 +21,7 @@
  * 
  * 3. UNIFIED SCHEDULING TYPES:
  *    - ScheduledActivitiesDocument: Central task scheduling for calendar integration
- *    - Task arrays: meal-6pm, meal-9:30pm, gym-workout, morning routine
+ *    - Task arrays: meal-6pm, meal-9:30pm, gym-workout
  *    - Activity status: active, completed, cancelled
  * 
  * 4. TRACKING & ANALYTICS TYPES:
@@ -68,13 +68,12 @@ export interface DailyPlanDocument {
     '6pm': boolean;
     '9:30pm': boolean;
     'gym': boolean;
-    'morning': boolean;
   };
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
 
-// New: Clean meal plan document (no gym/morning properties)
+// New: Clean meal plan document
 export interface MealPlanDocument {
   id?: string;
   userId: string;
@@ -125,7 +124,7 @@ export interface FoodHistory {
 export interface ActivityHistoryDocument {
   id?: string;
   userId: string;
-  activityType: '6pm' | '9:30pm' | 'gym' | 'morning';
+  activityType: '6pm' | '9:30pm' | 'gym';
   date: string; // YYYY-MM-DD format
   completed: boolean;
   createdAt: Timestamp;
@@ -157,7 +156,7 @@ export interface ScheduledActivitiesDocument {
   userId: string;
   date: string; // YYYY-MM-DD format
   status: 'active' | 'completed' | 'cancelled';
-  tasks: string[]; // Array of task names: ['meal-6pm', 'gym', 'morning', etc.]
+  tasks: string[]; // Array of task names: ['meal-6pm', 'gym', etc.]
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }

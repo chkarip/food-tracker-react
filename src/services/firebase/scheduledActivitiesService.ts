@@ -14,7 +14,7 @@
  *    - Food tasks: meal-6pm, meal-9:30pm
  *    - Fitness tasks: gym-workout, cardio, yoga-session
  *    - Finance tasks: budget-review, expense-tracking
- *    - Habit tasks: morning-routine, meditation, reading
+ *    - Habit tasks: meditation, reading
  *    - Custom tasks: project-work, skill-practice, social-activities
  * 2. UNIFIED CALENDAR DATA: Provides consistent task data for calendar visualization
  * 3. DATE CONSISTENCY: Ensures reliable date formatting (local timezone YYYY-MM-DD) across all operations

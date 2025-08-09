@@ -63,7 +63,6 @@ export const saveDailyPlan = async (
     '6pm': boolean;
     '9:30pm': boolean;
     'gym': boolean;
-    'morning': boolean;
   }
 ): Promise<void> => {
   try {
@@ -99,8 +98,7 @@ export const saveDailyPlan = async (
       completionStatus: completionStatus || {
         '6pm': false,
         '9:30pm': false,
-        'gym': false,
-        'morning': false
+        'gym': false
       },
       createdAt: createTimestamp(),
       updatedAt: createTimestamp()
@@ -228,7 +226,7 @@ export const deleteDailyPlan = async (
 export const updateCompletionStatus = async (
   userId: string,
   date: Date,
-  activityType: '6pm' | '9:30pm' | 'gym' | 'morning',
+  activityType: '6pm' | '9:30pm' | 'gym',
   completed: boolean
 ): Promise<void> => {
   try {
@@ -251,8 +249,7 @@ export const updateCompletionStatus = async (
       const currentCompletionStatus = currentData.completionStatus || {
         '6pm': false,
         '9:30pm': false,
-        'gym': false,
-        'morning': false
+        'gym': false
       };
       
       await updateDoc(docRef, {
@@ -270,7 +267,6 @@ export const updateCompletionStatus = async (
         '6pm': false,
         '9:30pm': false,
         'gym': false,
-        'morning': false,
         [activityType]: completed
       };
       
@@ -376,8 +372,7 @@ export const getDailyPlansForMonth = async (
           completionStatus: data.completionStatus || {
             '6pm': false,
             '9:30pm': false,
-            'gym': false,
-            'morning': false
+            'gym': false
           },
           timeslots: {
             '6pm': {
@@ -400,8 +395,7 @@ export const getDailyPlansForMonth = async (
         completionStatus: data.completionStatus || {
           '6pm': false,
           '9:30pm': false,
-          'gym': false,
-          'morning': false
+          'gym': false
         }
       } as DailyPlanDocument;
       
@@ -435,7 +429,7 @@ export const migrateCompletionStatusToHistory = async (userId: string): Promise<
     const querySnapshot = await getDocs(q);
     console.log('📄 Found', querySnapshot.docs.length, 'daily plans to migrate');
     
-    const activityTypes: ('6pm' | '9:30pm' | 'gym' | 'morning')[] = ['6pm', '9:30pm', 'gym', 'morning'];
+    const activityTypes: ('6pm' | '9:30pm' | 'gym')[] = ['6pm', '9:30pm', 'gym'];
     let migratedCount = 0;
     
     for (const doc of querySnapshot.docs) {
@@ -464,7 +458,7 @@ export const migrateCompletionStatusToHistory = async (userId: string): Promise<
 // Save scheduled activities with simplified structure
 export const saveScheduledActivities = async (
   userId: string,
-  newTasks: string[], // Array of task names to schedule: ['meal-6pm', 'gym', 'morning']
+  newTasks: string[], // Array of task names to schedule: ['meal-6pm', 'gym']
   date?: Date
 ): Promise<void> => {
   try {

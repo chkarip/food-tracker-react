@@ -121,11 +121,11 @@ const WorkoutBuilder: React.FC = () => {
       const todayDate = new Date();
       const localDate = new Date(todayDate.getFullYear(), todayDate.getMonth(), todayDate.getDate());
       
-      // Get existing scheduled activities to preserve meal/morning flags
+      // Get existing scheduled activities to preserve meal flags
       const existing = await loadScheduledActivities(user.uid, localDate);
       const existingTasks = existing?.tasks || [];
       
-      // Build new tasks array - keep existing meal/morning tasks, update gym
+      // Build new tasks array - keep existing meal tasks, update gym
       const newTasks = [...existingTasks.filter(task => task !== 'gym')]; // Remove old gym task
       
       // Add gym task if workout has exercises

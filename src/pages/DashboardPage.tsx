@@ -279,7 +279,6 @@ const DashboardPage: React.FC = () => {
       const has6pmScheduled = scheduledTasks.includes('meal-6pm');
       const has930pmScheduled = scheduledTasks.includes('meal-9:30pm');
       const hasGymScheduled = scheduledTasks.includes('gym');
-      const hasMorningScheduled = scheduledTasks.includes('morning');
       
       // Fallback to meal plans for backward compatibility
       const has6pmPlan = mealPlan?.timeslots?.['6pm']?.selectedFoods && mealPlan.timeslots['6pm'].selectedFoods.length > 0;
@@ -321,15 +320,6 @@ const DashboardPage: React.FC = () => {
           type: 'gym', 
           title: 'Gym Session', 
           completed: activityMap.get('gym') || false
-        });
-      }
-      
-      // Show morning routine if scheduled or has activity history
-      if (hasMorningScheduled || activityMap.has('morning') || (isCurrentMonth && !isPastDay)) {
-        events.push({ 
-          type: 'other', 
-          title: 'Morning Routine', 
-          completed: activityMap.get('morning') || false
         });
       }
       
@@ -432,14 +422,8 @@ const DashboardPage: React.FC = () => {
     setSelectedDay(null);
   };
 
-  const handleCreateMorning = () => {
-    // TODO: Navigate to morning routine page when implemented
-    console.log('Morning routine creation not yet implemented');
-    setSelectedDay(null);
-  };
-
   const handleToggleSchedule = async (
-    taskType: 'meal-6pm' | 'meal-9:30pm' | 'gym' | 'morning', 
+    taskType: 'meal-6pm' | 'meal-9:30pm' | 'gym', 
     scheduled: boolean
   ) => {
     if (!user || !selectedDay) return;
@@ -565,7 +549,6 @@ const DashboardPage: React.FC = () => {
         onClose={() => setSelectedDay(null)}
         onCreateMealPlan={handleCreateMealPlan}
         onCreateWorkout={handleCreateWorkout}
-        onCreateMorning={handleCreateMorning}
         onToggleSchedule={handleToggleSchedule}
       />
     </Container>

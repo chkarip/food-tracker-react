@@ -43,7 +43,6 @@ export const saveDailyPlan = async (
     '6pm': boolean;
     '9:30pm': boolean;
     'gym': boolean;
-    'morning': boolean;
   }
 ): Promise<void> => {
   try {
@@ -79,8 +78,7 @@ export const saveDailyPlan = async (
       completionStatus: completionStatus || {
         '6pm': false,
         '9:30pm': false,
-        'gym': false,
-        'morning': false
+        'gym': false
       },
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now()
@@ -148,7 +146,7 @@ export const deleteDailyPlan = async (
 export const updateCompletionStatus = async (
   userId: string,
   date: Date,
-  activityType: '6pm' | '9:30pm' | 'gym' | 'morning',
+  activityType: '6pm' | '9:30pm' | 'gym',
   completed: boolean
 ): Promise<void> => {
   try {
@@ -171,8 +169,7 @@ export const updateCompletionStatus = async (
       const currentCompletionStatus = currentData.completionStatus || {
         '6pm': false,
         '9:30pm': false,
-        'gym': false,
-        'morning': false
+        'gym': false
       };
       
       await updateDoc(docRef, {
@@ -190,7 +187,6 @@ export const updateCompletionStatus = async (
         '6pm': false,
         '9:30pm': false,
         'gym': false,
-        'morning': false,
         [activityType]: completed
       };
       
@@ -296,8 +292,7 @@ export const getDailyPlansForMonth = async (
           completionStatus: data.completionStatus || {
             '6pm': false,
             '9:30pm': false,
-            'gym': false,
-            'morning': false
+            'gym': false
           },
           timeslots: {
             '6pm': {
@@ -320,8 +315,7 @@ export const getDailyPlansForMonth = async (
         completionStatus: data.completionStatus || {
           '6pm': false,
           '9:30pm': false,
-          'gym': false,
-          'morning': false
+          'gym': false
         }
       } as DailyPlanDocument;
       
@@ -433,7 +427,7 @@ export const getPopularFoods = async (userId: string, limitCount: number = 10): 
 export const saveActivityHistory = async (
   userId: string,
   date: string, // YYYY-MM-DD format
-  activityType: '6pm' | '9:30pm' | 'gym' | 'morning',
+  activityType: '6pm' | '9:30pm' | 'gym',
   completed: boolean
 ): Promise<void> => {
   try {
@@ -465,7 +459,7 @@ export const saveActivityHistory = async (
 // Get last 100 days of activity history for a specific activity type
 export const getLast100DaysHistory = async (
   userId: string,
-  activityType: '6pm' | '9:30pm' | 'gym' | 'morning'
+  activityType: '6pm' | '9:30pm' | 'gym'
 ): Promise<ActivityHistoryDocument[]> => {
   try {
     console.log('📊 Firestore DEBUG - getLast100DaysHistory:');
@@ -513,7 +507,7 @@ export const getLast100DaysHistory = async (
 // Generate 100-day history array with missing days filled as incomplete
 export const generate100DayHistory = async (
   userId: string,
-  activityType: '6pm' | '9:30pm' | 'gym' | 'morning'
+  activityType: '6pm' | '9:30pm' | 'gym'
 ): Promise<{ date: string; completed: boolean; isToday: boolean }[]> => {
   try {
     const historyRecords = await getLast100DaysHistory(userId, activityType);
@@ -563,7 +557,7 @@ export const migrateCompletionStatusToHistory = async (userId: string): Promise<
     const querySnapshot = await getDocs(q);
     console.log('📄 Found', querySnapshot.docs.length, 'daily plans to migrate');
     
-    const activityTypes: ('6pm' | '9:30pm' | 'gym' | 'morning')[] = ['6pm', '9:30pm', 'gym', 'morning'];
+    const activityTypes: ('6pm' | '9:30pm' | 'gym')[] = ['6pm', '9:30pm', 'gym'];
     let migratedCount = 0;
     
     for (const doc of querySnapshot.docs) {
@@ -709,8 +703,7 @@ export const saveTimeslots = async (
     await saveScheduledActivities(userId, {
       'meal-6pm': (timeslotData['6pm']?.selectedFoods?.length || 0) > 0,
       'meal-9:30pm': (timeslotData['9:30pm']?.selectedFoods?.length || 0) > 0,
-      'gym': false, // Keep existing gym schedule
-      'morning': false // Keep existing morning schedule
+      'gym': false // Keep existing gym schedule
     }, date);
     
     console.log('  ✅ Successfully saved timeslots with docId:', docId);
@@ -754,7 +747,6 @@ export const saveScheduledActivities = async (
     'meal-6pm': boolean;
     'meal-9:30pm': boolean;
     'gym': boolean;
-    'morning': boolean;
   },
   date?: Date
 ): Promise<void> => {
@@ -783,9 +775,9 @@ export const saveScheduledActivities = async (
       status = data.status || 'active';
     }
     
-    // Merge tasks - remove old meal/gym/morning tasks and add new ones
+    // Merge tasks - remove old meal/gym tasks and add new ones
     const filteredExistingTasks = existingTasks.filter(task => 
-      !['meal-6pm', 'meal-9:30pm', 'gym', 'morning'].includes(task)
+      !['meal-6pm', 'meal-9:30pm', 'gym'].includes(task)
     );
     const allTasks = [...filteredExistingTasks, ...newTasks];
     

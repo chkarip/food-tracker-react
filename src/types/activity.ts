@@ -3,7 +3,7 @@
 export interface Activity {
   id: string;
   type: 'gym' | 'work' | 'personal' | 'health' | 'custom';
-  label: string;              // "Gym Session", "Morning Workout"
+  label: string;              // "Gym Session", "Workout"
   time?: string;              // "07:00" (optional)
   duration?: number;          // 60 minutes (optional)
   completed?: boolean;        // true/false
