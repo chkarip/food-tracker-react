@@ -19,8 +19,7 @@ async function triggerIndexCreation() {
   try {
     // Try to load the existing Firebase config
     console.log('📡 Attempting to connect to Firebase...');
-https://console.firebase.google.com/project/[YOUR_PROJECT_ID]/firestore/indexes');
-    
+
   } catch (error) {
     console.error('🚨 Error:', error.message);
     if (error.message.includes('index')) {
