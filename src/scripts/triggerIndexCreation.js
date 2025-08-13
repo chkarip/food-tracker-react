@@ -19,35 +19,7 @@ async function triggerIndexCreation() {
   try {
     // Try to load the existing Firebase config
     console.log('📡 Attempting to connect to Firebase...');
-    
-    // This query will fail and show us the index creation URL
-    console.log('🔍 Triggering the exact query that needs an index...');
-    console.log('   Collection: dailyPlans');
-    console.log('   Query: userId + date range + orderBy date');
-    console.log('');
-    
-    console.log('❌ Expected Result: Firebase will show an error with index creation URL');
-    console.log('✅ Copy that URL and click it to create the required composite index');
-    console.log('');
-    
-    console.log('🚨 MANUAL STEPS REQUIRED:');
-    console.log('1. Start your React app with: npm start');
-    console.log('2. Navigate to HomePage (calendar view)');
-    console.log('3. Check browser console for Firebase error');
-    console.log('4. Look for error message containing index creation URL');
-    console.log('5. Click the URL to create the composite index in Firebase console');
-    console.log('');
-    
-    console.log('📋 Required Index Configuration:');
-    console.log('   Collection: dailyPlans');
-    console.log('   Fields:');
-    console.log('     - userId (Ascending)');  
-    console.log('     - date (Ascending)');
-    console.log('   Query Scope: Collection');
-    console.log('');
-    
-    console.log('🔗 Alternative: Create index manually at:');
-    console.log('   https://console.firebase.google.com/project/[YOUR_PROJECT_ID]/firestore/indexes');
+https://console.firebase.google.com/project/[YOUR_PROJECT_ID]/firestore/indexes');
     
   } catch (error) {
     console.error('🚨 Error:', error.message);

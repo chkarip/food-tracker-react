@@ -11,7 +11,7 @@ export const formatDate = (date: Date): string => {
 
 // Collection names
 export const COLLECTIONS = {
-  DAILY_PLANS: 'mealPlans', // Legacy - being phased out
+  DAILY_PLANS: 'scheduledActivities', // Legacy - being phased out
   MEAL_PLANS: 'mealPlans',   // New meal plans collection
   USER_PREFERENCES: 'userPreferences',
   FOOD_HISTORY: 'foodHistory',
