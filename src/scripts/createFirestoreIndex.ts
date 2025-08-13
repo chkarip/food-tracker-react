@@ -12,7 +12,7 @@ export const createFirestoreIndex = async () => {
     
     // This query will trigger Firebase to show us the index creation URL
     const q = query(
-      collection(db, 'dailyPlans'),
+      collection(db, 'mealPlans'),
       where('userId', '==', 'dummy-user-id'),
       where('date', '>=', '2025-01-01'),
       where('date', '<=', '2025-12-31'),

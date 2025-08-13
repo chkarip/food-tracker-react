@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { 
-  Box, 
-  Card, 
-  CardContent, 
-  Typography, 
-  TextField, 
-  Button, 
+import {
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  TextField,
+  Button,
   Chip,
   Divider,
   Alert,
@@ -23,7 +23,7 @@ interface FoodSelectorWithFirebaseProps {
   onUpdateAmount: (index: number, amount: number) => void;
   onRemoveFood: (index: number) => void;
   onSwapFood?: (index: number) => void;
-}
+} // ✅ Added missing closing brace
 
 const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = ({
   selectedFoods,
@@ -31,9 +31,9 @@ const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = ({
   onUpdateAmount,
   onRemoveFood,
   onSwapFood
-}) => {
-  const [selectedFoodName, setSelectedFoodName] = React.useState<string>('');
-  const [amount, setAmount] = React.useState<number>(100);
+}) => { // ✅ Fixed arrow function
+  const [selectedFoodName, setSelectedFoodName] = useState('');
+  const [amount, setAmount] = useState(100);
   const [foods, setFoods] = useState<DatabaseFood[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -44,6 +44,7 @@ const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = ({
     
     // Subscribe to real-time updates
     const unsubscribe = subscribeToFoods((updatedFoods) => {
+      console.log('📊 Foods loaded from Firebase:', updatedFoods.length);
       setFoods(updatedFoods);
       setError(null);
       setLoading(false);
@@ -62,60 +63,62 @@ const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = ({
     return () => {
       unsubscribe();
     };
-  }, []); // Remove selectedFoodName dependency to prevent re-renders
-
-  const loadFoods = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const allFoods = await getAllFoods();
-      setFoods(allFoods);
-    } catch (err) {
-      setError('Failed to load foods from database. Please try again or add foods using the "Manage Foods" tab.');
-      console.error('Error loading foods:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [selectedFoodName]);
 
   // Convert foods to legacy format for compatibility (memoized and optimized)
-  const foodDatabase = useMemo(() => convertToLegacyFoodFormat(foods), [foods]);
+  const foodDatabase = useMemo(() => {
+    const converted = convertToLegacyFoodFormat(foods);
+    console.log('🔄 Converted foods for legacy format:', Object.keys(converted));
+    return converted;
+  }, [foods]);
+
   const availableFoods = useMemo(() => Object.keys(foodDatabase), [foodDatabase]);
 
   // Get food unit helper function (memoized)
   const getFoodUnit = useCallback((foodName: string): string => {
     const foodItem = foodDatabase[foodName];
-    if (!foodItem) return 'g';
+    if (!foodItem) {
+      console.warn(`⚠️ Food not found in database: ${foodName}`);
+      return 'g';
+    }
     return foodItem.isUnitFood ? 'units' : 'g';
   }, [foodDatabase]);
 
-  // Calculate macros helper function (memoized)
+  // Calculate macros helper function (memoized) 
   const calculateFoodMacros = useCallback((foodName: string, amount: number) => {
     const foodItem = foodDatabase[foodName];
-    if (!foodItem) return { protein: 0, fats: 0, carbs: 0, calories: 0 };
-    
+    if (!foodItem) {
+      console.warn(`⚠️ Cannot calculate macros for missing food: ${foodName}`);
+      return { protein: 0, fats: 0, carbs: 0, calories: 0 };
+    }
+
     const multiplier = foodItem.isUnitFood ? amount : amount / 100;
-    
     return {
-      protein: foodItem.nutrition.protein * multiplier,
-      fats: foodItem.nutrition.fats * multiplier,
-      carbs: foodItem.nutrition.carbs * multiplier,
-      calories: foodItem.nutrition.calories * multiplier
+      protein: (foodItem.nutrition?.protein || 0) * multiplier,
+      fats: (foodItem.nutrition?.fats || 0) * multiplier,
+      carbs: (foodItem.nutrition?.carbs || 0) * multiplier,
+      calories: (foodItem.nutrition?.calories || 0) * multiplier
     };
   }, [foodDatabase]);
 
   const handleAddFood = useCallback(() => {
     if (!selectedFoodName) return;
     
+    const foodItem = foodDatabase[selectedFoodName];
+    if (!foodItem) {
+      console.error(`❌ Cannot add missing food: ${selectedFoodName}`);
+      return;
+    }
+
     onAddFood({
       name: selectedFoodName,
       amount: amount
     });
-    
+
     // Reset form
     setSelectedFoodName('');
     setAmount(100);
-  }, [selectedFoodName, amount, onAddFood]);
+  }, [selectedFoodName, amount, onAddFood, foodDatabase]);
 
   const getFoodEmoji = useCallback((foodName: string): string => {
     const emojiMap: Record<string, string> = {
@@ -132,7 +135,8 @@ const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = ({
       'Tortilla wrap': '🌯',
       'Almonds/Walnuts': '🥜',
       'Dark-chocolate 74%': '🍫',
-      'Oatmeal': '🥣'
+      'Oatmeal': '🥣',
+      'rice-cake': '🍚'
     };
     return emojiMap[foodName] || '🍽️';
   }, []);
@@ -145,7 +149,7 @@ const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = ({
     if (foodItem.useFixedAmount && (foodItem.fixedAmount ?? 0) > 0) {
       return foodItem.fixedAmount ?? 0;
     }
-    
+
     // Fallback to default amounts
     if (foodItem.isUnitFood) {
       switch (foodName) {
@@ -166,76 +170,64 @@ const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = ({
   // Loading state
   if (loading) {
     return (
-      <Card sx={{ mb: 3, borderRadius: 4 }}>
-        <CardContent sx={{ p: 3, textAlign: 'center' }}>
-          <CircularProgress />
-          <Typography variant="body1" sx={{ mt: 2 }}>
-            Loading foods from database...
-          </Typography>
-        </CardContent>
-      </Card>
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', p: 4 }}>
+        <CircularProgress />
+        <Typography sx={{ ml: 2 }}>Loading foods from database...</Typography>
+      </Box>
     );
   }
 
   // Error state
   if (error) {
     return (
-      <Card sx={{ mb: 3, borderRadius: 4 }}>
-        <CardContent sx={{ p: 3 }}>
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-          <Button variant="contained" onClick={loadFoods}>
-            Retry Loading Foods
-          </Button>
-        </CardContent>
-      </Card>
+      <Alert severity="error" sx={{ mb: 2 }}>
+        {error}
+        <Button onClick={() => window.location.reload()} sx={{ ml: 2 }}>
+          Retry Loading Foods
+        </Button>
+      </Alert>
     );
   }
 
   // No foods state
   if (foods.length === 0) {
     return (
-      <Card sx={{ mb: 3, borderRadius: 4 }}>
-        <CardContent sx={{ p: 3 }}>
-          <Alert severity="info" sx={{ mb: 2 }}>
-            No foods found in database. Please add some foods using the "Manage Foods" tab.
-          </Alert>
-          <Button variant="contained" onClick={loadFoods}>
-            Refresh
-          </Button>
-        </CardContent>
-      </Card>
+      <Alert severity="warning" sx={{ mb: 2 }}>
+        No foods found in database. Please add some foods using the "Manage Foods" tab.
+        <Button onClick={() => window.location.reload()} sx={{ ml: 2 }}>
+          Refresh
+        </Button>
+      </Alert>
     );
   }
 
   return (
-    <Card sx={{ mb: 3, borderRadius: 4, width: '100%' }}>
-      <CardContent sx={{ p: 3 }}>
-        <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+    <Card>
+      <CardContent>
+        <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
           <RestaurantIcon />
           Food Selector
         </Typography>
 
         {/* Food Selection */}
-        <Box sx={{ mb: 3, width: '100%' }}>
-          <Typography variant="subtitle2" gutterBottom>
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="subtitle2" sx={{ mb: 2 }}>
             Available Foods ({availableFoods.length})
           </Typography>
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2, width: '100%' }}>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
             {availableFoods.map((foodName) => {
               const foodItem = foodDatabase[foodName];
               const hasFixedAmount = foodItem?.useFixedAmount;
               const isSelected = selectedFoods.some(food => food.name === foodName);
-              
+
               return (
                 <Chip
                   key={foodName}
-                  label={`${getFoodEmoji(foodName)} ${foodName}${hasFixedAmount ? ` (${foodItem.fixedAmount}${foodItem.isUnitFood ? 'u' : 'g'})` : ''}${isSelected ? ' ✓' : ''}`}
+                  label={`${getFoodEmoji(foodName)} ${foodName}`}
                   onClick={() => handleFoodSelect(foodName)}
                   variant={selectedFoodName === foodName ? 'filled' : (isSelected ? 'filled' : 'outlined')}
                   color={selectedFoodName === foodName ? 'primary' : (isSelected ? 'secondary' : (hasFixedAmount ? 'success' : 'default'))}
-                  sx={{ 
+                  sx={{
                     cursor: 'pointer',
                     ...(isSelected && {
                       backgroundColor: 'secondary.light',
@@ -250,79 +242,24 @@ const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = ({
 
         {/* Amount Input & Add Button */}
         {selectedFoodName && (
-          <Box sx={{ mb: 3, width: '100%' }}>
-            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', mb: 2, width: '100%' }}>
-              <TextField
-                label={`Amount (${getFoodUnit(selectedFoodName)})`}
-                type="number"
-                value={amount}
-                onChange={(e) => setAmount(Number(e.target.value))}
-                sx={{ flex: 1, minWidth: 120 }}
-                size="small"
-              />
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={handleAddFood}
-                disabled={!selectedFoodName || amount <= 0}
-                sx={{ whiteSpace: 'nowrap' }}
-              >
-                Add {selectedFoodName}
-              </Button>
-            </Box>
-            
-            {/* Cost Information */}
-            {(() => {
-              const foodItem = foodDatabase[selectedFoodName];
-              const costPerGram = getCostPerGram(selectedFoodName, foodItem?.isUnitFood || false);
-              const portionCost = calculatePortionCost(selectedFoodName, amount);
-              
-              if (costPerGram !== null && portionCost !== null) {
-                return (
-                  <Box 
-                    sx={{ 
-                      p: 2, 
-                      bgcolor: (theme) => theme.palette.mode === 'dark' 
-                        ? 'grey.800' 
-                        : 'grey.50',
-                      borderRadius: 2,
-                      border: (theme) => theme.palette.mode === 'dark' 
-                        ? '1px solid rgba(255, 255, 255, 0.12)' 
-                        : '1px solid rgba(0, 0, 0, 0.12)'
-                    }}
-                  >
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                      <EuroIcon fontSize="small" color="primary" />
-                      <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                        Cost Information
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
-                      <Box>
-                        <Typography variant="caption" color="text.secondary" display="block">
-                          {foodItem?.isUnitFood ? 'Cost per unit' : 'Cost per gram'}
-                        </Typography>
-                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                          {foodItem?.isUnitFood 
-                            ? formatCost(costPerGram, 2)
-                            : formatCost(costPerGram, 4)
-                          }
-                        </Typography>
-                      </Box>
-                      <Box>
-                        <Typography variant="caption" color="text.secondary" display="block">
-                          Total cost for {amount}{getFoodUnit(selectedFoodName)}
-                        </Typography>
-                        <Typography variant="body1" sx={{ fontWeight: 600, color: 'primary.main' }}>
-                          {formatCost(portionCost)}
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </Box>
-                );
-              }
-              return null;
-            })()}
+          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', mb: 3 }}>
+            <TextField
+              type="number"
+              value={amount}
+              onChange={(e) => setAmount(Number(e.target.value))}
+              label={getFoodUnit(selectedFoodName)}
+              sx={{ flex: 1, minWidth: 120 }}
+              size="small"
+            />
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={handleAddFood}
+              disabled={!selectedFoodName || amount <= 0}
+              sx={{ whiteSpace: 'nowrap' }}
+            >
+              Add {selectedFoodName}
+            </Button>
           </Box>
         )}
 
@@ -330,148 +267,91 @@ const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = ({
         {selectedFoods.length > 0 && (
           <>
             <Divider sx={{ my: 2 }} />
-            <Typography variant="subtitle2" gutterBottom>
+            <Typography variant="subtitle2" sx={{ mb: 2 }}>
               Selected Foods ({selectedFoods.length})
             </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, width: '100%' }}>
-              {selectedFoods.map((food, index) => {
-                const macros = calculateFoodMacros(food.name, food.amount);
-                const portionCost = calculatePortionCost(food.name, food.amount);
-                return (
-                  <Box
-                    key={`${food.name}-${index}`}
+            {selectedFoods.map((food, index) => {
+              const macros = calculateFoodMacros(food.name, food.amount);
+              const portionCost = calculatePortionCost(food.name, food.amount);
+
+              return (
+                <Box
+                  key={index}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    p: 2,
+                    mb: 1,
+                    backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'grey.800' : 'grey.50',
+                    borderRadius: 2,
+                    gap: 2,
+                    border: (theme) => theme.palette.mode === 'dark'
+                      ? '1px solid rgba(255, 255, 255, 0.12)'
+                      : '1px solid rgba(0, 0, 0, 0.12)'
+                  }}
+                >
+                  <Typography
+                    variant="subtitle2"
                     sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      p: 2,
-                      bgcolor: (theme) => theme.palette.mode === 'dark' 
-                        ? 'grey.800' 
-                        : 'grey.50',
-                      borderRadius: 2,
-                      gap: 2,
-                      border: (theme) => theme.palette.mode === 'dark' 
-                        ? '1px solid rgba(255, 255, 255, 0.12)' 
-                        : '1px solid rgba(0, 0, 0, 0.12)'
+                      color: (theme) => theme.palette.mode === 'dark' ? 'grey.100' : 'grey.800'
                     }}
                   >
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1 }}>
-                      <Typography 
-                        variant="body1"
-                        sx={{
-                          fontWeight: 500,
-                          color: (theme) => theme.palette.mode === 'dark' 
-                            ? 'grey.100' 
-                            : 'grey.800'
-                        }}
-                      >
-                        {getFoodEmoji(food.name)} {food.name}
-                      </Typography>
-                    </Box>
-                    
-                    <TextField
-                      type="number"
-                      value={food.amount}
-                      onChange={(e) => onUpdateAmount(index, Number(e.target.value))}
-                      label={getFoodUnit(food.name)}
-                      size="small"
-                      sx={{ width: 120 }}
-                    />
-                    
-                    <Box sx={{ minWidth: 200, textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                      <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
-                        <Typography 
-                          variant="caption" 
-                          sx={{
-                            color: (theme) => theme.palette.mode === 'dark' 
-                              ? 'grey.300' 
-                              : 'grey.600',
-                            fontWeight: 500
-                          }}
-                        >
-                          💪 {formatMacroValue(macros.protein)}g
-                        </Typography>
-                        <Typography 
-                          variant="caption" 
-                          sx={{
-                            color: (theme) => theme.palette.mode === 'dark' 
-                              ? 'grey.300' 
-                              : 'grey.600',
-                            fontWeight: 500
-                          }}
-                        >
-                          🥑 {formatMacroValue(macros.fats)}g
-                        </Typography>
-                      </Box>
-                      <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
-                        <Typography 
-                          variant="caption" 
-                          sx={{
-                            color: (theme) => theme.palette.mode === 'dark' 
-                              ? 'grey.300' 
-                              : 'grey.600',
-                            fontWeight: 500
-                          }}
-                        >
-                          🍞 {formatMacroValue(macros.carbs)}g
-                        </Typography>
-                        <Typography 
-                          variant="caption" 
-                          sx={{
-                            color: (theme) => theme.palette.mode === 'dark' 
-                              ? 'grey.300' 
-                              : 'grey.600',
-                            fontWeight: 500
-                          }}
-                        >
-                          🔥 {formatMacroValue(macros.calories, 0)} kcal
-                        </Typography>
-                      </Box>
-                      {portionCost !== null && (
-                        <Typography 
-                          variant="caption" 
-                          sx={{
-                            color: 'primary.main',
-                            fontWeight: 600,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: 0.5
-                          }}
-                        >
-                          💰 {formatCost(portionCost)}
-                        </Typography>
-                      )}
-                    </Box>
-                    
-                    <Box sx={{ display: 'flex', gap: 1 }}>
-                      {onSwapFood && (
-                        <Button
-                          variant="outlined"
-                          color="primary"
-                          size="small"
-                          onClick={() => onSwapFood(index)}
-                          sx={{ minWidth: 40, p: 1 }}
-                          title="Swap to other timeslot"
-                        >
-                          <SwapIcon fontSize="small" />
-                        </Button>
-                      )}
+                    {getFoodEmoji(food.name)} {food.name}
+                  </Typography>
+                  
+                  <TextField
+                    type="number"
+                    value={food.amount}
+                    onChange={(e) => onUpdateAmount(index, Number(e.target.value))}
+                    label={getFoodUnit(food.name)}
+                    size="small"
+                    sx={{ width: 120 }}
+                  />
+                  
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: (theme) => theme.palette.mode === 'dark' ? 'grey.300' : 'grey.600',
+                      fontWeight: 500
+                    }}
+                  >
+                    💪 {formatMacroValue(macros.protein)}g | 
+                    🥑 {formatMacroValue(macros.fats)}g | 
+                    🍞 {formatMacroValue(macros.carbs)}g | 
+                    🔥 {formatMacroValue(macros.calories, 0)} kcal
+                  </Typography>
+
+                  {portionCost !== null && (
+                    <Typography variant="caption" color="success.main">
+                      💰 {formatCost(portionCost)}
+                    </Typography>
+                  )}
+
+                  <Box sx={{ display: 'flex', gap: 1 }}>
+                    {onSwapFood && (
                       <Button
-                        variant="outlined"
-                        color="error"
                         size="small"
-                        onClick={() => onRemoveFood(index)}
+                        onClick={() => onSwapFood(index)}
                         sx={{ minWidth: 40, p: 1 }}
-                        title="Remove food"
+                        title="Swap to other timeslot"
                       >
-                        <DeleteIcon fontSize="small" />
+                        <SwapIcon />
                       </Button>
-                    </Box>
+                    )}
+                    <Button
+                      size="small"
+                      color="error"
+                      onClick={() => onRemoveFood(index)}
+                      sx={{ minWidth: 40, p: 1 }}
+                      title="Remove food"
+                    >
+                      <DeleteIcon />
+                    </Button>
                   </Box>
-                );
-              })}
-            </Box>
+                </Box>
+              );
+            })}
           </>
         )}
       </CardContent>

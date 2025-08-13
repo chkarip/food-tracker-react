@@ -58,6 +58,7 @@ import { saveActivityHistory } from './activityHistoryService';
 export const saveDailyPlan = async (
   userId: string, 
   timeslotData: { [key: string]: { selectedFoods: SelectedFood[], externalNutrition: ExternalNutrition } },
+  foodDatabase: any,
   date?: Date,
   completionStatus?: {
     '6pm': boolean;
@@ -78,7 +79,7 @@ export const saveDailyPlan = async (
     let combinedMacros = { protein: 0, fats: 0, carbs: 0, calories: 0 };
     
     Object.values(timeslotData).forEach(data => {
-      const foodMacros = calculateTotalMacros(data.selectedFoods);
+      const foodMacros = calculateTotalMacros(data.selectedFoods, foodDatabase); // <--- pass here
       combinedMacros.protein += foodMacros.protein + data.externalNutrition.protein;
       combinedMacros.fats += foodMacros.fats + data.externalNutrition.fats;
       combinedMacros.carbs += foodMacros.carbs + data.externalNutrition.carbs;
@@ -123,6 +124,7 @@ export const saveDailyPlan = async (
 export const saveMealPlan = async (
   userId: string,
   timeslotData: { [key: string]: { selectedFoods: SelectedFood[], externalNutrition: ExternalNutrition } },
+  foodDatabase: any,
   date?: Date,
   completionStatus?: { '6pm': boolean; '9:30pm': boolean }
 ): Promise<void> => {
@@ -139,7 +141,7 @@ export const saveMealPlan = async (
     let combinedMacros = { protein: 0, fats: 0, carbs: 0, calories: 0 };
     
     Object.values(timeslotData).forEach(data => {
-      const foodMacros = calculateTotalMacros(data.selectedFoods);
+      const foodMacros = calculateTotalMacros(data.selectedFoods, foodDatabase);
       combinedMacros.protein += foodMacros.protein + data.externalNutrition.protein;
       combinedMacros.fats += foodMacros.fats + data.externalNutrition.fats;
       combinedMacros.carbs += foodMacros.carbs + data.externalNutrition.carbs;

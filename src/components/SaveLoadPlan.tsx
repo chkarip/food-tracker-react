@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -13,31 +13,34 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Slider,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem
+  Slider
 } from '@mui/material';
-import { 
+import {
   Save as SaveIcon,
   CloudDownload as LoadIcon,
   History as HistoryIcon
 } from '@mui/icons-material';
+
 import { useAuth } from '../contexts/AuthContext';
-import { saveScheduledActivities, loadScheduledActivities, saveMealPlan } from '../services/firebase';
+import {
+  saveScheduledActivities,
+  loadScheduledActivities,
+  saveDailyPlan
+} from '../services/firebase/dailyPlansService';
+import { getAllFoods, convertToLegacyFoodFormat } from '../services/foodService';
 import { SelectedFood, ExternalNutrition } from '../types/nutrition';
 
 interface SaveLoadPlanProps {
-  timeslotData: { [key: string]: { selectedFoods: SelectedFood[], externalNutrition: ExternalNutrition } };
+  timeslotData: {
+    [key: string]: { selectedFoods: SelectedFood[]; externalNutrition: ExternalNutrition };
+  };
 }
 
-const SaveLoadPlan: React.FC<SaveLoadPlanProps> = ({
-  timeslotData
-}) => {
+const SaveLoadPlan: React.FC<SaveLoadPlanProps> = ({ timeslotData }) => {
   const { user, isAuthenticated } = useAuth();
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
   const [showMultiDayDialog, setShowMultiDayDialog] = useState(false);
   const [numberOfDays, setNumberOfDays] = useState(1);
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
@@ -46,57 +49,59 @@ const SaveLoadPlan: React.FC<SaveLoadPlanProps> = ({
     tasks: string[];
   } | null>(null);
 
-  const handleSave = async () => {
-    setShowMultiDayDialog(true);
-  };
+  const [foodDatabase, setFoodDatabase] = useState<Record<string, any>>({});
+  const [foodDatabaseLoading, setFoodDatabaseLoading] = useState(true);
+
+  // Load food database from Firebase
+  useEffect(() => {
+    const loadFoodDB = async () => {
+      try {
+        setFoodDatabaseLoading(true);
+        const firebaseFoods = await getAllFoods();
+        const converted = convertToLegacyFoodFormat(firebaseFoods);
+        setFoodDatabase(converted);
+      } catch (error) {
+        console.error('❌ Error loading food database:', error);
+        setMessage({ type: 'error', text: 'Failed to load food database' });
+      } finally {
+        setFoodDatabaseLoading(false);
+      }
+    };
+    loadFoodDB();
+  }, []);
+
+  const getTotalSelectedFoods = () =>
+    Object.values(timeslotData).reduce((total, data) => total + data.selectedFoods.length, 0);
+
+  const hasAnySelectedFoods = getTotalSelectedFoods() > 0;
 
   const handleSingleDaySave = async () => {
     if (!user) return;
-
+    if (Object.keys(foodDatabase).length === 0) {
+      setMessage({ type: 'error', text: 'Food database not loaded yet. Please wait...' });
+      return;
+    }
     setLoading(true);
     setMessage(null);
 
     try {
-      // Use a specific date to ensure consistency with calendar
-      const todayDate = new Date();
-      // Create date in local timezone to match calendar
-      const localDate = new Date(todayDate.getFullYear(), todayDate.getMonth(), todayDate.getDate());
-      
-      console.log('Saving meal plan and scheduled activities for date:', localDate.toISOString().split('T')[0]);
-      
-      // 1. Save detailed meal plan data to mealPlans collection
-      await saveMealPlan(user.uid, timeslotData, localDate);
-      
-      // 2. Update unified scheduled activities
+      const today = new Date();
+      const localDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+      await saveDailyPlan(user.uid, timeslotData, foodDatabase, localDate);
+
       const newTasks: string[] = [];
-      
-      // Add meal tasks based on current plan
-      if (timeslotData['6pm']?.selectedFoods?.length > 0) {
-        newTasks.push('meal-6pm');
-      }
-      if (timeslotData['9:30pm']?.selectedFoods?.length > 0) {
-        newTasks.push('meal-9:30pm');
-      }
-      
-      // Get existing scheduled activities to preserve gym tasks
+      if (timeslotData['6pm']?.selectedFoods?.length > 0) newTasks.push('meal-6pm');
+      if (timeslotData['9:30pm']?.selectedFoods?.length > 0) newTasks.push('meal-9:30pm');
+
       const existing = await loadScheduledActivities(user.uid, localDate);
       const existingTasks = existing?.tasks || [];
-      
-                  // Build new tasks array - keep existing gym, update meals based on plan
       const finalTasks = [...existingTasks.filter(task => !task.startsWith('meal-')), ...newTasks];
-      
+
       await saveScheduledActivities(user.uid, finalTasks, localDate);
-      
-      // Update the displayed scheduled activities
-      setCurrentScheduledActivities({
-        status: 'active', // Default status when saving
-        tasks: finalTasks
-      });
-      
-      setMessage({ 
-        type: 'success', 
-        text: 'Meal plan and schedule updated successfully! Detailed data saved to mealPlans collection, unified view updated in scheduled activities.' 
-      });
+      setCurrentScheduledActivities({ status: 'active', tasks: finalTasks });
+      setMessage({ type: 'success', text: 'Daily meal plan saved successfully!' });
+      setShowMultiDayDialog(false);
     } catch (error: any) {
       setMessage({ type: 'error', text: error.message });
     } finally {
@@ -106,49 +111,36 @@ const SaveLoadPlan: React.FC<SaveLoadPlanProps> = ({
 
   const handleMultiDaySave = async () => {
     if (!user) return;
-
+    if (Object.keys(foodDatabase).length === 0) {
+      setMessage({ type: 'error', text: 'Food database not loaded yet. Please wait...' });
+      return;
+    }
     setLoading(true);
     setMessage(null);
 
     try {
-      const promises = [];
-      const start = new Date(startDate);
-      
+      const startObj = new Date(startDate);
+      const savedDates: string[] = [];
+
       for (let i = 0; i < numberOfDays; i++) {
-        const currentDate = new Date(start);
-        currentDate.setDate(start.getDate() + i);
-        
-        // Save both detailed meal plan AND update scheduled activities for each day
-        promises.push(
-          (async () => {
-            // 1. Save detailed meal plan data
-            await saveMealPlan(user.uid, timeslotData, currentDate);
-            
-            // 2. Update unified scheduled activities
-            const existing = await loadScheduledActivities(user.uid, currentDate);
-            const existingTasks = existing?.tasks || [];
-            
-            // Build new tasks array - keep existing gym, update meals based on plan
-            const newTasks = [...existingTasks.filter(task => !task.startsWith('meal-'))]; // Remove old meal tasks
-            
-            // Add meal tasks based on current plan
-            if (timeslotData['6pm']?.selectedFoods?.length > 0) {
-              newTasks.push('meal-6pm');
-            }
-            if (timeslotData['9:30pm']?.selectedFoods?.length > 0) {
-              newTasks.push('meal-9:30pm');
-            }
-            
-            return saveScheduledActivities(user.uid, newTasks, currentDate);
-          })()
-        );
+        const currentDate = new Date(startObj);
+        currentDate.setDate(startObj.getDate() + i);
+
+        await saveDailyPlan(user.uid, timeslotData, foodDatabase, currentDate);
+
+        const newTasks: string[] = [];
+        if (timeslotData['6pm']?.selectedFoods?.length > 0) newTasks.push('meal-6pm');
+        if (timeslotData['9:30pm']?.selectedFoods?.length > 0) newTasks.push('meal-9:30pm');
+
+        const existing = await loadScheduledActivities(user.uid, currentDate);
+        const existingTasks = existing?.tasks || [];
+        const finalTasks = [...existingTasks.filter(task => !task.startsWith('meal-')), ...newTasks];
+
+        await saveScheduledActivities(user.uid, finalTasks, currentDate);
+        savedDates.push(currentDate.toLocaleDateString());
       }
-      
-      await Promise.all(promises);
-      setMessage({ 
-        type: 'success', 
-        text: `Meal plans and schedule updated for ${numberOfDays} day${numberOfDays > 1 ? 's' : ''}! Both detailed meal data and unified schedule saved.` 
-      });
+
+      setMessage({ type: 'success', text: `Saved meal plan for: ${savedDates.join(', ')}` });
       setShowMultiDayDialog(false);
     } catch (error: any) {
       setMessage({ type: 'error', text: error.message });
@@ -159,233 +151,144 @@ const SaveLoadPlan: React.FC<SaveLoadPlanProps> = ({
 
   const handleLoad = async () => {
     if (!user) return;
-
     setLoading(true);
     setMessage(null);
 
     try {
-      const activities = await loadScheduledActivities(user.uid);
-      if (activities && activities.tasks.length > 0) {
-        setCurrentScheduledActivities({
-          status: activities.status,
-          tasks: activities.tasks
-        });
-        
-        // For now, just show what's scheduled
-        const scheduledMeals = activities.tasks.filter(task => task.startsWith('meal-'));
-        setMessage({ 
-          type: 'success', 
-          text: `Found scheduled activities: ${scheduledMeals.join(', ') || 'None'}` 
-        });
-      } else {
-        setCurrentScheduledActivities(null);
-        setMessage({ type: 'error', text: 'No scheduled activities found for today' });
-      }
-    } catch (error: any) {
-      setCurrentScheduledActivities(null);
-      setMessage({ type: 'error', text: error.message });
-    } finally {
-      setLoading(false);
-    }
-  };
+      const today = new Date();
+      const localDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      const activities = await loadScheduledActivities(user.uid, localDate);
 
-  const handleLoadRecent = async () => {
-    if (!user) return;
-
-    setLoading(true);
-    setMessage(null);
-
-    try {
-      // For now, just show current scheduled activities
-      const activities = await loadScheduledActivities(user.uid);
       if (activities) {
-        setCurrentScheduledActivities({
-          status: activities.status,
-          tasks: activities.tasks
-        });
-        setMessage({ 
-          type: 'success', 
-          text: `Current scheduled activities loaded: ${activities.tasks.join(', ') || 'None'}` 
+        setCurrentScheduledActivities(activities);
+        setMessage({
+          type: 'success',
+          text: `Loaded plan for ${localDate.toLocaleDateString()}`
         });
       } else {
-        setCurrentScheduledActivities(null);
-        setMessage({ type: 'error', text: 'No recent scheduled activities found' });
+        setMessage({ type: 'error', text: 'No saved plan for today' });
       }
     } catch (error: any) {
-      setCurrentScheduledActivities(null);
       setMessage({ type: 'error', text: error.message });
     } finally {
       setLoading(false);
     }
   };
 
-  // Remove these unused functions since we're not using daily plans anymore
-  // const handleLoadSpecificPlan = ...
-  // const getTotalCalories = ...
-
-  /*
-   * PATTERN FOR OTHER COMPONENTS (Gym, Future Activities):
-   * 
-   * To maintain dual-system approach:
-   * 1. Save detailed data to your specific collection (e.g., scheduledWorkouts for gym)
-   * 2. Add task to unified schedule using helper functions:
-   * 
-   * import { addTaskToUnifiedSchedule } from '../services/firebase';
-   * 
-   * // Save detailed gym workout
-   * await saveScheduledWorkout(userId, workoutData, date);
-   * 
-   * // Add to unified schedule view
-   * await addTaskToUnifiedSchedule(userId, 'gym-workout', date);
-   * 
-   * This keeps detailed data separate while maintaining unified task view.
-   */
-
-  // Check if there are any selected foods in any timeslot
-  const hasSelectedFoods = Object.values(timeslotData).some(data => data.selectedFoods.length > 0);
-
-  if (!isAuthenticated) {
+  if (foodDatabaseLoading) {
     return (
-      <Card sx={{ mb: 3, borderRadius: 4 }}>
-        <CardContent sx={{ p: 3, textAlign: 'center' }}>
-          <Typography variant="h6" gutterBottom>
-            🔐 Save Your Progress
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Sign in to save and sync your meal plans and schedule across devices
-          </Typography>
-          <Button variant="outlined" disabled>
-            Sign In Required
-          </Button>
+      <Card>
+        <CardContent>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <CircularProgress size={20} />
+            <Typography>Loading food database...</Typography>
+          </Box>
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <Card sx={{ mb: 3, borderRadius: 4 }}>
-      <CardContent sx={{ p: 3 }}>
+    <Card>
+      <CardContent>
+        <Typography variant="h6" sx={{ mb: 2 }}>
+          💾 Save/Load Meal Plan
+        </Typography>
+
         {message && (
-          <Alert severity={message.type} sx={{ mb: 2 }}>
+          <Alert severity={message.type} sx={{ mb: 2 }} onClose={() => setMessage(null)}>
             {message.text}
           </Alert>
         )}
 
-        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mb: 2 }}>
+        <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
           <Button
-            variant="contained"
             startIcon={loading ? <CircularProgress size={16} /> : <SaveIcon />}
-            onClick={handleSave}
-            disabled={loading || !hasSelectedFoods}
+            onClick={() => setShowMultiDayDialog(true)}
+            disabled={loading || !hasAnySelectedFoods || !isAuthenticated}
             size="small"
+            variant="contained"
           >
-            Save
+            Save Plan
           </Button>
-
           <Button
-            variant="outlined"
-            startIcon={loading ? <CircularProgress size={16} /> : <LoadIcon />}
+            startIcon={<LoadIcon />}
             onClick={handleLoad}
-            disabled={loading}
+            disabled={loading || !isAuthenticated}
             size="small"
-          >
-            Load
-          </Button>
-
-          <Button
             variant="outlined"
-            startIcon={loading ? <CircularProgress size={16} /> : <HistoryIcon />}
-            onClick={handleLoadRecent}
-            disabled={loading}
-            size="small"
           >
-            Recent
+            Load Today
           </Button>
+          {currentScheduledActivities && (
+            <Button startIcon={<HistoryIcon />} size="small" variant="outlined" disabled>
+              {currentScheduledActivities.tasks.length} activities
+            </Button>
+          )}
         </Box>
 
-        {currentScheduledActivities && (
-          <Box sx={{ mt: 3, p: 2, bgcolor: 'background.paper', borderRadius: 1, border: 1, borderColor: 'divider' }}>
-            <Typography variant="subtitle2" gutterBottom>
-              Today's Scheduled Activities
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Status: <strong>{currentScheduledActivities.status}</strong>
-            </Typography>
-            {currentScheduledActivities.tasks && currentScheduledActivities.tasks.length > 0 ? (
-              <Box>
-                <Typography variant="body2" sx={{ mb: 1 }}>
-                  Scheduled tasks:
-                </Typography>
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                  {currentScheduledActivities.tasks.map((task, index) => (
-                    <Chip 
-                      key={index} 
-                      label={task} 
-                      size="small" 
-                      color={task.startsWith('meal-') ? 'primary' : 'default'}
-                      variant="outlined"
-                    />
-                  ))}
-                </Box>
-              </Box>
-            ) : (
-              <Typography variant="body2" color="text.secondary">
-                No tasks scheduled
-              </Typography>
-            )}
-          </Box>
-        )}
-      </CardContent>
+        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+          <Chip
+            label={`${getTotalSelectedFoods()} foods selected`}
+            color={hasAnySelectedFoods ? 'primary' : 'default'}
+            size="small"
+          />
+          <Chip
+            label={`${Object.keys(foodDatabase).length} foods in database`}
+            color="success"
+            size="small"
+          />
+        </Box>
 
-      {/* Multi-day Save Dialog */}
-      <Dialog open={showMultiDayDialog} onClose={() => setShowMultiDayDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Schedule Meals</DialogTitle>
-        <DialogContent>
-          <Box sx={{ pt: 2 }}>
-            <TextField
-              label="Start Date"
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              fullWidth
-              sx={{ mb: 3 }}
-              InputLabelProps={{
-                shrink: true,
-              }}
-            />
-            
-            <Typography gutterBottom>
-              Number of Days: {numberOfDays}
-            </Typography>
-            <Slider
-              value={numberOfDays}
-              onChange={(_, value) => setNumberOfDays(value as number)}
-              min={1}
-              max={30}
-              marks={[
-                { value: 1, label: '1 day' },
-                { value: 7, label: '1 week' },
-                { value: 14, label: '2 weeks' },
-                { value: 30, label: '1 month' }
-              ]}
-              sx={{ mb: 2 }}
-            />
-            
-            <Typography variant="body2" color="text.secondary">
-              This will schedule the current meal plan for {numberOfDays} consecutive day{numberOfDays > 1 ? 's' : ''} starting from {new Date(startDate).toLocaleDateString()}.
-            </Typography>
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setShowMultiDayDialog(false)}>Cancel</Button>
-          <Button onClick={handleSingleDaySave} disabled={loading}>
-            Schedule Today Only
-          </Button>
-          <Button onClick={handleMultiDaySave} variant="contained" disabled={loading}>
-            {loading ? <CircularProgress size={20} /> : `Schedule ${numberOfDays} Day${numberOfDays > 1 ? 's' : ''}`}
-          </Button>
-        </DialogActions>
-      </Dialog>
+        {!isAuthenticated && (
+          <Alert severity="warning" sx={{ mt: 2 }}>
+            Please log in to save/load meal plans
+          </Alert>
+        )}
+
+        {/* Multi-day Save Dialog */}
+        <Dialog open={showMultiDayDialog} onClose={() => setShowMultiDayDialog(false)}>
+          <DialogTitle>Save Meal Plan</DialogTitle>
+          <DialogContent>
+            <Box sx={{ pt: 2 }}>
+              <TextField
+                fullWidth
+                type="date"
+                label="Start Date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                sx={{ mb: 3 }}
+                InputLabelProps={{ shrink: true }}
+              />
+
+              <Typography gutterBottom>Number of days: {numberOfDays}</Typography>
+              <Slider
+                value={numberOfDays}
+                onChange={(_, val) => setNumberOfDays(val as number)}
+                min={1}
+                max={14}
+                marks
+                valueLabelDisplay="auto"
+                sx={{ mb: 2 }}
+              />
+
+              <Typography variant="body2" color="text.secondary">
+                This will save the plan for {numberOfDays} day(s) starting from {startDate}.
+              </Typography>
+            </Box>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setShowMultiDayDialog(false)}>Cancel</Button>
+            <Button
+              onClick={numberOfDays === 1 ? handleSingleDaySave : handleMultiDaySave}
+              variant="contained"
+              disabled={loading}
+            >
+              {loading ? <CircularProgress size={20} /> : 'Save'}
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </CardContent>
     </Card>
   );
 };

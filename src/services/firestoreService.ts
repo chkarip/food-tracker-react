@@ -17,7 +17,7 @@ import { DailyPlanDocument, UserPreferences, FoodHistory, ActivityHistoryDocumen
 import { SelectedFood, ExternalNutrition } from '../types/nutrition';
 import { calculateTotalMacros } from '../utils/nutritionCalculations';
 
-const DAILY_PLANS_COLLECTION = 'dailyPlans';
+const DAILY_PLANS_COLLECTION = 'mealPlans';
 const USER_PREFERENCES_COLLECTION = 'userPreferences';
 const FOOD_HISTORY_COLLECTION = 'foodHistory';
 const ACTIVITY_HISTORY_COLLECTION = 'activityHistory';
@@ -38,6 +38,7 @@ const formatDate = (date: Date): string => {
 export const saveDailyPlan = async (
   userId: string, 
   timeslotData: { [key: string]: { selectedFoods: SelectedFood[], externalNutrition: ExternalNutrition } },
+  foodDatabase: any,
   date?: Date,
   completionStatus?: {
     '6pm': boolean;
@@ -58,7 +59,7 @@ export const saveDailyPlan = async (
     let combinedMacros = { protein: 0, fats: 0, carbs: 0, calories: 0 };
     
     Object.values(timeslotData).forEach(data => {
-      const foodMacros = calculateTotalMacros(data.selectedFoods);
+      const foodMacros = calculateTotalMacros(data.selectedFoods, foodDatabase); // ✅ Pass foodDatabase
       combinedMacros.protein += foodMacros.protein + data.externalNutrition.protein;
       combinedMacros.fats += foodMacros.fats + data.externalNutrition.fats;
       combinedMacros.carbs += foodMacros.carbs + data.externalNutrition.carbs;
@@ -664,6 +665,7 @@ export const getActivityHistoryForDate = async (
 export const saveTimeslots = async (
   userId: string, 
   timeslotData: { [key: string]: { selectedFoods: SelectedFood[], externalNutrition: ExternalNutrition } },
+  foodDatabase: any,
   date?: Date
 ): Promise<void> => {
   try {
@@ -677,7 +679,7 @@ export const saveTimeslots = async (
     let combinedMacros = { protein: 0, fats: 0, carbs: 0, calories: 0 };
     
     Object.values(timeslotData).forEach(data => {
-      const foodMacros = calculateTotalMacros(data.selectedFoods);
+      const foodMacros = calculateTotalMacros(data.selectedFoods, foodDatabase); // ✅ Pass foodDatabase
       combinedMacros.protein += foodMacros.protein + data.externalNutrition.protein;
       combinedMacros.fats += foodMacros.fats + data.externalNutrition.fats;
       combinedMacros.carbs += foodMacros.carbs + data.externalNutrition.carbs;

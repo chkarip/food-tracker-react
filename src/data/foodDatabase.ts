@@ -35,11 +35,11 @@ import { FoodItem, MacroTargets } from '../types/nutrition';
 
 // Daily macro targets
 export const MACRO_TARGETS: MacroTargets = {
-  protein: 125,    // grams
-  fats: 61,        // grams
-  carbs: 287,      // grams
-  caloriesMin: 2100, // kcal
-  caloriesMax: 2200  // kcal
+  protein: 127,    // grams
+  fats: 65,        // grams
+  carbs: 300,      // grams
+  caloriesMin: 2300, // kcal
+  caloriesMax: 2350  // kcal
 };
 
 // Unit foods (measured per individual item, not per 100g)
@@ -99,12 +99,12 @@ export const FOOD_DATABASE: Record<string, FoodItem> = {
   },
   'Tortilla wrap': {
     name: 'Tortilla wrap',
-    nutrition: { protein: 6, fats: 8, carbs: 52, calories: 320 },
+    nutrition: { protein: 126, fats: 8, carbs: 52, calories: 320 },
     isUnitFood: true // measured per wrap
   },
   'Almonds/Walnuts': {
     name: 'Almonds/Walnuts',
-    nutrition: { protein: 20, fats: 50, carbs: 22, calories: 575 },
+    nutrition: { protein: 210, fats: 50, carbs: 22, calories: 575 },
     isUnitFood: false
   },
   'Dark-chocolate 74%': {

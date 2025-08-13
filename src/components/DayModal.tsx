@@ -1,30 +1,29 @@
 /**
- * DayModal.tsx - Detailed Day Activity Management
+ * DayModal.tsx - Day Activity Viewer
  * 
  * BUSINESS PURPOSE:
- * Provides comprehensive day-specific activity management including:
- * - Scheduling/unscheduling of meal plans and gym workouts
+ * Provides day-specific activity viewing including:
  * - Detailed program viewing (meal ingredients, workout exercises)
- * - Activity completion status tracking
- * - Direct navigation to program planning interfaces
+ * - Activity completion status display
+ * - Read-only preview of scheduled programs
  * 
  * KEY BUSINESS LOGIC:
- * 1. ACTIVITY SCHEDULING: Toggle switches for meal-6pm, meal-9:30pm, gym-workout
+ * 1. ACTIVITY DISPLAY: Shows scheduled meal plans and gym workouts for the selected day
  * 2. DETAILED DATA LOADING: Fetches specific program details from mealPlans and scheduledWorkouts collections
- * 3. PROGRAM PREVIEW: Shows meal ingredients, macros, workout exercises without full edit mode
- * 4. UNIFIED SCHEDULING: Updates both detailed collections and scheduledActivities for calendar display
+ * 3. PROGRAM PREVIEW: Shows meal ingredients, macros, workout exercises in read-only mode
+ * 4. UNIFIED DISPLAY: Reads from scheduledActivities for task flags and displays corresponding details
  * 
  * DATA INTEGRATION:
  * - Reads from scheduledActivities for task flags
  * - Loads detailed data from mealPlans (food selection, macros, external nutrition)
  * - Loads workout data from scheduledWorkouts (exercises, sets, reps, duration)
- * - Updates database when users toggle activity scheduling
+ * - Displays scheduled activities without modification capabilities
  * 
  * BUSINESS VALUE:
- * - Provides day-level program management without cluttering main calendar
- * - Enables users to preview scheduled programs before execution
- * - Maintains consistency between scheduling flags and detailed program data
- * - Supports informed decision-making with complete program visibility
+ * - Provides day-level program overview without cluttering main calendar
+ * - Enables users to review scheduled programs 
+ * - Shows consistency between scheduling flags and detailed program data
+ * - Supports review of planned activities with complete program visibility
  */
 import React, { useState, useEffect } from 'react';
 import {
@@ -41,8 +40,6 @@ import {
   Chip,
   alpha,
   Stack,
-  Switch,
-  FormControlLabel,
   Accordion,
   AccordionSummary,
   AccordionDetails,
@@ -53,7 +50,6 @@ import {
   Restaurant as FoodIcon,
   FitnessCenter as GymIcon,
   Close as CloseIcon,
-  Add as AddIcon,
   ExpandMore as ExpandMoreIcon,
   Schedule as TimeIcon
 } from '@mui/icons-material';
@@ -68,7 +64,6 @@ interface DayModalProps {
   onClose: () => void;
   onCreateMealPlan: () => void;
   onCreateWorkout: () => void;
-  onToggleSchedule: (taskType: 'meal-6pm' | 'meal-9:30pm' | 'gym', scheduled: boolean) => void;
 }
 
 const DayModal: React.FC<DayModalProps> = ({
@@ -76,8 +71,7 @@ const DayModal: React.FC<DayModalProps> = ({
   scheduledActivities,
   onClose,
   onCreateMealPlan,
-  onCreateWorkout,
-  onToggleSchedule
+  onCreateWorkout
 }) => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -187,57 +181,17 @@ const DayModal: React.FC<DayModalProps> = ({
         )}
         
         <Stack spacing={3}>
-          <Typography variant="h6" gutterBottom>
-            📅 Schedule Tasks for This Day
-          </Typography>
-          
           {/* Food Program Tasks */}
-          <Card variant="outlined">
-            <CardContent>
-              <Typography variant="subtitle1" sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                <FoodIcon color="primary" />
-                Food Program
-              </Typography>
-              
-              <Stack spacing={2}>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <FormControlLabel
-                    control={
-                      <Switch
-                        checked={scheduled['meal-6pm']}
-                        onChange={(e) => onToggleSchedule('meal-6pm', e.target.checked)}
-                        color="primary"
-                      />
-                    }
-                    label="6:00 PM - Afternoon Meal"
-                  />
-                  {scheduled['meal-6pm'] && (
-                    <Button size="small" variant="outlined" onClick={onCreateMealPlan}>
-                      Plan Meal
-                    </Button>
-                  )}
-                </Box>
-
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <FormControlLabel
-                    control={
-                      <Switch
-                        checked={scheduled['meal-9:30pm']}
-                        onChange={(e) => onToggleSchedule('meal-9:30pm', e.target.checked)}
-                        color="primary"
-                      />
-                    }
-                    label="9:30 PM - Evening Meal"
-                  />
-                  {scheduled['meal-9:30pm'] && (
-                    <Button size="small" variant="outlined" onClick={onCreateMealPlan}>
-                      Plan Meal
-                    </Button>
-                  )}
-                </Box>
+          {(scheduled['meal-6pm'] || scheduled['meal-9:30pm']) && (
+            <Card variant="outlined">
+              <CardContent>
+                <Typography variant="subtitle1" sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                  <FoodIcon color="primary" />
+                  Food Program
+                </Typography>
                 
                 {/* Show meal plan details if available */}
-                {(scheduled['meal-6pm'] || scheduled['meal-9:30pm']) && mealPlan && (
+                {mealPlan && (
                   <Accordion>
                     <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                       <Typography variant="subtitle2" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -308,38 +262,21 @@ const DayModal: React.FC<DayModalProps> = ({
                     </AccordionDetails>
                   </Accordion>
                 )}
-              </Stack>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Gym Program */}
-          <Card variant="outlined">
-            <CardContent>
-              <Typography variant="subtitle1" sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                <GymIcon color="warning" />
-                Gym Workout
-              </Typography>
-              
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={scheduled.gym}
-                      onChange={(e) => onToggleSchedule('gym', e.target.checked)}
-                      color="warning"
-                    />
-                  }
-                  label="Gym Session Scheduled"
-                />
-                {scheduled.gym && (
-                  <Button size="small" variant="outlined" onClick={onCreateWorkout}>
-                    Plan Workout
-                  </Button>
-                )}
-              </Box>
+          {scheduled.gym && (
+            <Card variant="outlined">
+              <CardContent>
+                <Typography variant="subtitle1" sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                  <GymIcon color="warning" />
+                  Gym Workout
+                </Typography>
               
               {/* Show workout details if available */}
-              {scheduled.gym && scheduledWorkout && (
+              {scheduledWorkout && (
                 <Accordion>
                   <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                     <Typography variant="subtitle2" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -424,23 +361,6 @@ const DayModal: React.FC<DayModalProps> = ({
               )}
             </CardContent>
           </Card>
-
-          {/* Summary */}
-          {Object.values(scheduled).some(Boolean) && (
-            <Card variant="outlined" sx={{ 
-              bgcolor: theme => alpha(theme.palette.primary.main, 0.08)
-            }}>
-              <CardContent>
-                <Typography variant="subtitle2" gutterBottom>
-                  📊 Scheduled Tasks Summary
-                </Typography>
-                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                  {scheduled['meal-6pm'] && <Chip label="6PM Meal" size="small" color="primary" />}
-                  {scheduled['meal-9:30pm'] && <Chip label="9:30PM Meal" size="small" color="primary" />}
-                  {scheduled.gym && <Chip label="Gym" size="small" color="warning" />}
-                </Box>
-              </CardContent>
-            </Card>
           )}
         </Stack>
       </DialogContent>

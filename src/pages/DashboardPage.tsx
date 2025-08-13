@@ -422,72 +422,6 @@ const DashboardPage: React.FC = () => {
     setSelectedDay(null);
   };
 
-  const handleToggleSchedule = async (
-    taskType: 'meal-6pm' | 'meal-9:30pm' | 'gym', 
-    scheduled: boolean
-  ) => {
-    if (!user || !selectedDay) return;
-    
-    console.log('🎯 DashboardPage: Schedule toggle:', { 
-      taskType, 
-      scheduled, 
-      userId: user.uid,
-      date: selectedDay.date.toISOString().split('T')[0]
-    });
-    
-    try {
-      const dayKey = selectedDay.date.toISOString().split('T')[0];
-      
-      // Save to scheduled activities
-      const { saveScheduledActivities } = await import('../services/firebase');
-      
-      // Convert task type to array format and normalize task names
-      const taskName = taskType === 'gym' ? 'gym-workout' : taskType;
-      const tasksToAdd = scheduled ? [taskName] : [];
-      
-      await saveScheduledActivities(user.uid, tasksToAdd, selectedDay.date);
-      console.log('✅ Scheduled activities updated');
-      
-      // Update local state immediately
-      setScheduledActivities(prev => {
-        const existing = prev.find(activity => activity.date === dayKey);
-        
-        if (existing) {
-          // Update existing
-          const updatedTasks = scheduled 
-            ? Array.from(new Set([...existing.tasks, taskName])) // Add normalized task name if not already present
-            : existing.tasks.filter(task => task !== taskName); // Remove normalized task name
-          
-          return prev.map(activity => 
-            activity.date === dayKey 
-              ? {
-                  ...activity,
-                  tasks: updatedTasks
-                }
-              : activity
-          );
-        } else {
-          // Create new entry
-          return [...prev, {
-            userId: user.uid,
-            date: dayKey,
-            status: 'active' as const,
-            tasks: scheduled ? [taskName] : [], // Use normalized task name
-            createdAt: null as any, // Will be set by Firebase
-            updatedAt: null as any  // Will be set by Firebase
-          }];
-        }
-      });
-      
-      // Force calendar refresh to show updated scheduling status
-      setCalendarRefresh(prev => prev + 1);
-      console.log('✅ Calendar refresh triggered');
-      
-    } catch (error) {
-      console.error('❌ Error updating scheduled activities:', error);
-    }
-  };
-
   return (
     <Container maxWidth="xl" sx={{ py: 3 }}>
       {/* Header */}
@@ -549,7 +483,6 @@ const DashboardPage: React.FC = () => {
         onClose={() => setSelectedDay(null)}
         onCreateMealPlan={handleCreateMealPlan}
         onCreateWorkout={handleCreateWorkout}
-        onToggleSchedule={handleToggleSchedule}
       />
     </Container>
   );

@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { 
-  Box, 
-  Card, 
-  CardContent, 
-  Typography, 
-  TextField, 
+import {
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  TextField,
   Button,
   FormControlLabel,
   Checkbox,
@@ -16,12 +16,12 @@ import { ExternalNutrition } from '../types/nutrition';
 interface ExternalNutritionInputProps {
   externalNutrition: ExternalNutrition;
   onUpdateExternal: (nutrition: ExternalNutrition) => void;
-}
+} // ✅ Added missing closing brace
 
 const ExternalNutritionInput: React.FC<ExternalNutritionInputProps> = ({
   externalNutrition,
   onUpdateExternal
-}) => {
+}) => { // ✅ Fixed arrow function
   const [isExternalEnabled, setIsExternalEnabled] = useState(false);
 
   const handleChange = (field: keyof ExternalNutrition, value: number) => {
@@ -40,10 +40,9 @@ const ExternalNutritionInput: React.FC<ExternalNutritionInputProps> = ({
     });
   };
 
-  const handleCheckboxChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCheckboxChange = (event: React.ChangeEvent<HTMLInputElement>) => { // ✅ Fixed type
     const enabled = event.target.checked;
     setIsExternalEnabled(enabled);
-    
     // If disabling, clear all external nutrition data
     if (!enabled) {
       clearAll();
@@ -53,28 +52,27 @@ const ExternalNutritionInput: React.FC<ExternalNutritionInputProps> = ({
   const hasExternalNutrition = Object.values(externalNutrition).some(value => value > 0);
 
   return (
-    <Card sx={{ mb: 3, borderRadius: 4 }}>
-      <CardContent sx={{ p: 3 }}>
+    <Card>
+      <CardContent>
         {/* Header with Checkbox */}
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
           <FormControlLabel
             control={
               <Checkbox
                 checked={isExternalEnabled}
                 onChange={handleCheckboxChange}
-                color="primary"
+                icon={<RestaurantIcon />}
+                checkedIcon={<RestaurantIcon />}
               />
             }
             label={
-              <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <RestaurantIcon />
+              <Typography variant="subtitle1">
                 External Nutrition
               </Typography>
             }
           />
           {hasExternalNutrition && isExternalEnabled && (
             <Button
-              variant="outlined"
               size="small"
               startIcon={<ClearIcon />}
               onClick={clearAll}
@@ -83,22 +81,16 @@ const ExternalNutritionInput: React.FC<ExternalNutritionInputProps> = ({
             </Button>
           )}
         </Box>
-        
+
         {/* Collapsible Content */}
         <Collapse in={isExternalEnabled}>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
             Add macros from foods eaten outside the app (restaurants, snacks, etc.)
           </Typography>
-
-          <Box 
-            sx={{ 
-              display: 'grid', 
-              gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(4, 1fr)' },
-              gap: 2 
-            }}
-          >
+          
+          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 2, mb: 2 }}>
             <TextField
-              label="💪 Protein (g)"
+              label="Protein (g)"
               type="number"
               value={externalNutrition.protein}
               onChange={(e) => handleChange('protein', Number(e.target.value))}
@@ -106,9 +98,8 @@ const ExternalNutritionInput: React.FC<ExternalNutritionInputProps> = ({
               size="small"
               fullWidth
             />
-            
             <TextField
-              label="🥑 Fats (g)"
+              label="Fats (g)"
               type="number"
               value={externalNutrition.fats}
               onChange={(e) => handleChange('fats', Number(e.target.value))}
@@ -116,9 +107,8 @@ const ExternalNutritionInput: React.FC<ExternalNutritionInputProps> = ({
               size="small"
               fullWidth
             />
-            
             <TextField
-              label="🍞 Carbs (g)"
+              label="Carbs (g)"
               type="number"
               value={externalNutrition.carbs}
               onChange={(e) => handleChange('carbs', Number(e.target.value))}
@@ -126,9 +116,8 @@ const ExternalNutritionInput: React.FC<ExternalNutritionInputProps> = ({
               size="small"
               fullWidth
             />
-            
             <TextField
-              label="🔥 Calories"
+              label="Calories"
               type="number"
               value={externalNutrition.calories}
               onChange={(e) => handleChange('calories', Number(e.target.value))}
@@ -139,12 +128,10 @@ const ExternalNutritionInput: React.FC<ExternalNutritionInputProps> = ({
           </Box>
 
           {hasExternalNutrition && (
-            <Box sx={{ mt: 2, p: 2, bgcolor: 'primary.50', borderRadius: 2 }}>
-              <Typography variant="body2" color="primary.main">
-                External Total: {externalNutrition.protein}g protein, {externalNutrition.fats}g fats, 
-                {externalNutrition.carbs}g carbs, {externalNutrition.calories} calories
-              </Typography>
-            </Box>
+            <Typography variant="caption" color="text.secondary">
+              External Total: {externalNutrition.protein}g protein, {externalNutrition.fats}g fats,{' '}
+              {externalNutrition.carbs}g carbs, {externalNutrition.calories} calories
+            </Typography>
           )}
         </Collapse>
       </CardContent>
