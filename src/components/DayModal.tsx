@@ -1,29 +1,16 @@
 /**
- * DayModal.tsx - Day Activity Viewer
- * 
- * BUSINESS PURPOSE:
- * Provides day-specific activity viewing including:
- * - Detailed program viewing (meal ingredients, workout exercises)
- * - Activity completion status display
- * - Read-only preview of scheduled programs
- * 
- * KEY BUSINESS LOGIC:
- * 1. ACTIVITY DISPLAY: Shows scheduled meal plans and gym workouts for the selected day
- * 2. DETAILED DATA LOADING: Fetches specific program details from mealPlans and scheduledWorkouts collections
- * 3. PROGRAM PREVIEW: Shows meal ingredients, macros, workout exercises in read-only mode
- * 4. UNIFIED DISPLAY: Reads from scheduledActivities for task flags and displays corresponding details
- * 
- * DATA INTEGRATION:
- * - Reads from scheduledActivities for task flags
- * - Loads detailed data from mealPlans (food selection, macros, external nutrition)
- * - Loads workout data from scheduledWorkouts (exercises, sets, reps, duration)
- * - Displays scheduled activities without modification capabilities
- * 
+ * DayModal.tsx - Day Activity Details Modal
+ *
+ * LOGIC SUMMARY:
+ * - Opens when a DayCard is clicked in the calendar grid.
+ * - Shows detailed plans for the selected day: meals, workouts, and other scheduled activities.
+ * - Loads and displays meal ingredients, macros, workout exercises, and status in read-only mode.
+ * - Integrates with scheduledActivities, mealPlans, and scheduledWorkouts for complete data.
+ * - No editing; purely for review and program visibility.
+ *
  * BUSINESS VALUE:
- * - Provides day-level program overview without cluttering main calendar
- * - Enables users to review scheduled programs 
- * - Shows consistency between scheduling flags and detailed program data
- * - Supports review of planned activities with complete program visibility
+ * - Provides a focused, uncluttered view of daily plans and progress.
+ * - Supports consistency and engagement by making all details visible on demand.
  */
 import React, { useState, useEffect } from 'react';
 import {

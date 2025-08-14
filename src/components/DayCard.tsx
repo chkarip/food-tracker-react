@@ -1,30 +1,16 @@
 /**
  * DayCard.tsx - Calendar Day Display Component
- * 
- * BUSINESS PURPOSE:
- * Individual calendar day representation that provides:
- * - Visual day number display with current day highlighting
- * - Scheduled activity pills showing planned tasks for the day
- * - Color-coded task indicators (blue for meals, orange for gym)
- * - Click interaction for detailed day management
- * 
- * KEY BUSINESS LOGIC:
- * 1. TASK VISUALIZATION: Displays scheduled activities as small colored pills
- * 2. TASK CATEGORIZATION: Different colors for meal tasks vs gym workouts
- * 3. USER-FRIENDLY LABELS: Converts technical task names (meal-6pm) to readable format (MEAL 6PM)
- * 4. INTERACTIVE DESIGN: Hover effects and click handling for day selection
- * 
- * VISUAL DESIGN PATTERNS:
- * - Current day gets special highlighting with primary color background
- * - Non-current month days are dimmed (40% opacity)
- * - Task pills use theme colors: primary (meals), secondary (gym), grey (others)
- * - Compact design fits multiple tasks in small calendar grid cells
- * 
+ *
+ * LOGIC SUMMARY:
+ * - Renders a single day in the calendar grid.
+ * - Shows the day number, highlights today, dims non-current month days.
+ * - Displays scheduled tasks as color-coded pills (meals, gym, others).
+ * - Converts technical task names to readable labels.
+ * - Handles click for day selection and management.
+ *
  * BUSINESS VALUE:
- * - Provides immediate visual feedback on daily program adherence
- * - Enables quick scanning of weekly/monthly activity patterns
- * - Supports program consistency by making scheduled activities visible
- * - Encourages engagement through clear visual progress indicators
+ * - Quick visual feedback on daily adherence and engagement.
+ * - Supports fast scanning of activity patterns and program consistency.
  */
 import React from 'react';
 import {
@@ -77,7 +63,7 @@ const DayCard: React.FC<DayCardProps> = ({ day, onDayClick }) => {
           {day.date.getDate()}
         </Typography>
         
-        {/* Show scheduled tasks as pills */}
+  {/* Scheduled tasks: color-coded pills for quick review */}
         {day.scheduledTasks && day.scheduledTasks.length > 0 && (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, mt: 1 }}>
             {day.scheduledTasks.map((task: string, index: number) => (

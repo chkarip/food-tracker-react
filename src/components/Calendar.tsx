@@ -1,3 +1,18 @@
+/**
+ * Calendar.tsx - Main Calendar Grid Component
+ *
+ * APP LOGIC OVERVIEW:
+ * - Hosts the calendar grid for the life tracker app.
+ * - Displays each day as a DayCard, showing scheduled tasks for quick review.
+ * - Provides navigation (month switching, go to today).
+ * - Weekday headers and compact grid layout for easy scanning.
+ * - Integrates with DayCard for visual feedback on daily program adherence.
+ *
+ * BUSINESS VALUE:
+ * - Central hub for tracking and scheduling all activities.
+ * - Enables fast navigation and overview of daily/weekly/monthly patterns.
+ * - Supports engagement and consistency by making all scheduled tasks visible.
+ */
 import React from 'react';
 import {
   Box,
@@ -37,19 +52,12 @@ const Calendar: React.FC<CalendarProps> = ({
   const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const monthYear = currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
-  // const getEventIcon = (type: string) => {
-  //   switch (type) {
-  //     case 'food': return '🍽️';
-  //     case 'gym': return '💪';
-  //     case 'finance': return '💰';
-  //     default: return '📅';
-  //   }
-  // };
+  // ...existing code...
 
   return (
     <Card sx={{ borderRadius: 4 }}>
       <CardContent sx={{ p: 3 }}>
-        {/* Calendar Header */}
+  {/* Calendar Header: Month, navigation, today button */}
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
           <Typography variant="h5" sx={{ fontWeight: 600 }}>
             {monthYear}
@@ -72,7 +80,7 @@ const Calendar: React.FC<CalendarProps> = ({
           </Box>
         </Box>
 
-        {/* Calendar Grid */}
+  {/* Calendar Grid: Weekday headers and DayCards */}
         <Box sx={{ mb: 2 }}>
           {/* Week days header */}
           <Box sx={{ 
@@ -97,7 +105,7 @@ const Calendar: React.FC<CalendarProps> = ({
             ))}
           </Box>
 
-          {/* Calendar days */}
+          {/* Calendar days: Each day rendered as DayCard */}
           <Box sx={{ 
             display: 'grid', 
             gridTemplateColumns: 'repeat(7, 1fr)',
