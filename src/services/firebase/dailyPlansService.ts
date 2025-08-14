@@ -106,7 +106,7 @@ export const saveDailyPlan = async (
     };
 
     console.log('  📄 Final plan data to save:', planData);
-    console.log('  🔥 Saving to Firestore collection:', COLLECTIONS.DAILY_PLANS);
+    console.log('  🔥 Saving to Firestore collection:', COLLECTIONS.SCHEDULED_ACTIVITIES);
 
     // Use userId_date as document ID for easy retrieval
     const docId = `${userId}_${planDate}`;
@@ -305,7 +305,7 @@ export const getRecentDailyPlans = async (
   try {
     // Use the existing composite index (userId asc, date asc) and sort in JS
     const q = query(
-      collection(db, COLLECTIONS.DAILY_PLANS),
+      collection(db, COLLECTIONS.SCHEDULED_ACTIVITIES),
       where('userId', '==', userId),
       orderBy('date', 'asc') // Use asc to match your existing index
     );
@@ -343,10 +343,10 @@ export const getDailyPlansForMonth = async (
     console.log('🔍 Firestore DEBUG - getDailyPlansForMonth:');
     console.log('  📅 Input params:', { userId, year, month, monthName: new Date(year, month).toLocaleDateString('en-US', { month: 'long' }) });
     console.log('  📅 Date range:', { startDateString, endDateString });
-    console.log('  🔥 Collection:', COLLECTIONS.DAILY_PLANS);
+    console.log('  🔥 Collection:', COLLECTIONS.SCHEDULED_ACTIVITIES);
     
     const q = query(
-      collection(db, COLLECTIONS.DAILY_PLANS),
+      collection(db, COLLECTIONS.SCHEDULED_ACTIVITIES),
       where('userId', '==', userId),
       where('date', '>=', startDateString),
       where('date', '<=', endDateString)
@@ -424,7 +424,7 @@ export const migrateCompletionStatusToHistory = async (userId: string): Promise<
     
     // Get all daily plans for the user
     const q = query(
-      collection(db, COLLECTIONS.DAILY_PLANS),
+      collection(db, COLLECTIONS.SCHEDULED_ACTIVITIES),
       where('userId', '==', userId)
     );
     

@@ -17,7 +17,7 @@ import { DailyPlanDocument, UserPreferences, FoodHistory, ActivityHistoryDocumen
 import { SelectedFood, ExternalNutrition } from '../types/nutrition';
 import { calculateTotalMacros } from '../utils/nutritionCalculations';
 
-const DAILY_PLANS_COLLECTION = 'mealPlans';
+const MEAL_PLANS_COLLECTION = 'mealPlans';
 const USER_PREFERENCES_COLLECTION = 'userPreferences';
 const FOOD_HISTORY_COLLECTION = 'foodHistory';
 const ACTIVITY_HISTORY_COLLECTION = 'activityHistory';
@@ -86,13 +86,13 @@ export const saveDailyPlan = async (
     };
 
     console.log('  📄 Final plan data to save:', planData);
-    console.log('  🔥 Saving to Firestore collection:', DAILY_PLANS_COLLECTION);
+    console.log('  🔥 Saving to Firestore collection:', MEAL_PLANS_COLLECTION);
 
     // Use userId_date as document ID for easy retrieval
     const docId = `${userId}_${planDate}`;
     console.log('  📝 Document ID to use:', docId);
     
-    await setDoc(doc(db, DAILY_PLANS_COLLECTION, docId), planData);
+    await setDoc(doc(db, MEAL_PLANS_COLLECTION, docId), planData);
     console.log('  ✅ Successfully saved meal plan with docId:', docId);
   } catch (error: any) {
     console.error('  ❌ Save error:', error);
@@ -109,7 +109,7 @@ export const loadDailyPlan = async (
     const planDate = formatDate(date || new Date());
     const docId = `${userId}_${planDate}`;
     
-    const docSnap = await getDoc(doc(db, DAILY_PLANS_COLLECTION, docId));
+    const docSnap = await getDoc(doc(db, MEAL_PLANS_COLLECTION, docId));
     
     if (docSnap.exists()) {
       return { id: docSnap.id, ...docSnap.data() } as DailyPlanDocument;
@@ -135,7 +135,7 @@ export const deleteDailyPlan = async (
     console.log('  📅 Date:', planDate);
     console.log('  📝 Document ID to delete:', docId);
     
-    await deleteDoc(doc(db, DAILY_PLANS_COLLECTION, docId));
+    await deleteDoc(doc(db, MEAL_PLANS_COLLECTION, docId));
     console.log('  ✅ Successfully deleted meal plan with docId:', docId);
   } catch (error: any) {
     console.error('  ❌ Delete error:', error);
@@ -153,7 +153,7 @@ export const updateCompletionStatus = async (
   try {
     const planDate = formatDate(date);
     const docId = `${userId}_${planDate}`;
-    const docRef = doc(db, DAILY_PLANS_COLLECTION, docId);
+    const docRef = doc(db, MEAL_PLANS_COLLECTION, docId);
     
     console.log('✅ Firestore DEBUG - updateCompletionStatus:');
     console.log('  👤 UserId:', userId);
@@ -224,7 +224,7 @@ export const getRecentDailyPlans = async (
   try {
     // Use the existing composite index (userId asc, date asc) and sort in JS
     const q = query(
-      collection(db, DAILY_PLANS_COLLECTION),
+      collection(db, MEAL_PLANS_COLLECTION),
       where('userId', '==', userId),
       orderBy('date', 'asc') // Use asc to match your existing index
     );
@@ -262,10 +262,10 @@ export const getDailyPlansForMonth = async (
     console.log('🔍 Firestore DEBUG - getDailyPlansForMonth:');
     console.log('  📅 Input params:', { userId, year, month, monthName: new Date(year, month).toLocaleDateString('en-US', { month: 'long' }) });
     console.log('  📅 Date range:', { startDateString, endDateString });
-    console.log('  🔥 Collection:', DAILY_PLANS_COLLECTION);
+    console.log('  🔥 Collection:', MEAL_PLANS_COLLECTION);
     
     const q = query(
-      collection(db, DAILY_PLANS_COLLECTION),
+      collection(db, MEAL_PLANS_COLLECTION),
       where('userId', '==', userId),
       where('date', '>=', startDateString),
       where('date', '<=', endDateString)
@@ -551,7 +551,7 @@ export const migrateCompletionStatusToHistory = async (userId: string): Promise<
     
     // Get all daily plans for the user
     const q = query(
-      collection(db, DAILY_PLANS_COLLECTION),
+      collection(db, MEAL_PLANS_COLLECTION),
       where('userId', '==', userId)
     );
     
