@@ -12,7 +12,7 @@ import {
   IconButton
 } from '@mui/material';
 import { Close as CloseIcon, Lock as LockIcon } from '@mui/icons-material';
-import { signInWithEmail, resetPassword } from '../services/authService';
+import { signInWithEmail, resetPassword } from '../../services/authService';
 
 interface AuthDialogProps {
   open: boolean;

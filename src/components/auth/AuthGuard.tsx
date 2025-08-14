@@ -13,7 +13,7 @@ import {
   Security as SecurityIcon,
   Shield as ShieldIcon
 } from '@mui/icons-material';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 import AuthDialog from './AuthDialog';
 
 const OWNER_EMAIL = 'chriskaripian@gmail.com';

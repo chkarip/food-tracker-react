@@ -29,7 +29,7 @@ src/
 ### Basic Usage
 
 ```tsx
-import ActivityGrid from '../components/ActivityGrid';
+import ActivityGrid from '../components/activity/ActivityGrid';
 
 <ActivityGrid 
   activityData={myActivityData}

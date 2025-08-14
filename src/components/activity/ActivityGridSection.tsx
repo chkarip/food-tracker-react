@@ -6,7 +6,7 @@ import {
   CircularProgress,
   Alert
 } from '@mui/material';
-import ActivityGrid, { ActivityGridDay } from '../ActivityGrid';
+import ActivityGrid, { ActivityGridDay } from './ActivityGrid';
 
 interface ActivityGridSectionProps {
   activityData: ActivityGridDay[];

@@ -6,7 +6,7 @@ import {
   alpha
 } from '@mui/material';
 import { ModuleStats, ActivityData } from '../../modules/shared/types';
-import { ActivityGridDay } from '../ActivityGrid';
+import { ActivityGridDay } from './ActivityGrid';
 import ActivityHeader from './ActivityHeader';
 import ActivityGridSection from './ActivityGridSection';
 import ActivityStats from './ActivityStats';

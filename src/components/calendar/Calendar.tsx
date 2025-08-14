@@ -29,7 +29,7 @@ import {
   ChevronRight as ChevronRightIcon,
   Today as TodayIcon
 } from '@mui/icons-material';
-import { CalendarDay } from '../modules/shared/types';
+import { CalendarDay } from '../../modules/shared/types';
 import DayCard from './DayCard';
 
 interface CalendarProps {

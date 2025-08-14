@@ -21,14 +21,14 @@ import {
   History as HistoryIcon
 } from '@mui/icons-material';
 
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 import {
   saveScheduledActivities,
   loadScheduledActivities,
   saveDailyPlan
-} from '../services/firebase/dailyPlansService';
-import { getAllFoods, convertToLegacyFoodFormat } from '../services/foodService';
-import { SelectedFood, ExternalNutrition } from '../types/nutrition';
+} from '../../services/firebase/dailyPlansService';
+import { getAllFoods, convertToLegacyFoodFormat } from '../../services/foodService';
+import { SelectedFood, ExternalNutrition } from '../../types/nutrition';
 
 interface SaveLoadPlanProps {
   timeslotData: {

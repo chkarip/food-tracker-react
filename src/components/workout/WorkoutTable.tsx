@@ -60,12 +60,12 @@ import {
   ExpandMore as ExpandMoreIcon,
   Schedule as ScheduleIcon
 } from '@mui/icons-material';
-import { WorkoutExercise, WorkoutType } from '../types/workout';
+import { WorkoutExercise, WorkoutType } from '../../types/workout';
 import WorkoutTableRow from './WorkoutTableRow';
 import SaveWorkoutModal, { ScheduledWorkout } from './SaveWorkoutModal';
-import { saveScheduledWorkout } from '../services/workoutService';
-import { addTaskToUnifiedSchedule } from '../services/firebase';
-import { useAuth } from '../contexts/AuthContext';
+import { saveScheduledWorkout } from '../../services/workoutService';
+import { addTaskToUnifiedSchedule } from '../../services/firebase';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface Exercise {
   id?: string;

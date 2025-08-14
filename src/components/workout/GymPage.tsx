@@ -13,7 +13,7 @@ import {
   FitnessCenter as GymIcon
 } from '@mui/icons-material';
 import { collection, getDocs, addDoc, doc, updateDoc } from 'firebase/firestore';
-import { db } from '../config/firebase';
+import { db } from '../../config/firebase';
 import ExerciseCard from './ExerciseCard';
 import ExerciseDialog from './ExerciseDialog';
 import ExerciseFilters from './ExerciseFilters';

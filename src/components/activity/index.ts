@@ -9,8 +9,8 @@ export { default as ActivityStats } from './ActivityStats';
 export { default as ActivityAction } from './ActivityAction';
 
 // Re-export ActivityGrid and related types for convenience
-export { default as ActivityGrid } from '../ActivityGrid';
-export type { ActivityGridDay, ActivityGridProps } from '../ActivityGrid';
+export { default as ActivityGrid } from './ActivityGrid';
+export type { ActivityGridDay, ActivityGridProps } from './ActivityGrid';
 
 // Example usage:
 /*

@@ -11,7 +11,7 @@ import {
   Collapse
 } from '@mui/material';
 import { Restaurant as RestaurantIcon, Clear as ClearIcon } from '@mui/icons-material';
-import { ExternalNutrition } from '../types/nutrition';
+import { ExternalNutrition } from '../../types/nutrition';
 
 interface ExternalNutritionInputProps {
   externalNutrition: ExternalNutrition;

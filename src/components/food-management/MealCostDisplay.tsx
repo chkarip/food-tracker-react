@@ -8,8 +8,8 @@ import {
   Chip
 } from '@mui/material';
 import { Euro as EuroIcon } from '@mui/icons-material';
-import { SelectedFood } from '../types/nutrition';
-import { calculateTotalMealCost, formatCost } from '../data/costDatabase';
+import { SelectedFood } from '../../types/nutrition';
+import { calculateTotalMealCost, formatCost } from '../../data/costDatabase';
 
 interface MealCostDisplayProps {
   timeslotData: Record<string, { selectedFoods: SelectedFood[] }>; // ✅ Fixed type

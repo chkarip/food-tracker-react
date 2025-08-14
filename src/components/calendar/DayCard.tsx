@@ -22,7 +22,7 @@ import {
   useTheme,
   Chip
 } from '@mui/material';
-import { CalendarDay } from '../modules/shared/types';
+import { CalendarDay } from '../../modules/shared/types';
 
 // Extend CalendarDay to ensure scheduledTasks is available
 interface ExtendedCalendarDay extends CalendarDay {

@@ -17,9 +17,9 @@ import FoodSelectorWithFirebase from './FoodSelectorWithFirebase';
 import ExternalNutritionInput from './ExternalNutritionInput';
 import SaveLoadPlan from './SaveLoadPlan';
 import MealCostDisplay from './MealCostDisplay';
-import { SelectedFood, ExternalNutrition, NutritionData } from '../types/nutrition';
-import { calculateTotalMacros } from '../utils/nutritionCalculations';
-import { getAllFoods, convertToLegacyFoodFormat } from '../services/foodService';
+import { SelectedFood, ExternalNutrition, NutritionData } from '../../types/nutrition';
+import { calculateTotalMacros } from '../../utils/nutritionCalculations';
+import { getAllFoods, convertToLegacyFoodFormat } from '../../services/foodService';
 
 interface TimeslotData {
   selectedFoods: SelectedFood[];

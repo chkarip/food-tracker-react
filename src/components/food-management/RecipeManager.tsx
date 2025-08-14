@@ -42,9 +42,9 @@ import {
   Clear as ClearIcon,
   MenuBook as InstructionsIcon
 } from '@mui/icons-material';
-import { Recipe, RecipeIngredient, RecipeFormData } from '../types/recipe';
-import { getAllFoods, DatabaseFood, convertToLegacyFoodFormat } from '../services/foodService';
-import { calculateMacros } from '../utils/nutritionCalculations';
+import { Recipe, RecipeIngredient, RecipeFormData } from '../../types/recipe';
+import { getAllFoods, DatabaseFood, convertToLegacyFoodFormat } from '../../services/foodService';
+import { calculateMacros } from '../../utils/nutritionCalculations';
 
 const RECIPE_CATEGORIES = [
   'Breakfast',

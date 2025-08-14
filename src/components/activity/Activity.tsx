@@ -18,7 +18,7 @@ import {
   alpha,
   useTheme 
 } from '@mui/material';
-import { ActivityDay, ActivityMonth } from '../types/activity';
+import { ActivityDay, ActivityMonth } from '../../types/activity';
 
 interface ActivityData {
   date: string;
@@ -379,7 +379,7 @@ const Activity: React.FC<ActivityProps> = ({
 export default Activity;
 
 // Export ActivityCard for DashboardPage compatibility
-export { default as ActivityCard } from './activity/ActivityCard';
+export { default as ActivityCard } from './ActivityCard';
 
 // Export the correct types
-export type { ActivityDay, ActivityMonth } from '../types/activity';
+export type { ActivityDay, ActivityMonth } from '../../types/activity';

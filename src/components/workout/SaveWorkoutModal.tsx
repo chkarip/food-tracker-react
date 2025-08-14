@@ -26,7 +26,7 @@ import {
   Timer as TimerIcon,
   Notes as NotesIcon
 } from '@mui/icons-material';
-import { WorkoutExercise, WorkoutType } from '../types/workout';
+import { WorkoutExercise, WorkoutType } from '../../types/workout';
 
 interface SaveWorkoutModalProps {
   open: boolean;

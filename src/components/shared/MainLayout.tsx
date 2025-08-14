@@ -32,9 +32,9 @@ import {
   Logout as LogoutIcon,
   ChevronLeft as ChevronLeftIcon
 } from '@mui/icons-material';
-import { useAuth } from '../contexts/AuthContext';
-import { signOutUser } from '../services/authService';
-import AuthDialog from './AuthDialog';
+import { useAuth } from '../../contexts/AuthContext';
+import { signOutUser } from '../../services/authService';
+import AuthDialog from '../auth/AuthDialog';
 
 const drawerWidth = 280;
 

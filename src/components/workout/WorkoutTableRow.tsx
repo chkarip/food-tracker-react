@@ -12,8 +12,8 @@ import {
   DragIndicator as DragIndicatorIcon,
   Delete as DeleteIcon
 } from '@mui/icons-material';
-import { WorkoutExercise } from '../types/workout';
-import NumericInput from './NumericInput';
+import { WorkoutExercise } from '../../types/workout';
+import NumericInput from '../shared/NumericInput';
 
 interface WorkoutTableRowProps {
   exercise: WorkoutExercise;

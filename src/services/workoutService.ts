@@ -12,7 +12,7 @@ import {
   deleteDoc
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
-import { ScheduledWorkout } from '../components/SaveWorkoutModal';
+import { ScheduledWorkout } from '../components/workout/SaveWorkoutModal';
 
 const SCHEDULED_WORKOUTS_COLLECTION = 'scheduledWorkouts';
 

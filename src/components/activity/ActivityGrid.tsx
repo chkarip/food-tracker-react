@@ -6,7 +6,7 @@ import {
   alpha,
   useTheme
 } from '@mui/material';
-import { getActivityGridConfig } from '../config/activityGridConfig';
+import { getActivityGridConfig } from '../../config/activityGridConfig';
 
 export interface ActivityGridDay {
   date: string;

@@ -40,10 +40,10 @@ import {
   ExpandMore as ExpandMoreIcon,
   Schedule as TimeIcon
 } from '@mui/icons-material';
-import { CalendarDay } from '../modules/shared/types';
-import { ScheduledActivitiesDocument, MealPlanDocument, ScheduledWorkoutDocument } from '../types/firebase';
-import { loadMealPlan, loadScheduledWorkout } from '../services/firebase';
-import { useAuth } from '../contexts/AuthContext';
+import { CalendarDay } from '../../modules/shared/types';
+import { ScheduledActivitiesDocument, MealPlanDocument, ScheduledWorkoutDocument } from '../../types/firebase';
+import { loadMealPlan, loadScheduledWorkout } from '../../services/firebase';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface DayModalProps {
   selectedDay: CalendarDay | null;

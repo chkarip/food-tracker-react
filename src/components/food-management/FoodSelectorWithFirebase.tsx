@@ -12,10 +12,10 @@ import {
   CircularProgress
 } from '@mui/material';
 import { Add as AddIcon, Restaurant as RestaurantIcon, SwapHoriz as SwapIcon, Delete as DeleteIcon, Euro as EuroIcon } from '@mui/icons-material';
-import { getAllFoods, DatabaseFood, convertToLegacyFoodFormat, subscribeToFoods } from '../services/foodService';
-import { calculateMacros, formatMacroValue } from '../utils/nutritionCalculations';
-import { calculatePortionCost, getCostPerGram, formatCost } from '../data/costDatabase';
-import { SelectedFood } from '../types/nutrition';
+import { getAllFoods, DatabaseFood, convertToLegacyFoodFormat, subscribeToFoods } from '../../services/foodService';
+import { calculateMacros, formatMacroValue } from '../../utils/nutritionCalculations';
+import { calculatePortionCost, getCostPerGram, formatCost } from '../../data/costDatabase';
+import { SelectedFood } from '../../types/nutrition';
 
 interface FoodSelectorWithFirebaseProps {
   selectedFoods: SelectedFood[];

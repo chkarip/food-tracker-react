@@ -39,9 +39,9 @@ import {
 } from '@mui/material';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { ActivityCard } from '../components/Activity';
-import Calendar from '../components/Calendar';
-import DayModal from '../components/DayModal';
+import { ActivityCard } from '../components/activity/Activity';
+import Calendar from '../components/calendar/Calendar';
+import DayModal from '../components/calendar/DayModal';
 import { useModuleStats } from '../modules/shared/hooks/useModuleStats';
 import { CalendarDay, CalendarEvent, ActivityData } from '../modules/shared/types';
 import { 

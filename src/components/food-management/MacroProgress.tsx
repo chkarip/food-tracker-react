@@ -1,8 +1,8 @@
 import React, { useMemo } from 'react';
 import { Box, Card, CardContent, Typography, LinearProgress } from '@mui/material';
-import { NutritionData, ExternalNutrition } from '../types/nutrition';
-import { MACRO_TARGETS } from '../config/nutritionTargets'; // ✅ Fixed import
-import { formatMacroValue } from '../utils/nutritionCalculations';
+import { NutritionData, ExternalNutrition } from '../../types/nutrition';
+import { MACRO_TARGETS } from '../../config/nutritionTargets'; // ✅ Fixed import
+import { formatMacroValue } from '../../utils/nutritionCalculations';
 
 interface MacroProgressProps {
   foodMacros: NutritionData;

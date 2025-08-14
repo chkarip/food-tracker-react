@@ -39,12 +39,12 @@ import {
   useMediaQuery
 } from '@mui/material';
 
-import Layout from './components/MainLayout';
+import Layout from './components/shared/MainLayout';
 import DashboardPage from './pages/DashboardPage';
 import FoodTrackerPage from './pages/FoodTrackerPage';
-import GymPage from './components/GymPage';
+import GymPage from './components/workout/GymPage';
 import FinancePage from './modules/finance/pages/FinancePage';
-import AuthGuard from './components/AuthGuard';
+import AuthGuard from './components/auth/AuthGuard';
 import { AuthProvider } from './contexts/AuthContext';
 
 function FoodTrackerApp() {

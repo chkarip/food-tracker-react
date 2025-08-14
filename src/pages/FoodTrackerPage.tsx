@@ -16,12 +16,12 @@ import {
   MenuBook as RecipeIcon,
   Euro as CostIcon,
 } from '@mui/icons-material';
-import TimeslotMealPlanner from '../components/TimeslotMealPlanner';
-import AddFoodManager from '../components/AddFoodManager';
-import FoodTrack from '../components/FoodTrack';
-import NutritionGoalsManager from '../components/NutritionGoalsManager';
-import FoodInventory from '../components/FoodInventory';
-import RecipeManager from '../components/RecipeManager';
+import TimeslotMealPlanner from '../components/food-management/TimeslotMealPlanner';
+import AddFoodManager from '../components/food-management/AddFoodManager';
+import FoodTrack from '../components/food-management/FoodTrack';
+import NutritionGoalsManager from '../components/food-management/NutritionGoalsManager';
+import FoodInventory from '../components/food-management/FoodInventory';
+import RecipeManager from '../components/food-management/RecipeManager';
 import CostManager from '../modules/food/components/CostManager';
 
 interface TabPanelProps {

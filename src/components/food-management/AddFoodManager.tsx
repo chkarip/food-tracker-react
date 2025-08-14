@@ -41,7 +41,7 @@ import {
   getAllFoods, 
   DatabaseFood,
   FoodFormData 
-} from '../services/foodService';
+} from '../../services/foodService';
 
 const FOOD_CATEGORIES = [
   'Dairy',

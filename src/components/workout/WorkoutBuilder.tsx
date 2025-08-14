@@ -10,10 +10,10 @@ import {
   Alert
 } from '@mui/material';
 import { collection, doc, getDocs, setDoc, getDoc } from 'firebase/firestore';
-import { db } from '../config/firebase';
-import { useAuth } from '../contexts/AuthContext';
-import { saveScheduledActivities, loadScheduledActivities } from '../services/firebase';
-import { WorkoutType, Workout, WorkoutExercise } from '../types/workout';
+import { db } from '../../config/firebase';
+import { useAuth } from '../../contexts/AuthContext';
+import { saveScheduledActivities, loadScheduledActivities } from '../../services/firebase';
+import { WorkoutType, Workout, WorkoutExercise } from '../../types/workout';
 import WorkoutTable from './WorkoutTable';
 
 interface Exercise {
