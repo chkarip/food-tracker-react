@@ -112,7 +112,7 @@ export const saveDailyPlan = async (
     const docId = `${userId}_${planDate}`;
     console.log('  📝 Document ID to use:', docId);
     
-    await setDoc(doc(db, COLLECTIONS.DAILY_PLANS, docId), planData);
+    await setDoc(doc(db, COLLECTIONS.MEAL_PLANS, docId), planData);
     console.log('  ✅ Successfully saved meal plan with docId:', docId);
   } catch (error: any) {
     console.error('  ❌ Save error:', error);
@@ -190,7 +190,7 @@ export const loadDailyPlan = async (
     const planDate = formatDate(date || new Date());
     const docId = `${userId}_${planDate}`;
     
-    const docSnap = await getDoc(doc(db, COLLECTIONS.DAILY_PLANS, docId));
+    const docSnap = await getDoc(doc(db, COLLECTIONS.MEAL_PLANS, docId));
     
     if (docSnap.exists()) {
       return { id: docSnap.id, ...docSnap.data() } as DailyPlanDocument;
@@ -216,7 +216,7 @@ export const deleteDailyPlan = async (
     console.log('  📅 Date:', planDate);
     console.log('  📝 Document ID to delete:', docId);
     
-    await deleteDoc(doc(db, COLLECTIONS.DAILY_PLANS, docId));
+    await deleteDoc(doc(db, COLLECTIONS.MEAL_PLANS, docId));
     console.log('  ✅ Successfully deleted meal plan with docId:', docId);
   } catch (error: any) {
     console.error('  ❌ Delete error:', error);
@@ -234,7 +234,7 @@ export const updateCompletionStatus = async (
   try {
     const planDate = formatDate(date);
     const docId = `${userId}_${planDate}`;
-    const docRef = doc(db, COLLECTIONS.DAILY_PLANS, docId);
+    const docRef = doc(db, COLLECTIONS.MEAL_PLANS, docId);
     
     console.log('✅ Firestore DEBUG - updateCompletionStatus:');
     console.log('  👤 UserId:', userId);

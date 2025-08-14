@@ -276,7 +276,7 @@ const DashboardPage: React.FC = () => {
       
       // Food events - check scheduled activities first, then fallback to meal plans
       const scheduledTasks = scheduledActivity?.tasks || [];
-      console.log('📅 Generating day:', dayKey, { scheduledTasks });
+      //console.log('📅 Generating day:', dayKey, { scheduledTasks });
       const has6pmScheduled = scheduledTasks.includes('meal-6pm');
       const has930pmScheduled = scheduledTasks.includes('meal-9:30pm');
       const hasGymScheduled = scheduledTasks.includes('gym');
