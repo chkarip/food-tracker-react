@@ -47,12 +47,12 @@ import {
   updateDoc,
   deleteDoc
 } from 'firebase/firestore';
-import { db } from '../../config/firebase';
-import { DailyPlanDocument, ScheduledActivitiesDocument, MealPlanDocument } from '../../types/firebase';
-import { SelectedFood, ExternalNutrition } from '../../types/nutrition';
-import { calculateTotalMacros } from '../../utils/nutritionCalculations';
-import { formatDate, COLLECTIONS, createTimestamp } from './utils';
-import { saveActivityHistory } from './activityHistoryService';
+import { db } from '../../../config/firebase';
+import { DailyPlanDocument, ScheduledActivitiesDocument, MealPlanDocument } from '../../../types/firebase';
+import { SelectedFood, ExternalNutrition } from '../../../types/nutrition';
+import { calculateTotalMacros } from '../../../utils/nutritionCalculations';
+import { formatDate, COLLECTIONS, createTimestamp } from '../shared/utils';
+import { saveActivityHistory } from '../scheduling/activityHistoryService';
 
 // Save daily plan to Firestore (with timeslots)
 export const saveDailyPlan = async (

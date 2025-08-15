@@ -15,8 +15,8 @@ import {
   Timestamp,
   onSnapshot
 } from 'firebase/firestore';
-import { db } from '../config/firebase';
-import { FOOD_DATABASE } from '../data/foodDatabase';
+import { db } from '../../../config/firebase';
+import { FOOD_DATABASE } from '../../../data/foodDatabase';
 
 export interface FoodConsumption {
   id: string;

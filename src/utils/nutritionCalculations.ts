@@ -1,5 +1,5 @@
 import { NutritionData, SelectedFood } from '../types/nutrition';
-import { getAllFoods, convertToLegacyFoodFormat } from '../services/foodService';
+import { getAllFoods, convertToLegacyFoodFormat } from '../services/firebase/nutrition/foodService';
 
 /**
  * Calculate macro nutrients for a specific food and amount

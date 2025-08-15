@@ -8,9 +8,9 @@ import {
   where, 
   orderBy 
 } from 'firebase/firestore';
-import { db } from '../../config/firebase';
-import { TimeslotsDocument, TimeslotMealData } from '../../types/firebase';
-import { formatDate, COLLECTIONS, createTimestamp } from './utils';
+import { db } from '../../../config/firebase';
+import { TimeslotsDocument, TimeslotMealData } from '../../../types/firebase';
+import { formatDate, COLLECTIONS, createTimestamp } from '../shared/utils';
 
 // Save timeslots data for a specific date
 export const saveTimeslots = async (

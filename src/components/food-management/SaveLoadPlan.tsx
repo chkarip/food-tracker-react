@@ -26,8 +26,8 @@ import {
   saveScheduledActivities,
   loadScheduledActivities,
   saveDailyPlan
-} from '../../services/firebase/dailyPlansService';
-import { getAllFoods, convertToLegacyFoodFormat } from '../../services/foodService';
+} from '../../services/firebase/meal-planning/dailyPlansService';
+import { getAllFoods, convertToLegacyFoodFormat } from '../../services/firebase/nutrition/foodService';
 import { SelectedFood, ExternalNutrition } from '../../types/nutrition';
 
 interface SaveLoadPlanProps {

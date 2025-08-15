@@ -12,10 +12,10 @@ import {
   updateDoc,
   deleteDoc
 } from 'firebase/firestore';
-import { db } from '../config/firebase';
-import { DailyPlanDocument, UserPreferences, FoodHistory, ActivityHistoryDocument, TimeslotsDocument, ScheduledActivitiesDocument, ScheduledWorkoutDocument } from '../types/firebase';
-import { SelectedFood, ExternalNutrition } from '../types/nutrition';
-import { calculateTotalMacros } from '../utils/nutritionCalculations';
+import { db } from '../../config/firebase';
+import { DailyPlanDocument, UserPreferences, FoodHistory, ActivityHistoryDocument, TimeslotsDocument, ScheduledActivitiesDocument, ScheduledWorkoutDocument } from '../../types/firebase';
+import { SelectedFood, ExternalNutrition } from '../../types/nutrition';
+import { calculateTotalMacros } from '../../utils/nutritionCalculations';
 
 const MEAL_PLANS_COLLECTION = 'mealPlans';
 const USER_PREFERENCES_COLLECTION = 'userPreferences';

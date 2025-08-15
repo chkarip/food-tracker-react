@@ -33,7 +33,7 @@ import {
   ChevronLeft as ChevronLeftIcon
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
-import { signOutUser } from '../../services/authService';
+import { signOutUser } from '../../services/firebase/authService';
 import AuthDialog from '../auth/AuthDialog';
 
 const drawerWidth = 280;

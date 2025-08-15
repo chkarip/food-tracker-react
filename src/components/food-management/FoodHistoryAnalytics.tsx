@@ -39,7 +39,7 @@ import {
 import foodHistoryService, { 
   FoodHistoryStats, 
   MonthlyFoodSummary 
-} from '../../services/foodHistoryService';
+} from '../../services/firebase/nutrition/foodConsumptionService';
 
 interface FoodHistoryAnalyticsProps {
   userId?: string;

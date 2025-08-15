@@ -19,7 +19,7 @@ import SaveLoadPlan from './SaveLoadPlan';
 import MealCostDisplay from './MealCostDisplay';
 import { SelectedFood, ExternalNutrition, NutritionData } from '../../types/nutrition';
 import { calculateTotalMacros } from '../../utils/nutritionCalculations';
-import { getAllFoods, convertToLegacyFoodFormat } from '../../services/foodService';
+import { getAllFoods, convertToLegacyFoodFormat } from '../../services/firebase/nutrition/foodService';
 
 interface TimeslotData {
   selectedFoods: SelectedFood[];

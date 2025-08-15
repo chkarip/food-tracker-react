@@ -7,9 +7,9 @@ import {
   where, 
   limit
 } from 'firebase/firestore';
-import { db } from '../../config/firebase';
-import { ActivityHistoryDocument } from '../../types/firebase';
-import { formatDate, COLLECTIONS, createTimestamp } from './utils';
+import { db } from '../../../config/firebase';
+import { ActivityHistoryDocument } from '../../../types/firebase';
+import { formatDate, COLLECTIONS, createTimestamp } from '../shared/utils';
 
 // Save activity completion to history for 100-day tracking
 export const saveActivityHistory = async (

@@ -63,7 +63,7 @@ import {
 import { WorkoutExercise, WorkoutType } from '../../types/workout';
 import WorkoutTableRow from './WorkoutTableRow';
 import SaveWorkoutModal, { ScheduledWorkout } from './SaveWorkoutModal';
-import { saveScheduledWorkout } from '../../services/workoutService';
+import { saveScheduledWorkout } from '../../services/firebase/workout/workoutService';
 import { addTaskToUnifiedSchedule } from '../../services/firebase';
 import { useAuth } from '../../contexts/AuthContext';
 

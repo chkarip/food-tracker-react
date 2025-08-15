@@ -9,8 +9,8 @@ import {
   GoogleAuthProvider,
   signInWithPopup
 } from 'firebase/auth';
-import { auth } from '../config/firebase';
-import { FirebaseUser } from '../types/firebase';
+import { auth } from '../../config/firebase';
+import { FirebaseUser } from '../../types/firebase';
 
 // Convert Firebase User to our FirebaseUser type
 const convertUser = (user: User): FirebaseUser => ({

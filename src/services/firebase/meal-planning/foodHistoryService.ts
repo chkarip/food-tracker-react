@@ -9,9 +9,9 @@ import {
   limit, 
   Timestamp 
 } from 'firebase/firestore';
-import { db } from '../../config/firebase';
-import { FoodHistory } from '../../types/firebase';
-import { formatDate, COLLECTIONS, createTimestamp } from './utils';
+import { db } from '../../../config/firebase';
+import { FoodHistory } from '../../../types/firebase';
+import { formatDate, COLLECTIONS, createTimestamp } from '../shared/utils';
 
 // Extended food history document for detailed meal tracking
 interface MealHistoryDocument {

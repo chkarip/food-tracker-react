@@ -45,8 +45,8 @@ import {
   limit,
   Timestamp 
 } from 'firebase/firestore';
-import { db } from '../../config/firebase';
-import { ScheduledActivitiesDocument } from '../../types/firebase';
+import { db } from '../../../config/firebase';
+import { ScheduledActivitiesDocument } from '../../../types/firebase';
 
 /**
  * Helper function to add a task to scheduled activities without affecting other tasks

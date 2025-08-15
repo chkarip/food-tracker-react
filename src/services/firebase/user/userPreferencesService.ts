@@ -4,9 +4,9 @@ import {
   getDoc, 
   updateDoc 
 } from 'firebase/firestore';
-import { db } from '../../config/firebase';
-import { UserPreferences } from '../../types/firebase';
-import { COLLECTIONS, createTimestamp } from './utils';
+import { db } from '../../../config/firebase';
+import { UserPreferences } from '../../../types/firebase';
+import { COLLECTIONS, createTimestamp } from '../shared/utils';
 
 // Default macro targets and preferences
 const DEFAULT_PREFERENCES: Omit<UserPreferences, 'id' | 'userId' | 'createdAt' | 'updatedAt'> = {

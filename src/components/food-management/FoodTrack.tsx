@@ -80,7 +80,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { getRecentDailyPlans, deleteDailyPlan } from '../../services/firebase';
 import { DailyPlanDocument } from '../../types/firebase';
 import { FOOD_DATABASE } from '../../data/foodDatabase';
-import foodHistoryService from '../../services/foodHistoryService';
+import foodHistoryService from '../../services/firebase/nutrition/foodConsumptionService';
 
 interface TrackedFood {
   id: string;

@@ -1,11 +1,11 @@
 // Export all Firebase service modules
-export * from './utils';
-export * from './dailyPlansService';
-export * from './activityHistoryService';
-export * from './foodHistoryService';
-export * from './userPreferencesService';
-export * from './timeslotsService';
-export * from './workoutService';
+export * from './shared/utils';
+export * from './meal-planning/dailyPlansService';
+export * from './scheduling/activityHistoryService';
+export * from './meal-planning/foodHistoryService';
+export * from './user/userPreferencesService';
+export * from './meal-planning/timeslotsService';
+export * from './workout/workoutService';
 
 // Export specific helpers from scheduledActivitiesService to avoid conflicts
 export { 
@@ -13,4 +13,4 @@ export {
   removeTaskFromUnifiedSchedule, 
   updateUnifiedScheduleStatus, 
   getUnifiedScheduleForDate 
-} from './scheduledActivitiesService';
+} from './scheduling/scheduledActivitiesService';
