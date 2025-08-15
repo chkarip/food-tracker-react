@@ -7,7 +7,7 @@
  * - Workout parameter configuration (sets, reps, weight, rest periods)
  * - Workout template creation and reuse for program consistency
  * - Calendar integration through dual-system architecture
- * - Real-time workout cost calculation and time estimation
+ * - Real-time time estimation
  * 
  * KEY BUSINESS LOGIC:
  * 1. DUAL-SYSTEM INTEGRATION: Saves detailed workout to scheduledWorkouts AND registers 'gym-workout' task in scheduledActivities
@@ -17,7 +17,6 @@
  * 5. PROGRAM VALIDATION: Ensures workout completeness before scheduling
  * 
  * CORE WORKOUT FEATURES:
- * - Exercise Builder: Drag-and-drop interface for workout construction
  * - Parameter Configuration: Sets, reps, weight, rest period customization
  * - Template Management: Save successful workouts as reusable templates
  * - Calendar Scheduling: Direct integration with calendar system

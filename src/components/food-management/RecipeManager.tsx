@@ -1,3 +1,35 @@
+/**
+ * FILE: RecipeManager.tsx
+ * ------------------------------------------------------------------
+ * PURPOSE
+ * • Let end-users create, edit and delete **custom recipes** that
+ *   automatically calculate nutrition + € cost from the master food DB.
+ *
+ * CORE RESPONSIBILITIES
+ * 1. DATA BOOTSTRAP
+ *    – Fetch full food list from Firestore (via getAllFoods) for
+ *      ingredient lookup.
+ *    – Load any recipes stored in localStorage for offline continuity.
+ *
+ * 2. AUTHORING WORKFLOW
+ *    – Dialog-driven form with sections for basic info, ingredients,
+ *      instructions and tags.
+ *    – Supports variable or fixed serving sizes.
+ *    – CRUD on ingredients (add / change food / change amount / delete).
+ *    – Live nutrition + cost roll-ups (total & per-serving).
+ *
+ * 3. PERSISTENCE RULES
+ *    – Recipes are **local-only** (JSON in localStorage) for instant UX
+ *      and to avoid Firestore writes on every keystroke.
+ *    – Each save updates `updatedAt`; new recipes also get `createdAt`.
+ *
+ * BUSINESS LOGIC HIGHLIGHTS
+ * • Nutrition = Σ(ingredient macros × amount) with correct 100 g vs unit
+ *   math.  Cost = Σ(costPerKg × amountKg).  100 % client-side.
+ * • Validation: recipe must have a non-empty name and ≥ 1 ingredient.
+ * • Tags, difficulty and category are plain enums to drive future search
+ *   / filter features.
+ */
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Box,

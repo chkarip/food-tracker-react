@@ -1,3 +1,35 @@
+/**
+ * FILE: TimeslotMealPlanner.tsx
+ * ------------------------------------------------------------------
+ * PURPOSE
+ * • The **core meal-planning workspace**: two fixed timeslots (6 pm and
+ *   9 : 30 pm) where a user selects foods, adds external macros, tracks
+ *   progress and sees live cost.
+ *
+ * MAJOR COMPONENT COMPOSITION
+ * ┌ Tabs (6 pm / 9 : 30 pm)
+ * │ └─ FoodSelectorWithFirebase   – choose foods + quantities
+ * │ └─ ExternalNutritionInput     – manual macro add-ons
+ * ├ MacroProgress                 – daily macro bars (all slots)
+ * ├ MealCostDisplay               – € breakdown
+ * └ SaveLoadPlan                  – persist to Firestore calendar
+ *
+ * STATE MODEL
+ * • timeslotData     → { '6pm': { selectedFoods[], externalNutrition }, … }
+ * • foodDatabase     → legacy-formatted food list for macro maths.
+ * • currentTimeslot  → index (0|1) for active tab.
+ *
+ * BUSINESS-LOGIC NOTES
+ * • Macro totals use `calculateTotalMacros` which respects unit-vs-weight
+ *   foods and fixed amounts from the admin panel.
+ * • Swapping food between timeslots is O(1) and keeps amounts intact.
+ * • All child components communicate upward via pure callbacks, so this
+ *   file remains the single source-of-truth for meal-draft state.
+ *
+ * EXTENSIBILITY
+ * • TIMESLOTS array is the only place to add breakfast / lunch etc.
+ * • Ready for dark/light theme thanks to MUI token usage.
+ */
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   Box,

@@ -1,3 +1,30 @@
+/**
+ * FoodHistoryAnalytics
+ * ------------------------------------------------------------
+ * PURPOSE
+ * Dashboard card that lets a user review what they actually ate:
+ *   – frequency of each food this month
+ *   – total grams / kilos and macro totals
+ *   – per-food expansion row with extra details
+ *   – CSV export for personal analysis
+ *
+ * DATA FLOW
+ * • Parallel fetches:
+ *     - getCurrentMonthFoodStats()
+ *     - getMonthlyFoodSummary(year, month)
+ * • Stores results in local state → renders MUI table.
+ *
+ * KEY UX
+ * • Month selector (dropdown showing last 12 months).
+ * • Expand/collapse rows for nutrition totals.
+ * • Export button opens confirm dialog → downloads CSV.
+ *
+ * TODO
+ * • Virtualise the table (react-window) if foods > 200.
+ * • Add chart (trend line of calories / protein) once Recharts
+ *   or another light library is approved.
+ * • Allow user to choose metric vs imperial weight units.
+ */
 import React, { useState, useEffect } from 'react';
 import {
   Box,

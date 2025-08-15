@@ -1,3 +1,29 @@
+/**
+ * AddFoodManager
+ * ------------------------------------------------------------
+ * PURPOSE
+ * Administration panel for managing the master “foods” collection
+ * in Firestore.  Used only by power users / admins.
+ *
+ * RESPONSIBILITIES
+ * • CRUD for food documents (add, edit, delete).
+ * • Client-side validation of macros, cost and uniqueness.
+ * • Re-load list after every mutation and display inline feedback.
+ * • Support “fixed amount” & “unit food” flags for quick selection
+ *   in meal-planning UI.
+ *
+ * STATE OVERVIEW
+ * • formData        – controlled fields for the add/edit dialog.
+ * • foods           – full list of DatabaseFood returned from DB.
+ * • editingFood     – currently edited item (null = insert mode).
+ * • deleteDialog    – item pending deletion confirmation.
+ * • loading/error/success – UX feedback flags.
+ *
+ * TODO
+ * • Break into smaller components (FoodForm, FoodsTable, etc.).
+ * • Add search / filter when food list grows large.
+ * • Move slug-generation logic into foodService to avoid drift.
+ */
 import React, { useState, useEffect } from 'react';
 import {
   Box,

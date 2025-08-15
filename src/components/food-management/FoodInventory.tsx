@@ -1,3 +1,33 @@
+/**
+ * FoodInventory
+ * ------------------------------------------------------------
+ * PURPOSE
+ * Local-only (offline-friendly) tracker of what ingredients the
+ * user has at home and where they are stored.
+ *
+ * RESPONSIBILITIES
+ * • CRUD on inventory items, persisted in localStorage.
+ * • Compute “status” badge (fresh | low | empty) from quantity.
+ * • Highlight items expiring within 3 days.
+ * • Group rows by storage location (fridge / freezer / pantry / counter).
+ *
+ * STATE SNAPSHOT
+ * • inventory     – InventoryItem[]
+ * • openDialog    – add/edit dialog visibility
+ * • editingItem   – InventoryItem | null
+ * • formData      – controlled inputs inside dialog
+ *
+ * BUSINESS RULES
+ * • Quantity ≤ 0  → status = 'empty'
+ * • Quantity ≤ 100g/ml (configurable) → status = 'low'
+ * • Else               → status = 'fresh'
+ *
+ * TODO
+ * • Sync with Firestore so the same inventory appears on multiple
+ *   devices (optional; keep local fallback).
+ * • Add bulk actions: “Clear Empty”, “Mark Purchased”, etc.
+ * • Responsive layout: switch to card grid on <600 px width.
+ */
 import React, { useState, useEffect } from 'react';
 import {
   Box,

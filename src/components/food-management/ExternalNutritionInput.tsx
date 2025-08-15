@@ -1,3 +1,30 @@
+/**
+ * ExternalNutritionInput
+ * ------------------------------------------------------------
+ * PURPOSE
+ * Allow the user to enter macros that were consumed outside the
+ * app’s tracked foods (e.g. restaurant meals, snacks, drinks).
+ *
+ * RESPONSIBILITIES
+ * • Toggle input on/off with a single checkbox.
+ * • Accept protein / fats / carbs / calories, always ≥ 0.
+ * • Forward every change upward via onUpdateExternal().
+ * • Offer a “Clear All” button to reset values to zero.
+ *
+ * PROPS
+ * • externalNutrition : ExternalNutrition
+ *      Current macro totals provided by the parent form/page.
+ * • onUpdateExternal  : (ExternalNutrition) => void
+ *      Callback fired for every field change or clear action.
+ *
+ * STATE
+ * • isExternalEnabled : boolean
+ *      Local flag that shows/hides the collapsible input group.
+ *
+ * TODO
+ * • Persist checkbox state in localStorage so it survives reload.
+ * • Consider showing estimated calories when only macros given.
+ */
 import React, { useState } from 'react';
 import {
   Box,

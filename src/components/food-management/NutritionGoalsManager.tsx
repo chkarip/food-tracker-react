@@ -1,3 +1,25 @@
+/**
+ * FILE: NutritionGoalsManager.tsx
+ * PURPOSE: Central nutrition goal management for the tracking app
+ * 
+ * BUSINESS LOGIC:
+ * - Allows users to set daily macro targets (protein, fats, carbs, calories)
+ * - Goals are independent and can be adjusted freely by user
+ * - Provides percentage breakdowns to help users understand macro distribution
+ * - Serves as the reference point for meal plan progress tracking
+ * 
+ * PROJECT ARCHITECTURE:
+ * - Standalone component - operates independently
+ * - Data persistence via localStorage (no external services required)
+ * - Exports utility function for other components to access current goals
+ * - Used by: Meal Plan components for visual progress comparison
+ * - Integration: Goals consumed by food logging for target comparison
+ * 
+ * COMPONENT INTERACTIONS:
+ * - MealPlan → getNutritionGoals() → Visual progress bars/indicators
+ * - FoodLogging → getNutritionGoals() → Daily target comparisons
+ * - RecipeManager → (future) Goal-aware recipe suggestions
+ */
 import React, { useState, useEffect } from 'react';
 import {
   Box,

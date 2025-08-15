@@ -1,3 +1,30 @@
+/**
+ * FILE: FoodSelectorWithFirebase.tsx
+ * ------------------------------------------------------------------
+ * PURPOSE
+ * • Present a searchable / clickable catalogue of foods stored in
+ *   Firestore and let the user build a meal program.
+ *
+ * CORE RESPONSIBILITIES
+ * • Live-subscribe to the Firestore “foods” collection and keep UI in sync.
+ * • Convert the Firestore schema → legacy in-memory shape expected by
+ *   the macro-calculation engine.
+ * • Allow the user to:
+ *     – pick a food (chip UI),
+ *     – adjust amount,
+ *     – preview macros + € cost,
+ *     – swap foods between timeslots,
+ *     – remove foods.
+ * • Emit pure callback events so the parent (TimeslotMealPlanner) owns
+ *   all state; the selector itself stays stateless/presentational.
+ *
+ * BUSINESS RULE HIGHLIGHTS
+ * • Fixed-amount & unit foods are respected when defaulting the “amount”.
+ * • Real-time safety: if an admin deletes a food that is currently
+ *   selected, the component auto-clears the selection to prevent errors.
+ * • All nutrition/cost maths are delegated to utility helpers; this file
+ *   owns zero arithmetic logic, only UI + orchestration.
+ */
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Box,

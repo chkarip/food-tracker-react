@@ -1,3 +1,25 @@
+/**
+ * FILE: MacroProgress.tsx
+ * ------------------------------------------------------------------
+ * PURPOSE
+ * • Display real-time progress bars that compare the user’s current
+ *   nutrient intake against their daily macro targets.
+ *
+ * INPUTS
+ * • foodMacros        → totals coming from selected foods.
+ * • externalNutrition → extra macros user logged manually (e.g. snacks).
+ *
+ * BUSINESS RULES
+ * • The two inputs are summed to produce “true” daily totals.
+ * • Each bar is capped at 100 % so visuals do not exceed the card width.
+ * • Target values are imported from a single source-of-truth config
+ *   (MACRO_TARGETS) to prevent drift between components.
+ *
+ * UI CONSIDERATIONS
+ * • Uses MUI’s LinearProgress for lightweight visuals.
+ * • Outputs both the numeric “X g / target g” and the progress bar,
+ *   catering to power users and quick-look users simultaneously.
+ */
 import React, { useMemo } from 'react';
 import { Box, Card, CardContent, Typography, LinearProgress } from '@mui/material';
 import { NutritionData, ExternalNutrition } from '../../types/nutrition';

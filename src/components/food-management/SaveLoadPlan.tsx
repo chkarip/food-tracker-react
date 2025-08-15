@@ -1,3 +1,34 @@
+/**
+ * FILE: SaveLoadPlan.tsx
+ * ------------------------------------------------------------------
+ * PURPOSE
+ * • Bridge the **local meal plan UI** ↔ **Firestore calendar backend**.
+ *   Users can save today’s plan (or bulk-save N days) and later reload.
+ *
+ * FUNCTIONAL FLOWS
+ *   Single-Day Save      → saveDailyPlan  → saveScheduledActivities
+ *   Multi-Day Bulk Save  → loop N days    → same two calls per day
+ *   Load Today’s Plan    → loadScheduledActivities (+ badge display)
+ *
+ * KEY PROPS
+ * • timeslotData – the exact structure produced by TimeslotMealPlanner:
+ *   { '6pm': { selectedFoods[], externalNutrition }, '9:30pm': … }
+ *
+ * BUSINESS RULES
+ * • Requires authentication; all buttons disabled for guests.
+ * • Meal tasks are written to the user’s `scheduledActivities` document
+ *   so the Calendar view shows them alongside gym tasks.
+ * • Safe-guards:
+ *     – Prevents save if food DB hasn’t loaded (ensures macros are valid).
+ *     – Shows inline <Alert> messages for success / error.
+ *     – Limits bulk save to 14 days to avoid accidental “month spam”.
+ *
+ * USER EXPERIENCE
+ * • Minimal card UI with three actions:
+ *     [Save Plan]  – opens bulk-save dialog when long-press/ellipsis.
+ *     [Load Today] – fetches today’s scheduled meals into memory.
+ *     [Badge]      – shows how many tasks are already scheduled today.
+ */
 import React, { useState, useEffect } from 'react';
 import {
   Card,
