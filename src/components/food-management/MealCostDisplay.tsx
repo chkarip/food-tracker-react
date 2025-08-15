@@ -30,18 +30,22 @@ import {
 } from '@mui/material';
 import { Euro as EuroIcon } from '@mui/icons-material';
 import { SelectedFood } from '../../types/nutrition';
-import { calculateTotalMealCost, formatCost } from '../../data/costDatabase';
+import { calculateTotalMealCost, formatCost } from '../../services/firebase/nutrition/foodService';
+import { useFoodDatabase } from '../../contexts/FoodContext';
 
 interface MealCostDisplayProps {
-  timeslotData: Record<string, { selectedFoods: SelectedFood[] }>; // ✅ Fixed type
-} // ✅ Added missing closing brace
+  timeslotData: Record<string, { selectedFoods: SelectedFood[] }>;
+}
 
-const MealCostDisplay: React.FC<MealCostDisplayProps> = ({ timeslotData }) => { // ✅ Fixed arrow function
-  const timeslotCosts = Object.entries(timeslotData).reduce((acc, [timeslotId, data]) => { // ✅ Fixed arrow function
-    const costData = calculateTotalMealCost(data.selectedFoods);
+const MealCostDisplay: React.FC<MealCostDisplayProps> = ({ timeslotData }) => {
+  const { foodDatabase } = useFoodDatabase();
+
+  const timeslotCosts = Object.entries(timeslotData).reduce((acc, [timeslotId, data]) => {
+    // ✅ Pass cached foodDatabase
+    const costData = calculateTotalMealCost(data.selectedFoods, foodDatabase);
     acc[timeslotId] = costData;
     return acc;
-  }, {} as Record<string, { individualCosts: Record<string, number>; totalCost: number }>); // ✅ Fixed type
+  }, {} as Record<string, { totalCost: number; individualCosts: Record<string, number> }>);
 
   const totalDailyCost = Object.values(timeslotCosts).reduce((sum, costData) => sum + costData.totalCost, 0);
 

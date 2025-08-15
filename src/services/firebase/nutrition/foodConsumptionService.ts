@@ -1,28 +1,33 @@
 /**
- * Food History Service
- * Handles food consumption tracking and history analytics
+ * foodConsumptionService.ts
+ * ------------------------------------------------------------
+ * Records food-consumption documents in Firestore and provides
+ * analytics (period stats, monthly summaries, realtime feed).
+ * No dependency on the old FOOD_DATABASE constant.
  */
 
-import { 
-  collection, 
-  doc, 
-  getDocs, 
-  addDoc, 
-  updateDoc, 
-  query, 
-  orderBy,
+import {
+  collection,
+  addDoc,
+  getDocs,
+  query,
   where,
+  onSnapshot,
   Timestamp,
-  onSnapshot
+  Query,
+  DocumentData
 } from 'firebase/firestore';
 import { db } from '../../../config/firebase';
-import { FOOD_DATABASE } from '../../../data/foodDatabase';
+
+/* ------------------------------------------------------------------ */
+/*  SHARED TYPES                                                       */
+/* ------------------------------------------------------------------ */
 
 export interface FoodConsumption {
-  id: string;
+  id: string;                                 // Firestore document ID
   foodName: string;
   quantity: number;
-  unit: string;
+  unit: 'g' | 'kg' | 'unit' | 'units';
   nutrition: {
     protein: number;
     fats: number;
@@ -33,6 +38,8 @@ export interface FoodConsumption {
   mealType?: 'breakfast' | 'lunch' | 'dinner' | 'snack';
   userId?: string;
 }
+
+export type NewFoodConsumption = Omit<FoodConsumption, 'id'>;
 
 export interface FoodHistoryStats {
   foodName: string;
@@ -50,7 +57,7 @@ export interface FoodHistoryStats {
 }
 
 export interface MonthlyFoodSummary {
-  month: string; // YYYY-MM format
+  month: string; // YYYY-MM
   year: number;
   foods: FoodHistoryStats[];
   totalDays: number;
@@ -64,198 +71,202 @@ export interface MonthlyFoodSummary {
 }
 
 /**
- * Record a food consumption entry
+ * Single food item inside a daily-meal program.
+ * The caller (FoodContext) supplies `isUnitFood`.
  */
-export const recordFoodConsumption = async (consumption: Omit<FoodConsumption, 'id'>): Promise<string> => {
+export interface MealProgramFood {
+  name: string;
+  quantity: number;
+  protein: number;
+  fats: number;
+  carbs: number;
+  calories: number;
+  isUnitFood: boolean;
+}
+
+/* ------------------------------------------------------------------ */
+/*  COLLECTION REF                                                     */
+/* ------------------------------------------------------------------ */
+
+const collectionRef = collection(db, 'foodConsumptions');
+
+/* ------------------------------------------------------------------ */
+/*  INSERT                                                             */
+/* ------------------------------------------------------------------ */
+
+export const recordFoodConsumption = async (
+  consumption: NewFoodConsumption
+): Promise<string> => {
   try {
-    const consumptionRef = collection(db, 'foodConsumptions');
-    const docRef = await addDoc(consumptionRef, {
+    const docRef = await addDoc(collectionRef, {
       ...consumption,
-      consumedAt: Timestamp.fromDate(consumption.consumedAt),
+      consumedAt: Timestamp.fromDate(consumption.consumedAt)
     });
-    
-    console.log('✅ Food consumption recorded:', docRef.id);
     return docRef.id;
-  } catch (error) {
-    console.error('❌ Error recording food consumption:', error);
-    throw error;
+  } catch (err) {
+    console.error('❌ recordFoodConsumption:', err);
+    throw err;
   }
 };
 
-/**
- * Get food consumption history for a specific time period
- */
+/* ------------------------------------------------------------------ */
+/*  HISTORY FETCH                                                      */
+/* ------------------------------------------------------------------ */
+
 export const getFoodConsumptionHistory = async (
-  startDate: Date, 
-  endDate: Date, 
+  start: Date,
+  end: Date,
   userId?: string
 ): Promise<FoodConsumption[]> => {
   try {
-    const consumptionRef = collection(db, 'foodConsumptions');
-    
-    // Use simpler query approach to avoid composite index issues
-    let q;
-    
-    if (userId) {
-      // First query by userId only
-      q = query(
-        consumptionRef,
-        where('userId', '==', userId)
-      );
-    } else {
-      // Query all documents if no userId (less efficient but works)
-      q = query(consumptionRef);
-    }
+    const q: Query<DocumentData> = userId
+      ? query(collectionRef, where('userId', '==', userId))
+      : query(collectionRef);
 
-    const querySnapshot = await getDocs(q);
-    
-    const consumptions: FoodConsumption[] = [];
-    querySnapshot.forEach((doc) => {
-      const data = doc.data();
-      const consumedAt = data.consumedAt instanceof Timestamp 
-        ? data.consumedAt.toDate() 
-        : new Date(data.consumedAt);
-      
-      // Filter by date range in memory (less efficient but avoids index issues)
-      if (consumedAt >= startDate && consumedAt <= endDate) {
-        consumptions.push({
+    const snap = await getDocs(q);
+    const out: FoodConsumption[] = [];
+
+    snap.forEach(doc => {
+      const d = doc.data();
+      const consumedAt =
+        d.consumedAt instanceof Timestamp
+          ? d.consumedAt.toDate()
+          : new Date(d.consumedAt);
+
+      if (consumedAt >= start && consumedAt <= end) {
+        out.push({
           id: doc.id,
-          foodName: data.foodName,
-          quantity: data.quantity,
-          unit: data.unit,
-          nutrition: data.nutrition,
+          foodName: d.foodName,
+          quantity: d.quantity,
+          unit: d.unit,
+          nutrition: d.nutrition,
           consumedAt,
-          mealType: data.mealType,
-          userId: data.userId,
+          mealType: d.mealType,
+          userId: d.userId
         });
       }
     });
-    
-    // Sort by consumedAt in memory
-    consumptions.sort((a, b) => b.consumedAt.getTime() - a.consumedAt.getTime());
-    
-    return consumptions;
-  } catch (error) {
-    console.error('Error fetching food consumption history:', error);
-    throw error;
+
+    return out.sort((a, b) => b.consumedAt.getTime() - a.consumedAt.getTime());
+  } catch (err) {
+    console.error('❌ getFoodConsumptionHistory:', err);
+    throw err;
   }
 };
 
-/**
- * Get current month's food history statistics
- */
-export const getCurrentMonthFoodStats = async (userId?: string): Promise<FoodHistoryStats[]> => {
-  const now = new Date();
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+/* ------------------------------------------------------------------ */
+/*  STATISTICS                                                         */
+/* ------------------------------------------------------------------ */
 
-  return getFoodStatsForPeriod(startOfMonth, endOfMonth, userId);
-};
-
-/**
- * Get food statistics for a specific period
- */
 export const getFoodStatsForPeriod = async (
-  startDate: Date, 
-  endDate: Date, 
+  start: Date,
+  end: Date,
   userId?: string
 ): Promise<FoodHistoryStats[]> => {
   try {
-    const consumptions = await getFoodConsumptionHistory(startDate, endDate, userId);
-    
-    // Group consumptions by food name
-    const foodGroups: Record<string, FoodConsumption[]> = {};
-    consumptions.forEach(consumption => {
-      if (!foodGroups[consumption.foodName]) {
-        foodGroups[consumption.foodName] = [];
+    const consumptions = await getFoodConsumptionHistory(start, end, userId);
+
+    /* group by foodName */
+    const groups: Record<string, FoodConsumption[]> = {};
+    consumptions.forEach(c => {
+      (groups[c.foodName] ||= []).push(c);
+    });
+
+    /* fallback weights for unit foods */
+    const UNIT_WEIGHTS: Record<string, number> = {
+      Eggs: 0.05,
+      'Tortilla wrap': 0.064,
+      'Canned tuna': 0.16
+    };
+
+    const stats: FoodHistoryStats[] = Object.entries(groups).map(
+      ([foodName, list]) => {
+        const lastEaten = list.reduce(
+          (latest, c) => (c.consumedAt > latest ? c.consumedAt : latest),
+          new Date(0)
+        );
+
+        /* total kg */
+        const totalKilos = list.reduce((sum, c) => {
+          if (c.unit === 'g') return sum + c.quantity / 1000;
+          if (c.unit === 'kg') return sum + c.quantity;
+          if (c.unit === 'unit' || c.unit === 'units') {
+            const w = UNIT_WEIGHTS[c.foodName] ?? 0.1;
+            return sum + w * c.quantity;
+          }
+          return sum;
+        }, 0);
+
+        /* nutrition totals */
+        const nutritionTotals = list.reduce(
+          (tot, c) => ({
+            protein: tot.protein + c.nutrition.protein,
+            fats: tot.fats + c.nutrition.fats,
+            carbs: tot.carbs + c.nutrition.carbs,
+            calories: tot.calories + c.nutrition.calories
+          }),
+          { protein: 0, fats: 0, carbs: 0, calories: 0 }
+        );
+
+        const avgQty =
+          list.reduce((s, c) => s + c.quantity, 0) / list.length;
+
+        return {
+          foodName,
+          lastEaten,
+          timesEatenThisMonth: list.length,
+          totalKilosThisMonth: totalKilos,
+          totalConsumptions: list.length,
+          averageQuantityPerMeal: avgQty,
+          nutritionTotals
+        };
       }
-      foodGroups[consumption.foodName].push(consumption);
-    });
+    );
 
-    // Calculate statistics for each food
-    const stats: FoodHistoryStats[] = Object.entries(foodGroups).map(([foodName, consumptions]) => {
-      const sortedConsumptions = consumptions.sort((a, b) => b.consumedAt.getTime() - a.consumedAt.getTime());
-      const lastEaten = sortedConsumptions[0].consumedAt;
-      
-      // Unit weight mapping for accurate weight calculations
-      const UNIT_WEIGHTS: Record<string, number> = {
-        'Eggs': 0.050,           // 50g per egg
-        'Tortilla wrap': 0.064,  // 64g per wrap (8-inch tortilla)
-        'Canned tuna': 0.160,    // 160g per can (typical size)
-      };
-
-      // Calculate total kilos consumed (convert all to kg)
-      const totalKilos = consumptions.reduce((sum, consumption) => {
-        if (consumption.unit === 'g') {
-          return sum + (consumption.quantity / 1000);
-        } else if (consumption.unit === 'kg') {
-          return sum + consumption.quantity;
-        } else if (consumption.unit === 'unit' || consumption.unit === 'units') {
-          // For unit foods, use proper weight mapping
-          const unitWeight = UNIT_WEIGHTS[consumption.foodName] || 0.1;
-          return sum + (consumption.quantity * unitWeight);
-        } else {
-          // Default fallback - treat as grams if unknown unit
-          return sum + (consumption.quantity / 1000);
-        }
-      }, 0);
-
-      // Calculate nutrition totals
-      const nutritionTotals = consumptions.reduce((totals, consumption) => ({
-        protein: totals.protein + consumption.nutrition.protein,
-        fats: totals.fats + consumption.nutrition.fats,
-        carbs: totals.carbs + consumption.nutrition.carbs,
-        calories: totals.calories + consumption.nutrition.calories,
-      }), { protein: 0, fats: 0, carbs: 0, calories: 0 });
-
-      // Calculate average quantity per meal
-      const averageQuantityPerMeal = consumptions.reduce((sum, c) => sum + c.quantity, 0) / consumptions.length;
-
-      return {
-        foodName,
-        lastEaten,
-        timesEatenThisMonth: consumptions.length,
-        totalKilosThisMonth: totalKilos,
-        totalConsumptions: consumptions.length,
-        averageQuantityPerMeal,
-        nutritionTotals,
-      };
-    });
-
-    // Sort by last eaten date (most recent first)
     return stats.sort((a, b) => b.lastEaten.getTime() - a.lastEaten.getTime());
-  } catch (error) {
-    console.error('Error calculating food stats:', error);
-    throw error;
+  } catch (err) {
+    console.error('❌ getFoodStatsForPeriod:', err);
+    throw err;
   }
 };
 
-/**
- * Get monthly food summary
- */
+export const getCurrentMonthFoodStats = async (
+  userId?: string
+): Promise<FoodHistoryStats[]> => {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth(), 1);
+  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+  return getFoodStatsForPeriod(start, end, userId);
+};
+
+/* ------------------------------------------------------------------ */
+/*  MONTHLY SUMMARY                                                    */
+/* ------------------------------------------------------------------ */
+
 export const getMonthlyFoodSummary = async (
-  year: number, 
-  month: number, 
+  year: number,
+  month: number,
   userId?: string
 ): Promise<MonthlyFoodSummary> => {
   try {
-    const startOfMonth = new Date(year, month - 1, 1);
-    const endOfMonth = new Date(year, month, 0, 23, 59, 59);
-    
-    const foods = await getFoodStatsForPeriod(startOfMonth, endOfMonth, userId);
-    
-    // Calculate total nutrition for the month
-    const totalNutrition = foods.reduce((totals, food) => ({
-      protein: totals.protein + food.nutritionTotals.protein,
-      fats: totals.fats + food.nutritionTotals.fats,
-      carbs: totals.carbs + food.nutritionTotals.carbs,
-      calories: totals.calories + food.nutritionTotals.calories,
-    }), { protein: 0, fats: 0, carbs: 0, calories: 0 });
+    const start = new Date(year, month - 1, 1);
+    const end = new Date(year, month, 0, 23, 59, 59);
 
-    // Calculate unique days with food consumption
-    const consumptions = await getFoodConsumptionHistory(startOfMonth, endOfMonth, userId);
+    const foods = await getFoodStatsForPeriod(start, end, userId);
+
+    const totalNutrition = foods.reduce(
+      (tot, f) => ({
+        protein: tot.protein + f.nutritionTotals.protein,
+        fats: tot.fats + f.nutritionTotals.fats,
+        carbs: tot.carbs + f.nutritionTotals.carbs,
+        calories: tot.calories + f.nutritionTotals.calories
+      }),
+      { protein: 0, fats: 0, carbs: 0, calories: 0 }
+    );
+
+    const all = await getFoodConsumptionHistory(start, end, userId);
     const uniqueDays = new Set(
-      consumptions.map(c => c.consumedAt.toDateString())
+      all.map(c => c.consumedAt.toDateString())
     ).size;
 
     return {
@@ -264,181 +275,146 @@ export const getMonthlyFoodSummary = async (
       foods,
       totalDays: uniqueDays,
       uniqueFoods: foods.length,
-      totalNutrition,
+      totalNutrition
     };
-  } catch (error) {
-    console.error('Error getting monthly food summary:', error);
-    throw error;
+  } catch (err) {
+    console.error('❌ getMonthlyFoodSummary:', err);
+    throw err;
   }
 };
 
-/**
- * Real-time listener for food consumption changes
- */
+/* ------------------------------------------------------------------ */
+/*  REAL-TIME LISTENER                                                 */
+/* ------------------------------------------------------------------ */
+
 export const subscribeToFoodConsumptions = (
-  callback: (consumptions: FoodConsumption[]) => void,
+  cb: (c: FoodConsumption[]) => void,
   userId?: string
 ) => {
-  const consumptionRef = collection(db, 'foodConsumptions');
-  
-  // Use simpler query approach to avoid composite index issues
-  let q;
-  
-  if (userId) {
-    // Query by userId only to avoid composite index requirement
-    q = query(
-      consumptionRef,
-      where('userId', '==', userId)
-    );
-  } else {
-    // Query all documents if no userId
-    q = query(consumptionRef);
-  }
+  const q: Query<DocumentData> = userId
+    ? query(collectionRef, where('userId', '==', userId))
+    : query(collectionRef);
 
-  return onSnapshot(q, (querySnapshot) => {
-    const consumptions: FoodConsumption[] = [];
-    querySnapshot.forEach((doc) => {
-      const data = doc.data();
-      consumptions.push({
-        id: doc.id,
-        foodName: data.foodName,
-        quantity: data.quantity,
-        unit: data.unit,
-        nutrition: data.nutrition,
-        consumedAt: data.consumedAt instanceof Timestamp 
-          ? data.consumedAt.toDate() 
-          : data.consumedAt,
-        mealType: data.mealType,
-        userId: data.userId,
+  return onSnapshot(
+    q,
+    snap => {
+      const list: FoodConsumption[] = [];
+      snap.forEach(doc => {
+        const d = doc.data();
+        list.push({
+          id: doc.id,
+          foodName: d.foodName,
+          quantity: d.quantity,
+          unit: d.unit,
+          nutrition: d.nutrition,
+          consumedAt:
+            d.consumedAt instanceof Timestamp
+              ? d.consumedAt.toDate()
+              : new Date(d.consumedAt),
+          mealType: d.mealType,
+          userId: d.userId
+        });
       });
-    });
-    
-    // Sort by consumedAt in memory (most recent first)
-    consumptions.sort((a, b) => b.consumedAt.getTime() - a.consumedAt.getTime());
-    
-    callback(consumptions);
-  }, (error) => {
-    console.error('Error in food consumption subscription:', error);
-  });
+      list.sort((a, b) => b.consumedAt.getTime() - a.consumedAt.getTime());
+      cb(list);
+    },
+    err => console.error('🔥 subscribeToFoodConsumptions:', err)
+  );
 };
 
-/**
- * Check if a daily meal program has already been imported
- */
+/* ------------------------------------------------------------------ */
+/*  DAILY-MEAL IMPORTER                                                */
+/* ------------------------------------------------------------------ */
+
 export const isDailyMealProgramImported = async (
   date: string,
   userId?: string
 ): Promise<boolean> => {
   try {
-    const consumptionRef = collection(db, 'foodConsumptions');
-    const targetDate = new Date(date);
-    
-    // Set time to start and end of day for comparison
-    const startOfDay = new Date(targetDate);
-    startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(targetDate);
-    endOfDay.setHours(23, 59, 59, 999);
-    
-    let q;
-    if (userId) {
-      q = query(
-        consumptionRef,
-        where('userId', '==', userId)
-      );
-    } else {
-      q = query(consumptionRef);
-    }
+    const target = new Date(date);
+    const start = new Date(target);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(target);
+    end.setHours(23, 59, 59, 999);
 
-    const querySnapshot = await getDocs(q);
-    
-    // Check if any consumption records exist for this date
-    let hasRecords = false;
-    querySnapshot.forEach((doc) => {
-      const data = doc.data();
-      const consumedAt = data.consumedAt instanceof Timestamp 
-        ? data.consumedAt.toDate() 
-        : new Date(data.consumedAt);
-      
-      if (consumedAt >= startOfDay && consumedAt <= endOfDay) {
-        hasRecords = true;
-      }
+    const q: Query<DocumentData> = userId
+      ? query(collectionRef, where('userId', '==', userId))
+      : query(collectionRef);
+
+    const snap = await getDocs(q);
+    let exists = false;
+
+    snap.forEach(doc => {
+      const ts =
+        doc.data().consumedAt instanceof Timestamp
+          ? doc.data().consumedAt.toDate()
+          : new Date(doc.data().consumedAt);
+
+      if (ts >= start && ts <= end) exists = true;
     });
-    
-    return hasRecords;
-  } catch (error) {
-    console.error('Error checking if daily meal program is imported:', error);
-    return false; // Default to not imported if error
+
+    return exists;
+  } catch (err) {
+    console.error('❌ isDailyMealProgramImported:', err);
+    return false;
   }
 };
 
-/**
- * Import daily meal program to consumption history
- */
 export const importDailyMealProgram = async (
-  mealProgram: {
-    date: string;
-    foods: Array<{
-      name: string;
-      quantity: number;
-      protein: number;
-      fats: number;
-      carbs: number;
-      calories: number;
-    }>;
-  },
+  mealProgram: { date: string; foods: MealProgramFood[] },
   userId?: string
 ): Promise<void> => {
   try {
-    // Check if this date has already been imported
-    const alreadyImported = await isDailyMealProgramImported(mealProgram.date, userId);
-    if (alreadyImported) {
-      console.log(`⚠️ Daily meal program for ${mealProgram.date} already imported, skipping`);
+    if (await isDailyMealProgramImported(mealProgram.date, userId)) {
+      console.log(`⚠️ Meal program ${mealProgram.date} already imported.`);
       return;
     }
-    
-    const consumptionDate = new Date(mealProgram.date);
-    
-    // Create consumption records for each food
-    const promises = mealProgram.foods.map(food => {
-      // Determine correct unit based on food database
-      const foodInfo = FOOD_DATABASE[food.name];
-      const unit = foodInfo?.isUnitFood ? 'units' : 'g';
-      
-      const consumption: Omit<FoodConsumption, 'id'> = {
-        foodName: food.name,
-        quantity: food.quantity,
-        unit: unit,
-        nutrition: {
-          protein: food.protein,
-          fats: food.fats,
-          carbs: food.carbs,
-          calories: food.calories,
-        },
-        consumedAt: consumptionDate,
-        mealType: 'lunch', // Default meal type
-        userId,
-      };
-      
-      return recordFoodConsumption(consumption);
-    });
 
-    await Promise.all(promises);
-    console.log('✅ Daily meal program imported to consumption history');
-  } catch (error) {
-    console.error('❌ Error importing daily meal program:', error);
-    throw error;
+    const date = new Date(mealProgram.date);
+
+    await Promise.all(
+      mealProgram.foods.map(f => {
+        const unit: 'units' | 'g' = f.isUnitFood ? 'units' : 'g';
+
+        const consumption: NewFoodConsumption = {
+          foodName: f.name,
+          quantity: f.quantity,
+          unit,
+          nutrition: {
+            protein: f.protein,
+            fats: f.fats,
+            carbs: f.carbs,
+            calories: f.calories
+          },
+          consumedAt: date,
+          mealType: 'lunch',
+          userId
+        };
+
+        return recordFoodConsumption(consumption);
+      })
+    );
+
+    console.log('✅ Daily meal program imported.');
+  } catch (err) {
+    console.error('❌ importDailyMealProgram:', err);
+    throw err;
   }
 };
+
+/* ------------------------------------------------------------------ */
+/*  AGGREGATE EXPORT                                                   */
+/* ------------------------------------------------------------------ */
 
 const foodHistoryService = {
   recordFoodConsumption,
   getFoodConsumptionHistory,
-  getCurrentMonthFoodStats,
   getFoodStatsForPeriod,
+  getCurrentMonthFoodStats,
   getMonthlyFoodSummary,
   subscribeToFoodConsumptions,
-  importDailyMealProgram,
   isDailyMealProgramImported,
+  importDailyMealProgram
 };
 
 export default foodHistoryService;

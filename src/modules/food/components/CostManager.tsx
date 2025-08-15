@@ -23,17 +23,19 @@ import {
   InputAdornment
 } from '@mui/material';
 import {
-  Euro as EuroIcon,
   Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
-  TrendingUp as TrendingUpIcon,
-  TrendingDown as TrendingDownIcon,
   ArrowUpward as ArrowUpwardIcon,
   ArrowDownward as ArrowDownwardIcon
 } from '@mui/icons-material';
-import { formatCost, COST_DATABASE, calculatePortionCost } from '../../../data/costDatabase';
-import { FOOD_DATABASE } from '../../../data/foodDatabase';
+
+import { useFoodDatabase } from '../../../contexts/FoodContext';
+import { formatCost } from '../../../services/firebase/nutrition/foodService';
+
+/* ------------------------------------------------------------------ */
+/*  TYPES                                                             */
+/* ------------------------------------------------------------------ */
 
 interface CostEntry {
   id: string;
@@ -45,17 +47,20 @@ interface CostEntry {
   notes?: string;
 }
 
-interface CostManagerProps {
-  // Props for parent communication if needed
-}
+type SortField =
+  | 'foodName'
+  | 'costPer100gOrUnit'
+  | 'costPerKg'
+  | 'costPerGramProtein'
+  | 'costPerGramCarbs'
+  | 'costPerGramFats';
 
-type SortField = 'foodName' | 'costPer100gOrUnit' | 'costPerKg' | 'costPerGramProtein' | 'costPerGramCarbs' | 'costPerGramFats';
 type SortDirection = 'asc' | 'desc';
 
 interface FoodAnalysisRow {
   foodName: string;
   foodData: any;
-  costInfo: any;
+  costInfo: { costPerKg: number };
   costPer100gOrUnit: number;
   costPerKg: number;
   costPerGramProtein: number | null;
@@ -64,17 +69,23 @@ interface FoodAnalysisRow {
   isUnitFood: boolean;
 }
 
-const CostManager: React.FC<CostManagerProps> = () => {
+/* ------------------------------------------------------------------ */
+/*  COMPONENT                                                         */
+/* ------------------------------------------------------------------ */
+
+const CostManager: React.FC = () => {
+  /* ---------- context ---------- */
+  const { foodDatabase } = useFoodDatabase();
+
+  /* ---------- local state ---------- */
   const [costs, setCosts] = useState<CostEntry[]>([]);
   const [editingCost, setEditingCost] = useState<CostEntry | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  
-  // Sorting state for food database table
+
   const [sortField, setSortField] = useState<SortField>('foodName');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
-  // Form state
   const [formData, setFormData] = useState<Partial<CostEntry>>({
     foodName: '',
     costPerKg: 0,
@@ -83,74 +94,55 @@ const CostManager: React.FC<CostManagerProps> = () => {
     notes: ''
   });
 
-  // Load costs from localStorage (can be replaced with Firebase later)
+  /* ---------- persistence ---------- */
   useEffect(() => {
-    loadCosts();
-  }, []);
-
-  const loadCosts = () => {
     try {
-      const savedCosts = localStorage.getItem('foodCosts');
-      if (savedCosts) {
-        setCosts(JSON.parse(savedCosts));
-      }
-    } catch (error) {
-      console.error('Error loading costs:', error);
+      const saved = localStorage.getItem('foodCosts');
+      if (saved) setCosts(JSON.parse(saved));
+    } catch (err) {
+      console.error('Failed to load costs', err);
     }
-  };
+  }, []);
 
   const saveCosts = (newCosts: CostEntry[]) => {
     try {
       localStorage.setItem('foodCosts', JSON.stringify(newCosts));
       setCosts(newCosts);
-    } catch (error) {
-      console.error('Error saving costs:', error);
+    } catch (err) {
+      console.error('Failed to save costs', err);
     }
   };
 
+  /* ---------- CRUD handlers ---------- */
   const handleSave = () => {
-    if (!formData.foodName || !formData.costPerKg) {
-      return;
-    }
+    if (!formData.foodName || !formData.costPerKg) return;
 
-    const newCost: CostEntry = {
-      id: editingCost?.id || Date.now().toString(),
+    const entry: CostEntry = {
+      id: editingCost?.id ?? Date.now().toString(),
       foodName: formData.foodName,
       costPerKg: formData.costPerKg,
-      unit: formData.unit || 'kg',
-      supplier: formData.supplier || '',
+      unit: formData.unit ?? 'kg',
+      supplier: formData.supplier ?? '',
       dateUpdated: new Date().toISOString().split('T')[0],
-      notes: formData.notes || ''
+      notes: formData.notes ?? ''
     };
 
-    let newCosts;
-    if (editingCost) {
-      // Update existing
-      newCosts = costs.map(cost => cost.id === editingCost.id ? newCost : cost);
-    } else {
-      // Add new
-      newCosts = [...costs, newCost];
-    }
+    const updated = editingCost
+      ? costs.map(c => (c.id === editingCost.id ? entry : c))
+      : [...costs, entry];
 
-    saveCosts(newCosts);
+    saveCosts(updated);
     handleCloseDialog();
   };
 
-  const handleEdit = (cost: CostEntry) => {
-    setEditingCost(cost);
-    setFormData({
-      foodName: cost.foodName,
-      costPerKg: cost.costPerKg,
-      unit: cost.unit,
-      supplier: cost.supplier,
-      notes: cost.notes
-    });
+  const handleEdit = (c: CostEntry) => {
+    setEditingCost(c);
+    setFormData({ ...c });
     setIsDialogOpen(true);
   };
 
   const handleDelete = (id: string) => {
-    const newCosts = costs.filter(cost => cost.id !== id);
-    saveCosts(newCosts);
+    saveCosts(costs.filter(c => c.id !== id));
   };
 
   const handleAdd = () => {
@@ -171,294 +163,180 @@ const CostManager: React.FC<CostManagerProps> = () => {
     setFormData({});
   };
 
-  // Sorting functions
+  /* ---------- sorting ---------- */
   const handleSort = (field: SortField) => {
     if (sortField === field) {
-      // Toggle direction if same field
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+      setSortDirection(prev => (prev === 'asc' ? 'desc' : 'asc'));
     } else {
-      // New field, default to ascending
       setSortField(field);
       setSortDirection('asc');
     }
   };
 
-  const getSortIcon = (field: SortField) => {
-    if (sortField !== field) return null;
-    return sortDirection === 'asc' ? <ArrowUpwardIcon fontSize="small" /> : <ArrowDownwardIcon fontSize="small" />;
-  };
+  const getSortIcon = (field: SortField) =>
+    sortField === field ? (sortDirection === 'asc' ? <ArrowUpwardIcon /> : <ArrowDownwardIcon />) : null;
 
-  // Prepare and sort food data
-  const getFoodAnalysisData = (): FoodAnalysisRow[] => {
-    const rows: FoodAnalysisRow[] = Object.entries(FOOD_DATABASE).map(([foodName, foodData]) => {
-      const costInfo = COST_DATABASE[foodName];
-      if (!costInfo) return null;
-
-      // Calculate costs
-      const isUnitFood = foodData.isUnitFood;
-      let costPer100gOrUnit: number;
-      let costPerKg: number;
-      
-      if (isUnitFood) {
-        costPer100gOrUnit = costInfo.costPerKg; // This is actually cost per unit
-        costPerKg = costInfo.costPerKg; // Same for unit foods
-      } else {
-        costPer100gOrUnit = (costInfo.costPerKg / 1000) * 100; // €/100g
-        costPerKg = costInfo.costPerKg; // €/kg
-      }
-
-      // Calculate nutritional efficiency
-      const nutrition = foodData.nutrition;
-      let costPerGramProtein: number | null = null;
-      let costPerGramCarbs: number | null = null;
-      let costPerGramFats: number | null = null;
-
-      if (nutrition.protein > 0) {
-        costPerGramProtein = costPer100gOrUnit / nutrition.protein;
-      }
-      if (nutrition.carbs > 0) {
-        costPerGramCarbs = costPer100gOrUnit / nutrition.carbs;
-      }
-      if (nutrition.fats > 0) {
-        costPerGramFats = costPer100gOrUnit / nutrition.fats;
-      }
-
-      return {
-        foodName,
-        foodData,
-        costInfo,
-        costPer100gOrUnit,
-        costPerKg,
-        costPerGramProtein,
-        costPerGramCarbs,
-        costPerGramFats,
-        isUnitFood
-      };
-    }).filter(Boolean) as FoodAnalysisRow[];
-
-    // Sort the data
-    return rows.sort((a, b) => {
-      let aValue: any;
-      let bValue: any;
-
-      switch (sortField) {
-        case 'foodName':
-          aValue = a.foodName.toLowerCase();
-          bValue = b.foodName.toLowerCase();
-          break;
-        case 'costPer100gOrUnit':
-          aValue = a.costPer100gOrUnit;
-          bValue = b.costPer100gOrUnit;
-          break;
-        case 'costPerKg':
-          aValue = a.costPerKg;
-          bValue = b.costPerKg;
-          break;
-        case 'costPerGramProtein':
-          aValue = a.costPerGramProtein ?? Infinity; // Null values go to end
-          bValue = b.costPerGramProtein ?? Infinity;
-          break;
-        case 'costPerGramCarbs':
-          aValue = a.costPerGramCarbs ?? Infinity;
-          bValue = b.costPerGramCarbs ?? Infinity;
-          break;
-        case 'costPerGramFats':
-          aValue = a.costPerGramFats ?? Infinity;
-          bValue = b.costPerGramFats ?? Infinity;
-          break;
-        default:
-          return 0;
-      }
-
-      if (sortDirection === 'asc') {
-        return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
-      } else {
-        return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
-      }
-    });
-  };
-
-  // Filter costs based on search term
-  const filteredCosts = costs.filter(cost =>
-    cost.foodName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (cost.supplier && cost.supplier.toLowerCase().includes(searchTerm.toLowerCase()))
+  /* ---------- derived data ---------- */
+  const filteredCosts = costs.filter(
+    c =>
+      c.foodName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (c.supplier && c.supplier.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  // Calculate statistics
-  const totalItems = costs.length;
-  const averageCost = costs.length > 0 
-    ? costs.reduce((sum, cost) => sum + cost.costPerKg, 0) / costs.length 
-    : 0;
-  const mostExpensive = costs.length > 0 
-    ? costs.reduce((max, cost) => cost.costPerKg > max.costPerKg ? cost : max, costs[0])
-    : null;
-  const cheapest = costs.length > 0
-    ? costs.reduce((min, cost) => cost.costPerKg < min.costPerKg ? cost : min, costs[0])
-    : null;
+  const stats = {
+    total: costs.length,
+    average: costs.length ? costs.reduce((s, c) => s + c.costPerKg, 0) / costs.length : 0,
+    most: costs.reduce<CostEntry | null>((max, c) => (!max || c.costPerKg > max.costPerKg ? c : max), null),
+    least: costs.reduce<CostEntry | null>((min, c) => (!min || c.costPerKg < min.costPerKg ? c : min), null)
+  };
+
+  /* ---------- analysis table ---------- */
+  const getFoodAnalysis = (): FoodAnalysisRow[] =>
+    Object.entries(foodDatabase)
+      .map(([name, data]) => {
+        const cost = (data as any).cost;
+        if (!cost?.costPerKg) return null;
+
+        const isUnit = (data as any).isUnitFood;
+        const costPer100gOrUnit = isUnit ? cost.costPerKg : (cost.costPerKg / 1000) * 100;
+
+        const n = (data as any).nutrition;
+        return {
+          foodName: name,
+          foodData: data,
+          costInfo: cost,
+          costPer100gOrUnit,
+          costPerKg: cost.costPerKg,
+          costPerGramProtein: n.protein ? costPer100gOrUnit / n.protein : null,
+          costPerGramCarbs: n.carbs ? costPer100gOrUnit / n.carbs : null,
+          costPerGramFats: n.fats ? costPer100gOrUnit / n.fats : null,
+          isUnitFood: isUnit
+        };
+      })
+      .filter((row): row is FoodAnalysisRow => row !== null)
+      .sort((a, b) => {
+        const val = (r: FoodAnalysisRow) => {
+          switch (sortField) {
+            case 'foodName':
+              return r.foodName.toLowerCase();
+            case 'costPer100gOrUnit':
+              return r.costPer100gOrUnit;
+            case 'costPerKg':
+              return r.costPerKg;
+            case 'costPerGramProtein':
+              return r.costPerGramProtein ?? Infinity;
+            case 'costPerGramCarbs':
+              return r.costPerGramCarbs ?? Infinity;
+            case 'costPerGramFats':
+              return r.costPerGramFats ?? Infinity;
+            default:
+              return 0;
+          }
+        };
+        const aVal = val(a);
+        const bVal = val(b);
+        if (aVal === bVal) return 0;
+        return sortDirection === 'asc' ? (aVal < bVal ? -1 : 1) : (aVal > bVal ? -1 : 1);
+      });
+
+  /* ------------------------------------------------------------------ */
+  /*  RENDER                                                            */
+  /* ------------------------------------------------------------------ */
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        <EuroIcon />
+    <Box sx={{ maxWidth: 1400, mx: 'auto', p: 3 }}>
+      {/* Header */}
+      <Typography variant="h4" gutterBottom>
         Cost Management
       </Typography>
-
-      <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-        Manage food costs, track price changes, and monitor your budget efficiency.
+      <Typography color="text.secondary" paragraph>
+        Manage food costs, track price changes and monitor budget efficiency.
       </Typography>
 
-      {/* Statistics Cards */}
-      <Box sx={{ 
-        display: 'grid', 
-        gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' },
-        gap: 2, 
-        mb: 3 
-      }}>
-        <Card>
-          <CardContent sx={{ textAlign: 'center' }}>
-            <Typography variant="h4" color="primary.main">
-              {totalItems}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Total Items
-            </Typography>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent sx={{ textAlign: 'center' }}>
-            <Typography variant="h4" color="info.main">
-              {formatCost(averageCost)}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Average Cost/kg
-            </Typography>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent sx={{ textAlign: 'center' }}>
-            <Typography variant="h6" color="error.main" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
-              <TrendingUpIcon fontSize="small" />
-              {mostExpensive ? formatCost(mostExpensive.costPerKg) : '-'}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Most Expensive
-            </Typography>
-            {mostExpensive && (
-              <Typography variant="caption" display="block" color="text.secondary">
-                {mostExpensive.foodName}
-              </Typography>
-            )}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent sx={{ textAlign: 'center' }}>
-            <Typography variant="h6" color="success.main" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
-              <TrendingDownIcon fontSize="small" />
-              {cheapest ? formatCost(cheapest.costPerKg) : '-'}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Cheapest
-            </Typography>
-            {cheapest && (
-              <Typography variant="caption" display="block" color="text.secondary">
-                {cheapest.foodName}
-              </Typography>
-            )}
-          </CardContent>
-        </Card>
+      {/* Stats */}
+      <Box display="flex" flexWrap="wrap" gap={2} mb={4}>
+        {[
+          { label: 'Total Items', value: stats.total },
+          { label: 'Average Cost/kg', value: formatCost(stats.average) },
+          {
+            label: 'Most Expensive',
+            value: stats.most ? formatCost(stats.most.costPerKg) : '-',
+            extra: stats.most?.foodName
+          },
+          {
+            label: 'Cheapest',
+            value: stats.least ? formatCost(stats.least.costPerKg) : '-',
+            extra: stats.least?.foodName
+          }
+        ].map(card => (
+          <Card sx={{ minWidth: 200 }} key={card.label}>
+            <CardContent sx={{ textAlign: 'center' }}>
+              <Typography variant="h4">{card.value}</Typography>
+              <Typography variant="body2">{card.label}</Typography>
+              {card.extra && <Chip label={card.extra} size="small" sx={{ mt: 1 }} />}
+            </CardContent>
+          </Card>
+        ))}
       </Box>
 
       {/* Controls */}
-      <Box sx={{ display: 'flex', gap: 2, mb: 3, alignItems: 'center' }}>
+      <Box display="flex" gap={2} mb={3}>
         <TextField
           label="Search foods or suppliers"
           value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          sx={{ flex: 1 }}
+          onChange={e => setSearchTerm(e.target.value)}
           size="small"
+          sx={{ flex: 1 }}
         />
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={handleAdd}
-        >
+        <Button variant="contained" startIcon={<AddIcon />} onClick={handleAdd}>
           Add Cost Entry
         </Button>
       </Box>
 
-      {/* Costs Table */}
-      <Card>
+      {/* Costs List */}
+      <Card sx={{ mb: 4 }}>
         <CardContent>
           <Typography variant="h6" gutterBottom>
-            Cost Database ({filteredCosts.length} items)
+            Cost Database ({filteredCosts.length})
           </Typography>
-          
           {filteredCosts.length === 0 ? (
-            <Alert severity="info" sx={{ mt: 2 }}>
-              No cost entries found. Add some cost data to get started.
-            </Alert>
+            <Alert severity="info">No cost entries found.</Alert>
           ) : (
-            <TableContainer component={Paper} sx={{ mt: 2 }}>
+            <TableContainer component={Paper}>
               <Table>
                 <TableHead>
                   <TableRow>
-                    <TableCell>Food Name</TableCell>
+                    <TableCell>Food</TableCell>
                     <TableCell>Cost</TableCell>
                     <TableCell>Unit</TableCell>
                     <TableCell>Supplier</TableCell>
-                    <TableCell>Last Updated</TableCell>
-                    <TableCell>Actions</TableCell>
+                    <TableCell>Updated</TableCell>
+                    <TableCell align="right">Actions</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {filteredCosts.map((cost) => (
-                    <TableRow key={cost.id}>
+                  {filteredCosts.map(c => (
+                    <TableRow key={c.id}>
                       <TableCell>
-                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                          {cost.foodName}
-                        </Typography>
-                        {cost.notes && (
-                          <Typography variant="caption" color="text.secondary" display="block">
-                            {cost.notes}
+                        <Typography fontWeight="medium">{c.foodName}</Typography>
+                        {c.notes && (
+                          <Typography variant="caption" color="text.secondary">
+                            {c.notes}
                           </Typography>
                         )}
                       </TableCell>
+                      <TableCell>{formatCost(c.costPerKg)}</TableCell>
                       <TableCell>
-                        <Typography variant="body2" sx={{ fontWeight: 600, color: 'primary.main' }}>
-                          {formatCost(cost.costPerKg)}
-                        </Typography>
+                        <Chip label={c.unit} size="small" />
                       </TableCell>
-                      <TableCell>
-                        <Chip 
-                          label={cost.unit === 'kg' ? '/ kg' : '/ unit'} 
-                          size="small" 
-                          variant="outlined"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2">
-                          {cost.supplier || '-'}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2" color="text.secondary">
-                          {cost.dateUpdated}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <IconButton 
-                          size="small" 
-                          onClick={() => handleEdit(cost)}
-                          color="primary"
-                        >
-                          <EditIcon fontSize="small" />
+                      <TableCell>{c.supplier || '-'}</TableCell>
+                      <TableCell>{c.dateUpdated}</TableCell>
+                      <TableCell align="right">
+                        <IconButton onClick={() => handleEdit(c)} color="primary">
+                          <EditIcon />
                         </IconButton>
-                        <IconButton 
-                          size="small" 
-                          onClick={() => handleDelete(cost.id)}
-                          color="error"
-                        >
-                          <DeleteIcon fontSize="small" />
+                        <IconButton onClick={() => handleDelete(c.id)} color="error">
+                          <DeleteIcon />
                         </IconButton>
                       </TableCell>
                     </TableRow>
@@ -470,133 +348,78 @@ const CostManager: React.FC<CostManagerProps> = () => {
         </CardContent>
       </Card>
 
-      {/* Food Database Analysis */}
-      <Card sx={{ mt: 3 }}>
+      {/* Analysis */}
+      <Card>
         <CardContent>
           <Typography variant="h6" gutterBottom>
             Complete Food Database Analysis
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            All available foods with cost breakdown and nutritional efficiency metrics
+          <Typography variant="body2" color="text.secondary" paragraph>
+            Cost breakdown and nutritional efficiency metrics for every food.
           </Typography>
-          
+
           <TableContainer component={Paper}>
             <Table size="small">
               <TableHead>
                 <TableRow>
-                  <TableCell 
-                    sx={{ fontWeight: 'bold', cursor: 'pointer', userSelect: 'none' }}
-                    onClick={() => handleSort('foodName')}
-                  >
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      Food Name
-                      {getSortIcon('foodName')}
-                    </Box>
-                  </TableCell>
-                  <TableCell 
-                    sx={{ fontWeight: 'bold', cursor: 'pointer', userSelect: 'none' }} 
-                    align="right"
-                    onClick={() => handleSort('costPer100gOrUnit')}
-                  >
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 0.5 }}>
-                      Cost/100g or Unit
-                      {getSortIcon('costPer100gOrUnit')}
-                    </Box>
-                  </TableCell>
-                  <TableCell 
-                    sx={{ fontWeight: 'bold', cursor: 'pointer', userSelect: 'none' }} 
-                    align="right"
-                    onClick={() => handleSort('costPerKg')}
-                  >
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 0.5 }}>
-                      Cost/kg
-                      {getSortIcon('costPerKg')}
-                    </Box>
-                  </TableCell>
-                  <TableCell 
-                    sx={{ fontWeight: 'bold', cursor: 'pointer', userSelect: 'none' }} 
-                    align="right"
-                    onClick={() => handleSort('costPerGramProtein')}
-                  >
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 0.5 }}>
-                      €/g Protein
-                      {getSortIcon('costPerGramProtein')}
-                    </Box>
-                  </TableCell>
-                  <TableCell 
-                    sx={{ fontWeight: 'bold', cursor: 'pointer', userSelect: 'none' }} 
-                    align="right"
-                    onClick={() => handleSort('costPerGramCarbs')}
-                  >
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 0.5 }}>
-                      €/g Carbs
-                      {getSortIcon('costPerGramCarbs')}
-                    </Box>
-                  </TableCell>
-                  <TableCell 
-                    sx={{ fontWeight: 'bold', cursor: 'pointer', userSelect: 'none' }} 
-                    align="right"
-                    onClick={() => handleSort('costPerGramFats')}
-                  >
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 0.5 }}>
-                      €/g Fats
-                      {getSortIcon('costPerGramFats')}
-                    </Box>
-                  </TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }}>Unit Type</TableCell>
+                  {(
+                    [
+                      'foodName',
+                      'costPer100gOrUnit',
+                      'costPerKg',
+                      'costPerGramProtein',
+                      'costPerGramCarbs',
+                      'costPerGramFats'
+                    ] as SortField[]
+                  ).map(field => (
+                    <TableCell
+                      key={field}
+                      onClick={() => handleSort(field)}
+                      sx={{ cursor: 'pointer', userSelect: 'none' }}
+                    >
+                      <Box display="flex" alignItems="center">
+                        {field === 'foodName'
+                          ? 'Food'
+                          : field === 'costPer100gOrUnit'
+                          ? 'Cost/100g or Unit'
+                          : field === 'costPerKg'
+                          ? 'Cost/kg'
+                          : field === 'costPerGramProtein'
+                          ? '€/g Protein'
+                          : field === 'costPerGramCarbs'
+                          ? '€/g Carbs'
+                          : '€/g Fats'}
+                        {getSortIcon(field)}
+                      </Box>
+                    </TableCell>
+                  ))}
+                  <TableCell>Unit Type</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {getFoodAnalysisData().map((row) => (
+                {getFoodAnalysis().map(row => (
                   <TableRow key={row.foodName}>
+                    <TableCell>{row.foodName}</TableCell>
+                    <TableCell>{formatCost(row.costPer100gOrUnit)}</TableCell>
                     <TableCell>
-                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                        {row.foodName}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        P: {row.foodData.nutrition.protein}g | C: {row.foodData.nutrition.carbs}g | F: {row.foodData.nutrition.fats}g
-                      </Typography>
-                    </TableCell>
-                    <TableCell align="right">
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                        {formatCost(row.costPer100gOrUnit)}
-                      </Typography>
-                    </TableCell>
-                    <TableCell align="right">
-                      <Typography variant="body2">
-                        {row.isUnitFood ? formatCost(row.costPerKg) + '/unit' : formatCost(row.costPerKg)}
-                      </Typography>
-                    </TableCell>
-                    <TableCell align="right">
-                      <Typography 
-                        variant="body2" 
-                        color={row.costPerGramProtein && row.costPerGramProtein < 0.1 ? 'success.main' : 'text.primary'}
-                      >
-                        {row.costPerGramProtein ? formatCost(row.costPerGramProtein, 3) : '-'}
-                      </Typography>
-                    </TableCell>
-                    <TableCell align="right">
-                      <Typography 
-                        variant="body2"
-                        color={row.costPerGramCarbs && row.costPerGramCarbs < 0.05 ? 'success.main' : 'text.primary'}
-                      >
-                        {row.costPerGramCarbs ? formatCost(row.costPerGramCarbs, 3) : '-'}
-                      </Typography>
-                    </TableCell>
-                    <TableCell align="right">
-                      <Typography 
-                        variant="body2"
-                        color={row.costPerGramFats && row.costPerGramFats < 0.2 ? 'success.main' : 'text.primary'}
-                      >
-                        {row.costPerGramFats ? formatCost(row.costPerGramFats, 3) : '-'}
-                      </Typography>
+                      {row.isUnitFood
+                        ? `${formatCost(row.costPerKg)}/unit`
+                        : formatCost(row.costPerKg)}
                     </TableCell>
                     <TableCell>
-                      <Chip 
-                        label={row.isUnitFood ? 'per unit' : 'per 100g'} 
-                        size="small" 
-                        variant="outlined"
-                        color={row.isUnitFood ? 'secondary' : 'primary'}
+                      {row.costPerGramProtein ? formatCost(row.costPerGramProtein, 3) : '-'}
+                    </TableCell>
+                    <TableCell>
+                      {row.costPerGramCarbs ? formatCost(row.costPerGramCarbs, 3) : '-'}
+                    </TableCell>
+                    <TableCell>
+                      {row.costPerGramFats ? formatCost(row.costPerGramFats, 3) : '-'}
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={row.isUnitFood ? 'Unit' : 'Weight'}
+                        size="small"
+                        color={row.isUnitFood ? 'primary' : 'default'}
                       />
                     </TableCell>
                   </TableRow>
@@ -604,50 +427,35 @@ const CostManager: React.FC<CostManagerProps> = () => {
               </TableBody>
             </Table>
           </TableContainer>
-          
-          <Box sx={{ mt: 2, p: 2, bgcolor: 'background.paper', borderRadius: 1, border: '1px solid', borderColor: 'divider' }}>
-            <Typography variant="caption" color="text.secondary">
-              <strong>Legend:</strong><br/>
-              • <strong>Cost/100g or Unit:</strong> Base cost for comparison<br/>
-              • <strong>Cost/kg:</strong> Standardized cost per kilogram (or per unit for unit foods)<br/>
-              • <strong>€/g Protein/Carbs/Fats:</strong> Cost efficiency - lower is better<br/>
-              • <strong>Green values:</strong> Highly cost-efficient for that macro<br/>
-              • <strong>Unit foods:</strong> Eggs, Tortilla wrap, Canned tuna (measured individually)
-            </Typography>
-          </Box>
         </CardContent>
       </Card>
 
       {/* Add/Edit Dialog */}
       <Dialog open={isDialogOpen} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-        <DialogTitle>
-          {editingCost ? 'Edit Cost Entry' : 'Add Cost Entry'}
-        </DialogTitle>
+        <DialogTitle>{editingCost ? 'Edit Cost Entry' : 'Add Cost Entry'}</DialogTitle>
         <DialogContent>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+          <Box display="flex" flexDirection="column" gap={2} pt={1}>
             <TextField
               label="Food Name"
-              value={formData.foodName || ''}
-              onChange={(e) => setFormData(prev => ({ ...prev, foodName: e.target.value }))}
+              value={formData.foodName ?? ''}
+              onChange={e => setFormData(prev => ({ ...prev, foodName: e.target.value }))}
               fullWidth
               required
             />
             <TextField
               label="Cost"
               type="number"
-              value={formData.costPerKg || ''}
-              onChange={(e) => setFormData(prev => ({ ...prev, costPerKg: Number(e.target.value) }))}
-              InputProps={{
-                startAdornment: <InputAdornment position="start">€</InputAdornment>,
-              }}
+              value={formData.costPerKg ?? 0}
+              onChange={e => setFormData(prev => ({ ...prev, costPerKg: +e.target.value }))}
+              InputProps={{ startAdornment: <InputAdornment position="start">€</InputAdornment> }}
               fullWidth
               required
             />
             <TextField
-              label="Unit Type"
+              label="Unit"
               select
-              value={formData.unit || 'kg'}
-              onChange={(e) => setFormData(prev => ({ ...prev, unit: e.target.value as 'kg' | 'unit' }))}
+              value={formData.unit ?? 'kg'}
+              onChange={e => setFormData(prev => ({ ...prev, unit: e.target.value as 'kg' | 'unit' }))}
               SelectProps={{ native: true }}
               fullWidth
             >
@@ -655,15 +463,15 @@ const CostManager: React.FC<CostManagerProps> = () => {
               <option value="unit">Per Unit</option>
             </TextField>
             <TextField
-              label="Supplier (Optional)"
-              value={formData.supplier || ''}
-              onChange={(e) => setFormData(prev => ({ ...prev, supplier: e.target.value }))}
+              label="Supplier"
+              value={formData.supplier ?? ''}
+              onChange={e => setFormData(prev => ({ ...prev, supplier: e.target.value }))}
               fullWidth
             />
             <TextField
-              label="Notes (Optional)"
-              value={formData.notes || ''}
-              onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+              label="Notes"
+              value={formData.notes ?? ''}
+              onChange={e => setFormData(prev => ({ ...prev, notes: e.target.value }))}
               multiline
               rows={2}
               fullWidth
@@ -671,14 +479,8 @@ const CostManager: React.FC<CostManagerProps> = () => {
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseDialog}>
-            Cancel
-          </Button>
-          <Button 
-            onClick={handleSave} 
-            variant="contained"
-            disabled={!formData.foodName || !formData.costPerKg}
-          >
+          <Button onClick={handleCloseDialog}>Cancel</Button>
+          <Button onClick={handleSave} variant="contained">
             {editingCost ? 'Update' : 'Add'}
           </Button>
         </DialogActions>

@@ -46,6 +46,7 @@ import GymPage from './components/workout/GymPage';
 import FinancePage from './modules/finance/pages/FinancePage';
 import AuthGuard from './components/auth/AuthGuard';
 import { AuthProvider } from './contexts/AuthContext';
+import { FoodProvider } from './contexts/FoodContext'; // ✅ NEW
 
 function FoodTrackerApp() {
   // Theme state
@@ -87,16 +88,20 @@ function FoodTrackerApp() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Router>
-        <Routes>
-          <Route path="/" element={<Layout darkMode={darkMode} toggleDarkMode={toggleDarkMode} />}>
-            <Route index element={<DashboardPage />} />
-            <Route path="food" element={<FoodTrackerPage />} />
-            <Route path="gym" element={<GymPage />} />
-            <Route path="finance" element={<FinancePage />} />
-          </Route>
-        </Routes>
-      </Router>
+      <FoodProvider> {/* ✅ NEW - Wrap routes with FoodProvider */}
+        <Router>
+          <AuthGuard>
+            <Layout darkMode={darkMode} toggleDarkMode={toggleDarkMode}>
+              <Routes>
+                <Route path="/" element={<DashboardPage />} />
+                <Route path="/food" element={<FoodTrackerPage />} />
+                <Route path="/gym" element={<GymPage />} />
+                <Route path="/finance" element={<FinancePage />} />
+              </Routes>
+            </Layout>
+          </AuthGuard>
+        </Router>
+      </FoodProvider> {/* ✅ NEW - Close FoodProvider */}
     </ThemeProvider>
   );
 }
@@ -105,9 +110,7 @@ function FoodTrackerApp() {
 function App() {
   return (
     <AuthProvider>
-      <AuthGuard>
-        <FoodTrackerApp />
-      </AuthGuard>
+      <FoodTrackerApp />
     </AuthProvider>
   );
 }

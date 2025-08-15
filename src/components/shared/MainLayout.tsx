@@ -41,15 +41,20 @@ const drawerWidth = 280;
 interface LayoutProps {
   darkMode: boolean;
   toggleDarkMode: () => void;
+  children?: React.ReactNode;
 }
 
-const Layout: React.FC<LayoutProps> = ({ darkMode, toggleDarkMode }) => {
+const Layout: React.FC<LayoutProps> = ({ 
+  darkMode, 
+  toggleDarkMode, 
+  children // ✅ Added children to destructuring
+}) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navigate = useNavigate();
   const location = useLocation();
   const { user, isAuthenticated } = useAuth();
-  
+
   const [mobileOpen, setMobileOpen] = useState(false);
   const [authDialogOpen, setAuthDialogOpen] = useState(false);
   const [userMenuAnchor, setUserMenuAnchor] = useState<null | HTMLElement>(null);
@@ -95,31 +100,31 @@ const Layout: React.FC<LayoutProps> = ({ darkMode, toggleDarkMode }) => {
   ];
 
   const drawer = (
-    <Box>
+    <div>
       {/* Sidebar Header */}
-      <Box sx={{ p: 3, textAlign: 'center', bgcolor: 'primary.main', color: 'white' }}>
-        <Typography variant="h6" noWrap component="div">
+      <Box sx={{ p: 2, textAlign: 'center' }}>
+        <Typography variant="h6" component="div" sx={{ fontWeight: 700 }}>
           Track Everything
         </Typography>
-        <Typography variant="caption" sx={{ opacity: 0.8 }}>
+        <Typography variant="body2" color="text.secondary">
           Food • Gym • Finance
         </Typography>
       </Box>
-      
+
       <Divider />
-      
+
       {/* Date Display */}
-      <Box sx={{ p: 2, bgcolor: 'action.hover' }}>
-        <Typography variant="body2" color="text.secondary" align="center">
+      <Box sx={{ p: 2, textAlign: 'center', bgcolor: 'primary.50' }}>
+        <Typography variant="overline" display="block">
           Today
         </Typography>
-        <Typography variant="h6" align="center" color="primary.main">
-          {new Date().toLocaleDateString('en-US', { 
-            month: 'short', 
+        <Typography variant="h6" sx={{ fontWeight: 600 }}>
+          {new Date().toLocaleDateString('en-US', {
+            month: 'short',
             day: 'numeric'
           })}
         </Typography>
-        <Typography variant="caption" color="text.secondary" align="center" display="block">
+        <Typography variant="body2" color="text.secondary">
           {new Date().toLocaleDateString('en-US', { weekday: 'long' })}
         </Typography>
       </Box>
@@ -160,10 +165,6 @@ const Layout: React.FC<LayoutProps> = ({ darkMode, toggleDarkMode }) => {
               <ListItemText 
                 primary={item.text}
                 secondary={item.description}
-                secondaryTypographyProps={{
-                  variant: 'caption',
-                  color: 'text.secondary'
-                }}
               />
             </ListItemButton>
           </ListItem>
@@ -174,39 +175,30 @@ const Layout: React.FC<LayoutProps> = ({ darkMode, toggleDarkMode }) => {
 
       {/* Quick Stats */}
       <Box sx={{ p: 2 }}>
-        <Typography variant="subtitle2" gutterBottom>
+        <Typography variant="overline" display="block" gutterBottom>
           Quick Stats
         </Typography>
+        
         <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-          <Typography variant="caption" color="text.secondary">
-            Today's Meals
-          </Typography>
-          <Typography variant="caption" color="primary.main">
-            0/3
-          </Typography>
+          <Typography variant="body2">Today's Meals</Typography>
+          <Typography variant="body2" fontWeight="bold">0/3</Typography>
         </Box>
+        
         <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-          <Typography variant="caption" color="text.secondary">
-            Gym Sessions
-          </Typography>
-          <Typography variant="caption" color="secondary.main">
-            0/1
-          </Typography>
+          <Typography variant="body2">Gym Sessions</Typography>
+          <Typography variant="body2" fontWeight="bold">0/1</Typography>
         </Box>
+        
         <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-          <Typography variant="caption" color="text.secondary">
-            Tasks Done
-          </Typography>
-          <Typography variant="caption" color="success.main">
-            0/0
-          </Typography>
+          <Typography variant="body2">Tasks Done</Typography>
+          <Typography variant="body2" fontWeight="bold">0/0</Typography>
         </Box>
       </Box>
-    </Box>
+    </div>
   );
 
   return (
-    <Box sx={{ display: 'flex', height: '100vh' }}>
+    <Box sx={{ display: 'flex' }}>
       {/* App Bar */}
       <AppBar
         position="fixed"
@@ -225,13 +217,13 @@ const Layout: React.FC<LayoutProps> = ({ darkMode, toggleDarkMode }) => {
           >
             <MenuIcon />
           </IconButton>
-          
+
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
             {menuItems.find(item => item.path === location.pathname)?.text || 'Track Everything'}
           </Typography>
 
           {/* Theme Toggle */}
-          <IconButton color="inherit" onClick={toggleDarkMode} sx={{ mr: 1 }}>
+          <IconButton onClick={toggleDarkMode} color="inherit">
             {darkMode ? <LightModeIcon /> : <DarkModeIcon />}
           </IconButton>
 
@@ -258,8 +250,8 @@ const Layout: React.FC<LayoutProps> = ({ darkMode, toggleDarkMode }) => {
             </>
           ) : (
             <Button
-              color="inherit"
               startIcon={<LoginIcon />}
+              color="inherit"
               onClick={() => setAuthDialogOpen(true)}
             >
               Sign In
@@ -278,9 +270,7 @@ const Layout: React.FC<LayoutProps> = ({ darkMode, toggleDarkMode }) => {
           variant="temporary"
           open={mobileOpen}
           onClose={handleDrawerToggle}
-          ModalProps={{
-            keepMounted: true, // Better open performance on mobile.
-          }}
+          ModalProps={{ keepMounted: true }}
           sx={{
             display: { xs: 'block', md: 'none' },
             '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
@@ -288,7 +278,7 @@ const Layout: React.FC<LayoutProps> = ({ darkMode, toggleDarkMode }) => {
         >
           {drawer}
         </Drawer>
-        
+
         {/* Desktop drawer */}
         <Drawer
           variant="permanent"
@@ -307,22 +297,19 @@ const Layout: React.FC<LayoutProps> = ({ darkMode, toggleDarkMode }) => {
         component="main"
         sx={{
           flexGrow: 1,
+          p: 3,
           width: { md: `calc(100% - ${drawerWidth}px)` },
-          height: '100vh',
-          overflow: 'hidden'
         }}
       >
         {/* Toolbar spacer */}
         <Toolbar />
         
         {/* Page content */}
-        <Box sx={{ height: 'calc(100vh - 64px)', overflow: 'auto', p: 0 }}>
-          <Outlet />
-        </Box>
+        {children || <Outlet />} {/* ✅ FIXED: Render children if passed, otherwise use Outlet */}
       </Box>
 
       {/* Auth Dialog */}
-      <AuthDialog
+      <AuthDialog 
         open={authDialogOpen}
         onClose={() => setAuthDialogOpen(false)}
       />

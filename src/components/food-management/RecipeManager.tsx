@@ -75,7 +75,8 @@ import {
   MenuBook as InstructionsIcon
 } from '@mui/icons-material';
 import { Recipe, RecipeIngredient, RecipeFormData } from '../../types/recipe';
-import { getAllFoods, DatabaseFood, convertToLegacyFoodFormat } from '../../services/firebase/nutrition/foodService';
+import { useFoodDatabase } from '../../contexts/FoodContext';
+
 import { calculateMacros } from '../../utils/nutritionCalculations';
 
 const RECIPE_CATEGORIES = [
@@ -108,10 +109,10 @@ const COMMON_TAGS = [
 const RecipeManager: React.FC = () => {
   // State for recipes
   const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [foods, setFoods] = useState<DatabaseFood[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const { foodDatabase: cachedFoodDatabase } = useFoodDatabase();
 
   // Dialog state
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -134,18 +135,8 @@ const RecipeManager: React.FC = () => {
 
   // Load foods and recipes on mount
   useEffect(() => {
-    loadFoods();
     loadRecipes();
   }, []);
-
-  const loadFoods = async () => {
-    try {
-      const foodsData = await getAllFoods();
-      setFoods(foodsData);
-    } catch (err) {
-      setError('Failed to load foods');
-    }
-  };
 
   const loadRecipes = () => {
     const savedRecipes = localStorage.getItem('recipes');
@@ -160,7 +151,7 @@ const RecipeManager: React.FC = () => {
   };
 
   // Convert foods to legacy format for compatibility
-  const foodDatabase = useMemo(() => convertToLegacyFoodFormat(foods), [foods]);
+  const foodDatabase = useMemo(() => cachedFoodDatabase, [cachedFoodDatabase]);
   const availableFoods = useMemo(() => Object.keys(foodDatabase), [foodDatabase]);
 
   // Calculate nutrition for an ingredient
@@ -180,26 +171,27 @@ const RecipeManager: React.FC = () => {
 
   // Calculate ingredient cost
   const calculateIngredientCost = useCallback((foodName: string, amount: number) => {
-    const food = foods.find(f => f.name === foodName);
-    if (!food) return 0;
-
-    const multiplier = food.metadata.isUnitFood ? amount : amount / 1000; // Convert g to kg
-    return food.cost.costPerKg * multiplier;
-  }, [foods]);
+    const foodItem = foodDatabase[foodName];
+     if (!foodItem || !foodItem.cost) return 0;
+    
+    const multiplier = foodItem.isUnitFood ? amount : amount / 1000; // Convert g to kg
+    return foodItem.cost.costPerKg * multiplier;
+  }, [foodDatabase]);
 
   // Get food unit
   const getFoodUnit = useCallback((foodName: string): string => {
-    const food = foods.find(f => f.name === foodName);
-    return food?.metadata.isUnitFood ? 'units' : 'g';
-  }, [foods]);
+    const foodItem = foodDatabase[foodName];
+    return foodItem?.isUnitFood ? 'units' : 'g';
+  }, [foodDatabase]); // ✅ Changed dependency from [foods] to [foodDatabase]
+
 
   // Add ingredient to recipe
   const addIngredient = () => {
     if (availableFoods.length === 0) return;
-
     const firstFood = availableFoods[0];
-    const defaultAmount = foods.find(f => f.name === firstFood)?.metadata.isUnitFood ? 1 : 100;
-    
+    const foodItem = foodDatabase[firstFood];
+    const defaultAmount = foodItem?.isUnitFood ? 1 : 100; // ✅ Updated logic
+
     const newIngredient: RecipeIngredient = {
       id: Date.now().toString(),
       foodName: firstFood,
@@ -406,9 +398,9 @@ const RecipeManager: React.FC = () => {
 
   // Format cost
   const formatCost = (cost: number) => {
-    return `$${cost.toFixed(2)}`;
+    return `€${cost.toFixed(2)}`;
   };
-
+  
   return (
     <Box sx={{ p: 3 }}>
       {/* Header */}

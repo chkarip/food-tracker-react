@@ -6,8 +6,8 @@
  *   Firestore and let the user build a meal program.
  *
  * CORE RESPONSIBILITIES
- * • Live-subscribe to the Firestore “foods” collection and keep UI in sync.
- * • Convert the Firestore schema → legacy in-memory shape expected by
+ * • Use cached food data from FoodContext (no direct Firestore calls).
+ * • Convert the cached data → legacy in-memory shape expected by
  *   the macro-calculation engine.
  * • Allow the user to:
  *     – pick a food (chip UI),
@@ -19,13 +19,12 @@
  *   all state; the selector itself stays stateless/presentational.
  *
  * BUSINESS RULE HIGHLIGHTS
- * • Fixed-amount & unit foods are respected when defaulting the “amount”.
- * • Real-time safety: if an admin deletes a food that is currently
- *   selected, the component auto-clears the selection to prevent errors.
+ * • Fixed-amount & unit foods are respected when defaulting the "amount".
  * • All nutrition/cost maths are delegated to utility helpers; this file
  *   owns zero arithmetic logic, only UI + orchestration.
  */
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   Box,
   Card,
@@ -38,10 +37,15 @@ import {
   Alert,
   CircularProgress
 } from '@mui/material';
-import { Add as AddIcon, Restaurant as RestaurantIcon, SwapHoriz as SwapIcon, Delete as DeleteIcon, Euro as EuroIcon } from '@mui/icons-material';
-import { getAllFoods, DatabaseFood, convertToLegacyFoodFormat, subscribeToFoods } from '../../services/firebase/nutrition/foodService';
+import { 
+  Add as AddIcon, 
+  SwapHoriz as SwapIcon, 
+  Delete as DeleteIcon 
+} from '@mui/icons-material';
+
+import { useFoodDatabase } from '../../contexts/FoodContext';
 import { calculateMacros, formatMacroValue } from '../../utils/nutritionCalculations';
-import { calculatePortionCost, getCostPerGram, formatCost } from '../../data/costDatabase';
+import { calculatePortionCost, formatCost } from '../../services/firebase/nutrition/foodService';
 import { SelectedFood } from '../../types/nutrition';
 
 interface FoodSelectorWithFirebaseProps {
@@ -50,7 +54,7 @@ interface FoodSelectorWithFirebaseProps {
   onUpdateAmount: (index: number, amount: number) => void;
   onRemoveFood: (index: number) => void;
   onSwapFood?: (index: number) => void;
-} // ✅ Added missing closing brace
+}
 
 const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = ({
   selectedFoods,
@@ -58,47 +62,14 @@ const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = ({
   onUpdateAmount,
   onRemoveFood,
   onSwapFood
-}) => { // ✅ Fixed arrow function
+}) => {
+  // ✅ Use cached food data from FoodContext instead of direct Firebase calls
+  const { foodDatabase, loading, error } = useFoodDatabase();
+
   const [selectedFoodName, setSelectedFoodName] = useState('');
   const [amount, setAmount] = useState(100);
-  const [foods, setFoods] = useState<DatabaseFood[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  // Load foods from Firebase on component mount with real-time updates
-  useEffect(() => {
-    setLoading(true);
-    
-    // Subscribe to real-time updates
-    const unsubscribe = subscribeToFoods((updatedFoods) => {
-      console.log('📊 Foods loaded from Firebase:', updatedFoods.length);
-      setFoods(updatedFoods);
-      setError(null);
-      setLoading(false);
-      
-      // Clear selection if the currently selected food was deleted
-      if (selectedFoodName) {
-        const foodStillExists = updatedFoods.some(food => food.name === selectedFoodName);
-        if (!foodStillExists) {
-          setSelectedFoodName('');
-          setAmount(100);
-        }
-      }
-    });
-
-    // Cleanup subscription on unmount
-    return () => {
-      unsubscribe();
-    };
-  }, [selectedFoodName]);
-
-  // Convert foods to legacy format for compatibility (memoized and optimized)
-  const foodDatabase = useMemo(() => {
-    const converted = convertToLegacyFoodFormat(foods);
-    console.log('🔄 Converted foods for legacy format:', Object.keys(converted));
-    return converted;
-  }, [foods]);
-
+  // ✅ Food database is already in legacy format from context
   const availableFoods = useMemo(() => Object.keys(foodDatabase), [foodDatabase]);
 
   // Get food unit helper function (memoized)
@@ -111,7 +82,7 @@ const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = ({
     return foodItem.isUnitFood ? 'units' : 'g';
   }, [foodDatabase]);
 
-  // Calculate macros helper function (memoized) 
+  // Calculate macros helper function (memoized)
   const calculateFoodMacros = useCallback((foodName: string, amount: number) => {
     const foodItem = foodDatabase[foodName];
     if (!foodItem) {
@@ -130,7 +101,6 @@ const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = ({
 
   const handleAddFood = useCallback(() => {
     if (!selectedFoodName) return;
-    
     const foodItem = foodDatabase[selectedFoodName];
     if (!foodItem) {
       console.error(`❌ Cannot add missing food: ${selectedFoodName}`);
@@ -171,7 +141,7 @@ const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = ({
   const getDefaultAmount = useCallback((foodName: string): number => {
     const foodItem = foodDatabase[foodName];
     if (!foodItem) return 100;
-    
+
     // Use fixed amount if enabled
     if (foodItem.useFixedAmount && (foodItem.fixedAmount ?? 0) > 0) {
       return foodItem.fixedAmount ?? 0;
@@ -194,20 +164,19 @@ const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = ({
     setAmount(getDefaultAmount(foodName));
   }, [getDefaultAmount]);
 
-  // Loading state
+  // ✅ Loading state from context
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', p: 4 }}>
-        <CircularProgress />
-        <Typography sx={{ ml: 2 }}>Loading foods from database...</Typography>
-      </Box>
+      <Alert severity="info" icon={<CircularProgress size={18} />}>
+        Loading foods from database...
+      </Alert>
     );
   }
 
-  // Error state
+  // ✅ Error state from context
   if (error) {
     return (
-      <Alert severity="error" sx={{ mb: 2 }}>
+      <Alert severity="error">
         {error}
         <Button onClick={() => window.location.reload()} sx={{ ml: 2 }}>
           Retry Loading Foods
@@ -216,10 +185,10 @@ const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = ({
     );
   }
 
-  // No foods state
-  if (foods.length === 0) {
+  // ✅ No foods state
+  if (availableFoods.length === 0) {
     return (
-      <Alert severity="warning" sx={{ mb: 2 }}>
+      <Alert severity="warning">
         No foods found in database. Please add some foods using the "Manage Foods" tab.
         <Button onClick={() => window.location.reload()} sx={{ ml: 2 }}>
           Refresh
@@ -231,56 +200,54 @@ const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = ({
   return (
     <Card>
       <CardContent>
-        <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-          <RestaurantIcon />
+        {/* Header */}
+        <Typography variant="h6" gutterBottom>
           Food Selector
         </Typography>
 
         {/* Food Selection */}
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="subtitle2" sx={{ mb: 2 }}>
-            Available Foods ({availableFoods.length})
-          </Typography>
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-            {availableFoods.map((foodName) => {
-              const foodItem = foodDatabase[foodName];
-              const hasFixedAmount = foodItem?.useFixedAmount;
-              const isSelected = selectedFoods.some(food => food.name === foodName);
+        <Typography variant="body2" gutterBottom>
+          Available Foods ({availableFoods.length})
+        </Typography>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 2 }}>
+          {availableFoods.map((foodName) => {
+            const foodItem = foodDatabase[foodName];
+            const hasFixedAmount = foodItem?.useFixedAmount;
+            const isSelected = selectedFoods.some(food => food.name === foodName);
 
-              return (
-                <Chip
-                  key={foodName}
-                  label={`${getFoodEmoji(foodName)} ${foodName}`}
-                  onClick={() => handleFoodSelect(foodName)}
-                  variant={selectedFoodName === foodName ? 'filled' : (isSelected ? 'filled' : 'outlined')}
-                  color={selectedFoodName === foodName ? 'primary' : (isSelected ? 'secondary' : (hasFixedAmount ? 'success' : 'default'))}
-                  sx={{
-                    cursor: 'pointer',
-                    ...(isSelected && {
-                      backgroundColor: 'secondary.light',
-                      color: 'secondary.contrastText'
-                    })
-                  }}
-                />
-              );
-            })}
-          </Box>
+            return (
+              <Chip
+                key={foodName}
+                label={foodName}
+                onClick={() => handleFoodSelect(foodName)}
+                variant={selectedFoodName === foodName ? 'filled' : (isSelected ? 'filled' : 'outlined')}
+                color={selectedFoodName === foodName ? 'primary' : (isSelected ? 'secondary' : (hasFixedAmount ? 'success' : 'default'))}
+                sx={{
+                  cursor: 'pointer',
+                  ...(isSelected && {
+                    backgroundColor: 'secondary.light',
+                    color: 'secondary.contrastText'
+                  })
+                }}
+              />
+            );
+          })}
         </Box>
 
         {/* Amount Input & Add Button */}
         {selectedFoodName && (
-          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', mb: 3 }}>
+          <Box sx={{ display: 'flex', gap: 1, mb: 3 }}>
             <TextField
               type="number"
               value={amount}
-              onChange={(e) => setAmount(Number(e.target.value))}
+              onChange={e => setAmount(Number(e.target.value))}
               label={getFoodUnit(selectedFoodName)}
               sx={{ flex: 1, minWidth: 120 }}
               size="small"
             />
             <Button
-              variant="contained"
               startIcon={<AddIcon />}
+              variant="contained"
               onClick={handleAddFood}
               disabled={!selectedFoodName || amount <= 0}
               sx={{ whiteSpace: 'nowrap' }}
@@ -293,89 +260,89 @@ const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = ({
         {/* Selected Foods List */}
         {selectedFoods.length > 0 && (
           <>
-            <Divider sx={{ my: 2 }} />
-            <Typography variant="subtitle2" sx={{ mb: 2 }}>
+            <Divider sx={{ mb: 2 }} />
+            <Typography variant="subtitle1" gutterBottom>
               Selected Foods ({selectedFoods.length})
             </Typography>
+
             {selectedFoods.map((food, index) => {
               const macros = calculateFoodMacros(food.name, food.amount);
-              const portionCost = calculatePortionCost(food.name, food.amount);
+              // ✅ Pass foodDatabase to calculatePortionCost
+              const portionCost = calculatePortionCost(food.name, food.amount, foodDatabase);
 
               return (
                 <Box
-                  key={index}
+                  key={`${food.name}-${index}`}
                   sx={{
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    p: 2,
+                    p: 1,
                     mb: 1,
-                    backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'grey.800' : 'grey.50',
                     borderRadius: 2,
-                    gap: 2,
-                    border: (theme) => theme.palette.mode === 'dark'
+                    bgcolor: theme => theme.palette.mode === 'dark' ? 'grey.800' : 'grey.50',
+                    border: theme => theme.palette.mode === 'dark'
                       ? '1px solid rgba(255, 255, 255, 0.12)'
                       : '1px solid rgba(0, 0, 0, 0.12)'
                   }}
                 >
-                  <Typography
-                    variant="subtitle2"
-                    sx={{
-                      color: (theme) => theme.palette.mode === 'dark' ? 'grey.100' : 'grey.800'
-                    }}
-                  >
+                  <Typography sx={{ flex: 2, color: theme => theme.palette.mode === 'dark' ? 'grey.100' : 'grey.800' }}>
                     {getFoodEmoji(food.name)} {food.name}
                   </Typography>
-                  
+
                   <TextField
                     type="number"
-                    value={food.amount}
-                    onChange={(e) => onUpdateAmount(index, Number(e.target.value))}
-                    label={getFoodUnit(food.name)}
                     size="small"
+                    value={food.amount}
+                    onChange={e => onUpdateAmount(index, Number(e.target.value))}
+                    label={getFoodUnit(food.name)}
                     sx={{ width: 120 }}
                   />
-                  
+
                   <Typography
-                    variant="caption"
+                    variant="body2"
                     sx={{
-                      color: (theme) => theme.palette.mode === 'dark' ? 'grey.300' : 'grey.600',
+                      flex: 3,
+                      ml: 1,
+                      color: theme => theme.palette.mode === 'dark' ? 'grey.300' : 'grey.600',
                       fontWeight: 500
                     }}
                   >
-                    💪 {formatMacroValue(macros.protein)}g | 
-                    🥑 {formatMacroValue(macros.fats)}g | 
-                    🍞 {formatMacroValue(macros.carbs)}g | 
+                    💪 {formatMacroValue(macros.protein)}g |{' '}
+                    🥑 {formatMacroValue(macros.fats)}g |{' '}
+                    🍞 {formatMacroValue(macros.carbs)}g |{' '}
                     🔥 {formatMacroValue(macros.calories, 0)} kcal
                   </Typography>
 
+                  {/* ✅ Show cost if available */}
                   {portionCost !== null && (
-                    <Typography variant="caption" color="success.main">
+                    <Typography variant="body2" sx={{ flex: 1, ml: 1 }}>
                       💰 {formatCost(portionCost)}
                     </Typography>
                   )}
 
-                  <Box sx={{ display: 'flex', gap: 1 }}>
-                    {onSwapFood && (
-                      <Button
-                        size="small"
-                        onClick={() => onSwapFood(index)}
-                        sx={{ minWidth: 40, p: 1 }}
-                        title="Swap to other timeslot"
-                      >
-                        <SwapIcon />
-                      </Button>
-                    )}
+                  {/* Swap button (if provided) */}
+                  {onSwapFood && (
                     <Button
                       size="small"
-                      color="error"
-                      onClick={() => onRemoveFood(index)}
+                      onClick={() => onSwapFood(index)}
                       sx={{ minWidth: 40, p: 1 }}
-                      title="Remove food"
+                      title="Swap to other timeslot"
                     >
-                      <DeleteIcon />
+                      <SwapIcon />
                     </Button>
-                  </Box>
+                  )}
+
+                  {/* Remove button */}
+                  <Button
+                    size="small"
+                    color="error"
+                    onClick={() => onRemoveFood(index)}
+                    sx={{ minWidth: 40, p: 1 }}
+                    title="Remove food"
+                  >
+                    <DeleteIcon />
+                  </Button>
                 </Box>
               );
             })}
