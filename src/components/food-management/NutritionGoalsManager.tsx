@@ -30,10 +30,10 @@ interface Props {
 
 /* ---------- defaults ---------- */
 const DEFAULT_GOALS: NutritionGoals = {
-  protein: 125,
-  fats: 61,
-  carbs: 287,
-  calories: 2_150
+  protein: 127,
+  fats: 65,
+  carbs: 300,
+  calories: 2_300
 };
 
 const STORAGE_KEY = 'nutritionGoals';

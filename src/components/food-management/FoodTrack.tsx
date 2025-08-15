@@ -98,10 +98,10 @@ interface NutritionGoals {
 }
 
 const DEFAULT_GOALS: NutritionGoals = {
-  protein: 125,
-  fats: 61,
-  carbs: 287,
-  calories: 2150
+  protein: 127,
+  fats: 65,
+  carbs: 300,
+  calories: 2300
 };
 
 /* ------------------------------------------------------------------ */

@@ -25,10 +25,10 @@ import { formatMacroValue } from '../../utils/nutritionCalculations';
 
 // Default targets
 const DEFAULT_MACRO_TARGETS = {
-  protein: 125,
-  fats: 61,
-  carbs: 287,
-  caloriesMax: 2150
+  protein: 127,
+  fats: 65,
+  carbs: 300,
+  caloriesMax: 2300
 };
 
 interface MacroProgressProps {

@@ -11,11 +11,11 @@ import { COLLECTIONS, createTimestamp } from '../shared/utils';
 // Default macro targets and preferences
 const DEFAULT_PREFERENCES: Omit<UserPreferences, 'id' | 'userId' | 'createdAt' | 'updatedAt'> = {
   macroTargets: {
-    protein: 125,
-    fats: 61,
-    carbs: 287,
-    caloriesMin: 2100,
-    caloriesMax: 2200
+    protein: 127,
+    fats: 65,
+    carbs: 300,
+    caloriesMin: 2300,
+    caloriesMax: 2350
   },
   defaultFoodAmounts: {
     'Greek yogurt': 200,
