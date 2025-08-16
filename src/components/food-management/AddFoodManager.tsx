@@ -1,5 +1,5 @@
 /**
- * AddFoodManager – admin CRUD panel for the master “foods” collection.
+ * AddFoodManager – admin CRUD panel for the master "foods" collection.
  * (header comments truncated)
  */
 
@@ -39,9 +39,7 @@ import {
   Save as SaveIcon,
   Cancel as CancelIcon
 } from '@mui/icons-material';
-
 import { useFoodDatabase } from '../../contexts/FoodContext';
-
 import {
   addFood,
   updateFood,
@@ -51,7 +49,7 @@ import {
 } from '../../services/firebase/nutrition/foodService';
 
 /* ------------------------------------------------------------------ */
-/*  CONSTANTS                                                          */
+/* CONSTANTS */
 /* ------------------------------------------------------------------ */
 
 const FOOD_CATEGORIES = [
@@ -68,7 +66,16 @@ const FOOD_CATEGORIES = [
 ];
 
 /* ------------------------------------------------------------------ */
-/*  COMPONENT                                                          */
+/* HELPER FUNCTIONS */
+/* ------------------------------------------------------------------ */
+
+// Format numbers to one decimal place
+const formatNumber = (value: number): string => {
+  return (Math.round(value * 10) / 10).toFixed(1);
+};
+
+/* ------------------------------------------------------------------ */
+/* COMPONENT */
 /* ------------------------------------------------------------------ */
 
 const AddFoodManager: React.FC = () => {
@@ -113,7 +120,7 @@ const AddFoodManager: React.FC = () => {
   const [deleteDialog, setDeleteDialog] = useState<FirestoreFood | null>(null);
 
   /* ------------------------------------------------------------------ */
-  /*  HELPERS                                                           */
+  /* HELPERS */
   /* ------------------------------------------------------------------ */
 
   const resetForm = () => {
@@ -157,20 +164,23 @@ const AddFoodManager: React.FC = () => {
       setError('Food name is required');
       return false;
     }
+
     const n = formData.nutrition;
     if (n.protein < 0 || n.fats < 0 || n.carbs < 0 || n.calories < 0) {
       setError('Nutrition values cannot be negative');
       return false;
     }
+
     if (formData.cost.costPerKg < 0) {
       setError('Cost cannot be negative');
       return false;
     }
+
     return true;
   };
 
   /* ------------------------------------------------------------------ */
-  /*  CRUD                                                               */
+  /* CRUD */
   /* ------------------------------------------------------------------ */
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -180,6 +190,7 @@ const AddFoodManager: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
+      
       if (editingFood) {
         await updateFood(editingFood.firestoreId, formData);
         setSuccess(`✅ ${formData.name} updated`);
@@ -187,6 +198,7 @@ const AddFoodManager: React.FC = () => {
         await addFood(formData);
         setSuccess(`✅ ${formData.name} added`);
       }
+
       resetForm(); // context will auto-refresh list
     } catch (err) {
       setError(
@@ -232,204 +244,195 @@ const AddFoodManager: React.FC = () => {
   };
 
   /* ------------------------------------------------------------------ */
-  /*  RENDER                                                             */
+  /* RENDER */
   /* ------------------------------------------------------------------ */
 
   return (
-    <Box sx={{ maxWidth: 1000, mx: 'auto', p: 3 }}>
+    <Box sx={{ p: 3, maxWidth: '1200px', margin: '0 auto' }}>
       {/* -------------------------------------------------- */}
-      {/* Add / Edit Form                                    */}
+      {/* Add / Edit Form */}
       {/* -------------------------------------------------- */}
-      <Card sx={{ mb: 4 }}>
-        <CardContent component="form" onSubmit={handleSubmit}>
-          <Typography variant="h6" gutterBottom>
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Typography variant="h5" gutterBottom>
+            <FoodIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
             {editingFood ? 'Edit Food' : 'Add New Food'}
           </Typography>
-
+          
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
           {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
 
-          {/* Basic information */}
-          <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
-            <TextField
-              label="Food name"
-              value={formData.name}
-              onChange={e => handleInputChange('name', e.target.value)}
-              required
-              sx={{ flex: 1 }}
-            />
-            <FormControl sx={{ minWidth: 140 }}>
-              <InputLabel>Category</InputLabel>
-              <Select
-                value={formData.category}
-                label="Category"
-                onChange={e => handleInputChange('category', e.target.value)}
-              >
-                {FOOD_CATEGORIES.map(cat => (
-                  <MenuItem key={cat} value={cat}>
-                    {cat}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Stack>
-
-          <FormControlLabel
-            control={
-              <Switch
-                checked={formData.isUnitFood}
-                onChange={e => handleInputChange('isUnitFood', e.target.checked)}
-              />
-            }
-            label="Unit food"
-          />
-
-          <FormControlLabel
-            control={
-              <Switch
-                checked={formData.useFixedAmount}
-                onChange={e =>
-                  handleInputChange('useFixedAmount', e.target.checked)
-                }
-              />
-            }
-            label="Use fixed amount"
-            sx={{ ml: 2 }}
-          />
-
-          {formData.useFixedAmount && (
-            <TextField
-              label="Fixed amount"
-              type="number"
-              value={formData.fixedAmount}
-              onChange={e => handleInputChange('fixedAmount', e.target.value)}
-              inputProps={{
-                min: 0,
-                step: formData.isUnitFood ? 1 : 10
-              }}
-              sx={{ mt: 2 }}
-              helperText={`Default amount when selected in Meal Planner (${formData.isUnitFood ? 'units' : 'g'})`}
-            />
-          )}
-
-          <Divider sx={{ my: 3 }} />
-
-          {/* Nutrition */}
-          <Typography variant="subtitle1" gutterBottom>
-            Nutrition (per {formData.isUnitFood ? 'unit' : '100g'})
-          </Typography>
-          <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
-            {(['protein', 'fats', 'carbs', 'calories'] as const).map(field => (
+          <Box component="form" onSubmit={handleSubmit}>
+            {/* Basic information */}
+            <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
               <TextField
-                key={field}
-                label={field.charAt(0).toUpperCase() + field.slice(1)}
-                type="number"
-                value={formData.nutrition[field]}
-                onChange={e =>
-                  handleInputChange(`nutrition.${field}`, e.target.value)
-                }
-                inputProps={{ min: 0, step: field === 'calories' ? 1 : 0.1 }}
-                sx={{ flex: 1, minWidth: 120 }}
+                label="Food Name"
+                value={formData.name}
+                onChange={(e) => handleInputChange('name', e.target.value)}
+                required
+                sx={{ flex: 1 }}
               />
-            ))}
-          </Stack>
+              
+              <FormControl sx={{ flex: 1 }}>
+                <InputLabel>Category</InputLabel>
+                <Select
+                  value={formData.category}
+                  onChange={(e) => handleInputChange('category', e.target.value)}
+                  label="Category"
+                >
+                  {FOOD_CATEGORIES.map(cat => (
+                    <MenuItem key={cat} value={cat}>{cat}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Stack>
 
-          {/* Cost */}
-          <Typography variant="subtitle1" gutterBottom>
-            Cost
-          </Typography>
-          <Stack direction="row" spacing={2} sx={{ mb: 3 }}>
-            <TextField
-              label="Cost"
-              type="number"
-              value={formData.cost.costPerKg}
-              onChange={e => handleInputChange('cost.costPerKg', e.target.value)}
-              inputProps={{ min: 0, step: 0.01 }}
-              sx={{ flex: 1 }}
-            />
-            <FormControl sx={{ minWidth: 120 }}>
-              <InputLabel>Unit</InputLabel>
-              <Select
-                value={formData.cost.unit}
-                label="Unit"
-                onChange={e => handleInputChange('cost.unit', e.target.value)}
-              >
-                <MenuItem value="kg">€/kg</MenuItem>
-                <MenuItem value="unit">€/unit</MenuItem>
-              </Select>
-            </FormControl>
-          </Stack>
+            <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={formData.isUnitFood}
+                    onChange={(e) => handleInputChange('isUnitFood', e.target.checked)}
+                  />
+                }
+                label="Unit food"
+              />
+              
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={formData.useFixedAmount}
+                    onChange={(e) => handleInputChange('useFixedAmount', e.target.checked)}
+                  />
+                }
+                label="Use fixed amount"
+                sx={{ ml: 2 }}
+              />
+            </Stack>
 
-          {/* Buttons */}
-          <Stack direction="row" spacing={2}>
-            <Button
-              type="submit"
-              variant="contained"
-              startIcon={editingFood ? <SaveIcon /> : <AddIcon />}
-              disabled={loading}
-            >
-              {editingFood ? 'Update' : 'Add'}
-            </Button>
+            {formData.useFixedAmount && (
+              <TextField
+                label="Fixed Amount"
+                type="number"
+                value={formData.fixedAmount}
+                onChange={(e) => handleInputChange('fixedAmount', e.target.value)}
+                inputProps={{
+                  min: 0,
+                  step: formData.isUnitFood ? 1 : 10
+                }}
+                sx={{ mt: 2 }}
+                helperText={`Default amount when selected in Meal Planner (${formData.isUnitFood ? 'units' : 'g'})`}
+              />
+            )}
 
-            {editingFood && (
+            <Divider sx={{ my: 2 }} />
+
+            {/* Nutrition */}
+            <Typography variant="h6" gutterBottom>
+              Nutrition (per {formData.isUnitFood ? 'unit' : '100g'})
+            </Typography>
+            <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
+              {(['protein', 'fats', 'carbs', 'calories'] as const).map(field => (
+                <TextField
+                  key={field}
+                  label={field.charAt(0).toUpperCase() + field.slice(1)}
+                  type="number"
+                  value={formData.nutrition[field]}
+                  onChange={(e) => handleInputChange(`nutrition.${field}`, e.target.value)}
+                  inputProps={{ min: 0, step: field === 'calories' ? 1 : 0.1 }}
+                  sx={{ flex: 1, minWidth: 120 }}
+                />
+              ))}
+            </Stack>
+
+            <Divider sx={{ my: 2 }} />
+
+            {/* Cost */}
+            <Typography variant="h6" gutterBottom>Cost</Typography>
+            <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
+              <TextField
+                label="Cost"
+                type="number"
+                value={formData.cost.costPerKg}
+                onChange={(e) => handleInputChange('cost.costPerKg', e.target.value)}
+                inputProps={{ min: 0, step: 0.01 }}
+                sx={{ flex: 1 }}
+              />
+              
+              <FormControl sx={{ minWidth: 120 }}>
+                <InputLabel>Unit</InputLabel>
+                <Select
+                  value={formData.cost.unit}
+                  onChange={(e) => handleInputChange('cost.unit', e.target.value)}
+                  label="Unit"
+                >
+                  <MenuItem value="kg">€/kg</MenuItem>
+                  <MenuItem value="unit">€/unit</MenuItem>
+                </Select>
+              </FormControl>
+            </Stack>
+
+            {/* Buttons */}
+            <Stack direction="row" spacing={2}>
               <Button
-                variant="outlined"
-                color="secondary"
-                startIcon={<CancelIcon />}
-                onClick={resetForm}
+                type="submit"
+                variant="contained"
+                startIcon={editingFood ? <SaveIcon /> : <AddIcon />}
                 disabled={loading}
               >
-                Cancel
+                {editingFood ? 'Update' : 'Add'}
               </Button>
-            )}
-          </Stack>
+              
+              {editingFood && (
+                <Button
+                  variant="outlined"
+                  startIcon={<CancelIcon />}
+                  onClick={resetForm}
+                  disabled={loading}
+                >
+                  Cancel
+                </Button>
+              )}
+            </Stack>
+          </Box>
         </CardContent>
       </Card>
 
       {/* -------------------------------------------------- */}
-      {/* Saved Foods list                                   */}
+      {/* Saved Foods list */}
       {/* -------------------------------------------------- */}
       <Card>
         <CardContent>
           <Typography variant="h6" gutterBottom>
             Saved Foods ({foods.length})
           </Typography>
-
+          
           {foods.length === 0 ? (
-            <Alert severity="info">No foods in database yet.</Alert>
+            <Typography color="text.secondary">
+              No foods in database yet.
+            </Typography>
           ) : (
             <List>
               {foods.map(food => (
-                <ListItem key={food.firestoreId}>
-                  <FoodIcon sx={{ mr: 1 }} />
+                <ListItem key={food.firestoreId} divider>
                   <ListItemText
                     primary={
                       <>
                         {food.name}{' '}
                         {food.metadata?.isUnitFood && (
-                          <Chip
-                            size="small"
-                            label="Unit"
-                            color="primary"
-                            sx={{ ml: 0.5 }}
-                          />
+                          <Chip label="unit" size="small" />
                         )}
                         {food.metadata?.useFixedAmount && (
-                          <Chip
-                            size="small"
-                            label="Fixed"
-                            color="secondary"
-                            sx={{ ml: 0.5 }}
-                          />
+                          <Chip label="fixed" size="small" color="secondary" />
                         )}
                       </>
                     }
                     secondary={
                       <>
-                        Protein: {food.nutrition.protein}g&nbsp;|&nbsp;Fats:{' '}
-                        {food.nutrition.fats}g&nbsp;|&nbsp;Carbs:{' '}
-                        {food.nutrition.carbs}g&nbsp;|&nbsp;Calories:{' '}
-                        {food.nutrition.calories}kcal&nbsp;|&nbsp;Cost:{' '}
+                        Protein: {formatNumber(food.nutrition.protein)}g | Fats:{' '}
+                        {formatNumber(food.nutrition.fats)}g | Carbs:{' '}
+                        {formatNumber(food.nutrition.carbs)}g | Calories:{' '}
+                        {formatNumber(food.nutrition.calories)}kcal | Cost:{' '}
                         €{food.cost.costPerKg.toFixed(2)}/{food.cost.unit}
                         {food.metadata?.useFixedAmount && (
                           <>
@@ -444,13 +447,15 @@ const AddFoodManager: React.FC = () => {
                   />
                   <ListItemSecondaryAction>
                     <IconButton
-                      edge="end"
                       onClick={() => handleEdit(food)}
                       sx={{ mr: 1 }}
                     >
                       <EditIcon />
                     </IconButton>
-                    <IconButton color="error" onClick={() => setDeleteDialog(food)}>
+                    <IconButton 
+                      color="error"
+                      onClick={() => setDeleteDialog(food)}
+                    >
                       <DeleteIcon />
                     </IconButton>
                   </ListItemSecondaryAction>
@@ -462,20 +467,22 @@ const AddFoodManager: React.FC = () => {
       </Card>
 
       {/* -------------------------------------------------- */}
-      {/* Delete dialog                                      */}
+      {/* Delete dialog */}
       {/* -------------------------------------------------- */}
       <Dialog open={!!deleteDialog} onClose={() => setDeleteDialog(null)}>
         <DialogTitle>Delete Food</DialogTitle>
         <DialogContent>
-          Are you sure you want to delete &quot;{deleteDialog?.name}&quot;? This
-          cannot be undone.
+          <Typography>
+            Are you sure you want to delete "{deleteDialog?.name}"? This
+            cannot be undone.
+          </Typography>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDeleteDialog(null)}>Cancel</Button>
           <Button
-            variant="contained"
-            color="error"
             onClick={() => deleteDialog && handleDelete(deleteDialog)}
+            color="error"
+            variant="contained"
             disabled={loading}
           >
             Delete
