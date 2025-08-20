@@ -2,7 +2,6 @@ import { Timestamp } from 'firebase/firestore';
 
 // Helper to format date as YYYY-MM-DD (timezone-safe)
 export const formatDate = (date: Date): string => {
-  // Use local date components to avoid timezone issues
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
@@ -11,13 +10,15 @@ export const formatDate = (date: Date): string => {
 
 // Collection names
 export const COLLECTIONS = {
-  MEAL_PLANS: 'mealPlans',   
-  USER_PREFERENCES: 'userPreferences',
+  MEAL_PLANS: 'mealPlans',
+  USER_PREFERENCES: 'userPreferences', 
   FOOD_HISTORY: 'foodHistory',
   ACTIVITY_HISTORY: 'activityHistory',
   TIMESLOTS: 'timeslots',
   SCHEDULED_ACTIVITIES: 'scheduledActivities',
   SCHEDULED_WORKOUTS: 'scheduledWorkouts',
+  WORKOUT_TEMPLATES: 'workoutTemplates', // This is needed
+  EXERCISES: 'exercises' // Add this if you don't have it
 } as const;
 
 // Common Firestore utilities

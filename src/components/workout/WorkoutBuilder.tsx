@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTemplates } from '../../hooks/useTemplates';
 import {
   Box,
   Typography,
@@ -7,13 +8,15 @@ import {
   Select,
   MenuItem,
   Paper,
-  Alert
+  Alert,
+  Button // ❌ Missing import!
 } from '@mui/material';
 import { collection, doc, getDocs, setDoc, getDoc } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { saveScheduledActivities, loadScheduledActivities } from '../../services/firebase';
 import { WorkoutType, Workout, WorkoutExercise } from '../../types/workout';
+import { SaveTemplateInput } from '../../types/template'; // ✅ Proper import
 import WorkoutTable from './WorkoutTable';
 
 interface Exercise {
@@ -31,15 +34,25 @@ interface Exercise {
 const WorkoutBuilder: React.FC = () => {
   const { user } = useAuth();
   const [selectedWorkoutType, setSelectedWorkoutType] = useState<WorkoutType>('Lower A');
-  const [currentWorkout, setCurrentWorkout] = useState<Workout>({
+  const [currentWorkout, setCurrentWorkout] = useState({
     name: 'Lower A',
-    exercises: [],
+    exercises: [] as WorkoutExercise[],
     lastModified: new Date(),
     isActive: true
   });
   const [availableExercises, setAvailableExercises] = useState<Exercise[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  // New template system hook
+  const {
+    templates,
+    selectedTemplate,
+    loadTemplatesForWorkoutType,
+    loadTemplate,
+    saveTemplate,
+    clearSelectedTemplate
+  } = useTemplates();
 
   const workoutTypes: WorkoutType[] = ['Lower A', 'Lower B', 'Upper A', 'Upper B'];
 
@@ -96,6 +109,7 @@ const WorkoutBuilder: React.FC = () => {
 
   const handleWorkoutTypeChange = (workoutType: WorkoutType) => {
     setSelectedWorkoutType(workoutType);
+    clearSelectedTemplate(); // ✅ Clear template when changing workout type
   };
 
   const handleExercisesChange = (exercises: WorkoutExercise[]) => {
@@ -106,88 +120,142 @@ const WorkoutBuilder: React.FC = () => {
     }));
   };
 
-  const handleSaveWorkout = async () => {
-    if (!user) return;
-    
-    try {
-      setSaving(true);
-      const workoutRef = doc(db, 'workouts', selectedWorkoutType.toLowerCase().replace(' ', '_'));
-      await setDoc(workoutRef, {
-        ...currentWorkout,
-        lastModified: new Date()
+  // Handle template loading
+  const handleLoadTemplate = async (templateId: string) => {
+    const template = await loadTemplate(templateId);
+    if (template) {
+      setCurrentWorkout({
+        name: template.name,
+        exercises: template.exercises,
+        lastModified: new Date(),
+        isActive: true
       });
+    }
+  };
+
+  // Handle template saving/updating
+  const handleSaveTemplate = async () => {
+    try {
+      const templateName = selectedTemplate?.name || 
+        `${selectedWorkoutType} - ${new Date().toLocaleDateString()}`;
       
-      // Update scheduled activities to mark gym as scheduled for today (preserve meal flags)
-      const todayDate = new Date();
-      const localDate = new Date(todayDate.getFullYear(), todayDate.getMonth(), todayDate.getDate());
+      const templateData: SaveTemplateInput = {
+        name: templateName,
+        workoutType: selectedWorkoutType,
+        exercises: currentWorkout.exercises,
+        description: selectedTemplate ? 'Updated template' : 'New template'
+      };
+
+      await saveTemplate(templateData, selectedTemplate?.id);
       
-      // Get existing scheduled activities to preserve meal flags
-      const existing = await loadScheduledActivities(user.uid, localDate);
-      const existingTasks = existing?.tasks || [];
+      // Success notification
+      console.log(selectedTemplate ? '✅ Template updated!' : '✅ Template created!');
       
-      // Build new tasks array - keep existing meal tasks, update gym
-      const newTasks = [...existingTasks.filter(task => task !== 'gym')]; // Remove old gym task
-      
-      // Add gym task if workout has exercises
-      if (currentWorkout.exercises.length > 0) {
-        newTasks.push('gym');
-      }
-      
-      console.log('Updating scheduled activities for gym:', newTasks);
-      await saveScheduledActivities(user.uid, newTasks, localDate);
-      
-      console.log(`${selectedWorkoutType} workout saved and scheduled successfully!`);
     } catch (error) {
-      console.error('Error saving workout:', error);
-    } finally {
-      setSaving(false);
+      console.error('❌ Error saving template:', error);
     }
   };
 
   if (loading) {
     return (
-      <Alert severity="info">
-        Loading exercises and workouts...
-      </Alert>
+      <Box p={3}>
+        <Alert severity="info">
+          Loading exercises and workouts...
+        </Alert>
+      </Box>
     );
   }
 
   return (
-    <Box sx={{ width: '100%' }}>
+    <Box component={Paper} p={3}>
+      {/* Header */}
+      <Typography variant="h4" gutterBottom>
+        My Workouts
+      </Typography>
+
       {/* Workout Type Selector */}
-      <Paper sx={{ p: 3, mb: 3 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, mb: 2 }}>
-          <Typography variant="h6" sx={{ fontWeight: 600 }}>
-            My Workouts
-          </Typography>
-          <FormControl sx={{ minWidth: 250 }}>
-            <InputLabel>Workout Type</InputLabel>
+      <FormControl fullWidth sx={{ mb: 2 }}>
+        <InputLabel id="workout-type-label">Workout Type</InputLabel>
+        <Select
+          labelId="workout-type-label"
+          value={selectedWorkoutType}
+          label="Workout Type"
+          onChange={(e) => handleWorkoutTypeChange(e.target.value as WorkoutType)}
+        >
+          {workoutTypes.map((type) => (
+            <MenuItem key={type} value={type}>
+              {type}
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
+
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+        Create and manage your workout routines. Each workout can contain multiple exercises with specific weights, sets, reps, and rest periods.
+      </Typography>
+
+      {/* Current Workout Info */}
+      {currentWorkout.exercises.length > 0 && (
+        <Alert severity="info" sx={{ mb: 2 }}>
+          Current workout: {currentWorkout.exercises.length} exercises, {' '}
+          {currentWorkout.exercises.reduce((total, ex) => total + ex.sets, 0)} total sets
+          <br />
+          Last modified: {currentWorkout.lastModified.toLocaleDateString()} at {' '}
+          {currentWorkout.lastModified.toLocaleTimeString()}
+        </Alert>
+      )}
+
+      {/* Template Controls */}
+      <Box sx={{ mb: 3, display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+        {/* Load Template Button */}
+        <Button 
+          variant="outlined"
+          onClick={() => loadTemplatesForWorkoutType(selectedWorkoutType)}
+        >
+          Load Template
+        </Button>
+
+        {/* Template Dropdown */}
+        {templates.length > 0 && (
+          <FormControl sx={{ minWidth: 200 }}>
+            <InputLabel id="template-select-label">Select Template</InputLabel>
             <Select
-              value={selectedWorkoutType}
-              label="Workout Type"
-              onChange={(e) => handleWorkoutTypeChange(e.target.value as WorkoutType)}
+              labelId="template-select-label"
+              value={selectedTemplate?.id || ''}
+              label="Select Template"
+              onChange={(e) => e.target.value && handleLoadTemplate(e.target.value as string)}
             >
-              {workoutTypes.map((type) => (
-                <MenuItem key={type} value={type}>
-                  {type}
+              <MenuItem value="">
+                <em>Select a template...</em>
+              </MenuItem>
+              {templates.map((template) => (
+                <MenuItem key={template.id} value={template.id}>
+                  {template.name}
                 </MenuItem>
               ))}
             </Select>
           </FormControl>
-        </Box>
-        
-        <Typography variant="body2" color="text.secondary">
-          Create and manage your workout routines. Each workout can contain multiple exercises with specific weights, sets, reps, and rest periods.
-          {currentWorkout.exercises.length > 0 && (
-            <>
-              <br />
-              <strong>Current workout:</strong> {currentWorkout.exercises.length} exercises, {currentWorkout.exercises.reduce((total, ex) => total + ex.sets, 0)} total sets
-              <br />
-              Last modified: {currentWorkout.lastModified.toLocaleDateString()} at {currentWorkout.lastModified.toLocaleTimeString()}
-            </>
-          )}
-        </Typography>
-      </Paper>
+        )}
+
+        {/* Save/Update Template Button */}
+        <Button 
+          variant="contained"
+          onClick={handleSaveTemplate}
+          disabled={currentWorkout.exercises.length === 0}
+        >
+          {selectedTemplate ? `Update "${selectedTemplate.name}"` : 'Save as New Template'}
+        </Button>
+
+        {/* Clear Selection Button */}
+        {selectedTemplate && (
+          <Button 
+            variant="text"
+            onClick={clearSelectedTemplate}
+          >
+            Clear Selection
+          </Button>
+        )}
+      </Box>
 
       {/* Workout Table */}
       <WorkoutTable
@@ -195,7 +263,6 @@ const WorkoutBuilder: React.FC = () => {
         exercises={currentWorkout.exercises}
         availableExercises={availableExercises}
         onExercisesChange={handleExercisesChange}
-        onSaveWorkout={handleSaveWorkout}
       />
 
       {/* Saving Indicator */}

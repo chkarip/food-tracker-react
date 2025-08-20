@@ -1,3 +1,15 @@
+// Workout Templates
+match /workoutTemplates/{templateId} {
+  // Users can read their own templates and public templates
+  allow read: if request.auth != null && 
+    (resource.data.userId == request.auth.uid || resource.data.isPublic == true);
+  // Users can only create/update/delete their own templates
+  allow write: if request.auth != null && 
+    resource.data.userId == request.auth.uid;
+  // Allow creation of new templates
+  allow create: if request.auth != null && 
+    request.resource.data.userId == request.auth.uid;
+}
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
