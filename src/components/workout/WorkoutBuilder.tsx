@@ -9,7 +9,7 @@ import {
   MenuItem,
   Paper,
   Alert,
-  Button // ❌ Missing import!
+  Button
 } from '@mui/material';
 import { collection, doc, getDocs, setDoc, getDoc } from 'firebase/firestore';
 import { db } from '../../config/firebase';
@@ -40,6 +40,8 @@ const WorkoutBuilder: React.FC = () => {
     lastModified: new Date(),
     isActive: true
   });
+
+  console.log('Initial currentWorkout state:', currentWorkout);
   const [availableExercises, setAvailableExercises] = useState<Exercise[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -61,9 +63,15 @@ const WorkoutBuilder: React.FC = () => {
     loadExercises();
   }, []);
 
-  // Load selected workout when workout type changes
+  // Instead of loading from legacy "workouts" collection, clear or initialize empty on type change:
   useEffect(() => {
-    loadWorkout(selectedWorkoutType);
+    setCurrentWorkout({
+      name: selectedWorkoutType,
+      exercises: [],
+      lastModified: new Date(),
+      isActive: true,
+    });
+    clearSelectedTemplate(); // Clear any selected template on type change
   }, [selectedWorkoutType]);
 
   const loadExercises = async () => {
@@ -82,29 +90,13 @@ const WorkoutBuilder: React.FC = () => {
     }
   };
 
-  const loadWorkout = async (workoutType: WorkoutType) => {
-    try {
-      const workoutRef = doc(db, 'workouts', workoutType.toLowerCase().replace(' ', '_'));
-      const workoutDoc = await getDoc(workoutRef);
-      
-      if (workoutDoc.exists()) {
-        const workoutData = workoutDoc.data() as any;
-        setCurrentWorkout({
-          ...workoutData,
-          lastModified: workoutData.lastModified?.toDate ? workoutData.lastModified.toDate() : new Date()
-        });
-      } else {
-        // Create empty workout
-        setCurrentWorkout({
-          name: workoutType,
-          exercises: [],
-          lastModified: new Date(),
-          isActive: true
-        });
-      }
-    } catch (error) {
-      console.error('Error loading workout:', error);
-    }
+  // Removed legacy loadWorkout function
+
+  // New function to fetch templates for the selected workout type
+  // ✅ FIXED VERSION
+  const fetchTemplates = async () => {
+    if (!user) return;
+    await loadTemplatesForWorkoutType(selectedWorkoutType); // Correct function name, no setTemplates needed
   };
 
   const handleWorkoutTypeChange = (workoutType: WorkoutType) => {
@@ -113,6 +105,7 @@ const WorkoutBuilder: React.FC = () => {
   };
 
   const handleExercisesChange = (exercises: WorkoutExercise[]) => {
+    console.log('Updating exercises:', exercises);
     setCurrentWorkout(prev => ({
       ...prev,
       exercises,
@@ -123,12 +116,13 @@ const WorkoutBuilder: React.FC = () => {
   // Handle template loading
   const handleLoadTemplate = async (templateId: string) => {
     const template = await loadTemplate(templateId);
+    console.log('Loaded template:', template);
     if (template) {
       setCurrentWorkout({
         name: template.name,
         exercises: template.exercises,
         lastModified: new Date(),
-        isActive: true
+        isActive: true,
       });
     }
   };
@@ -210,7 +204,7 @@ const WorkoutBuilder: React.FC = () => {
         {/* Load Template Button */}
         <Button 
           variant="outlined"
-          onClick={() => loadTemplatesForWorkoutType(selectedWorkoutType)}
+          onClick={fetchTemplates}
         >
           Load Template
         </Button>
