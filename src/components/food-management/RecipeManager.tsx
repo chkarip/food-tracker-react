@@ -92,6 +92,7 @@ import { Recipe, RecipeIngredient, RecipeFormData } from '../../types/recipe';
 import { useFoodDatabase } from '../../contexts/FoodContext';
 import { calculateMacros } from '../../utils/nutritionCalculations';
 import { addFood, deleteFood } from '../../services/firebase/nutrition/foodService';
+import { FoodFormData } from '../../types/food';
 
 const RECIPE_CATEGORIES = [
   'Breakfast',
@@ -293,18 +294,18 @@ const RecipeManager: React.FC = () => {
       const recipeCostPerKg = calculateRecipeCostPerKg(cleanRecipeData.ingredients);
 
       // Create food data using the same structure as foodService expects
-      const foodFormData = {
+      const foodFormData: FoodFormData = {
         name: `${cleanRecipeData.name} (Recipe)`,
         nutrition: ensureNutritionComplete(nutritionPer100g),
         cost: {
-          costPerKg: recipeCostPerKg, // Use proper calculated cost per kg
-          unit: 'kg' as 'kg' | 'unit'
+          costPerKg: recipeCostPerKg,
+          unit: 'kg'
         },
         category: cleanRecipeData.category || 'Other',
-        isUnitFood: false, // Per 100g, not per unit
+        isUnitFood: false,
         useFixedAmount: false,
         fixedAmount: 100,
-        hidden: false // ← ADD THIS LINE
+        hidden: false
       };
 
       // Use the foodService.addFood function to create the food item

@@ -40,13 +40,8 @@ import {
   Cancel as CancelIcon
 } from '@mui/icons-material';
 import { useFoodDatabase } from '../../contexts/FoodContext';
-import {
-  addFood,
-  updateFood,
-  deleteFood,
-  FirestoreFood,
-  FoodFormData
-} from '../../services/firebase/nutrition/foodService';
+import { addFood, updateFood, deleteFood } from '../../services/firebase/nutrition/foodService';
+import { FirestoreFood, FoodFormData } from '../../types/food';
 
 /* ------------------------------------------------------------------ */
 /* CONSTANTS */

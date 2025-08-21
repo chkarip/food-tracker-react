@@ -5,6 +5,15 @@
  * subscriptions, cost data, and legacy format conversion.
  */
 
+
+import {
+  FoodFormData,
+  FirestoreFood,
+  LegacyFoodItem,
+  FoodNutrition,
+  FoodCost,
+  FirebaseFoodItem
+} from '../../../types/food';
 import {
   collection,
   doc,
@@ -19,68 +28,6 @@ import {
   Timestamp,
 } from 'firebase/firestore';
 import { db } from '../../../config/firebase';
-
-export interface FirebaseFoodItem {
-  id: string;
-  name: string;
-  nutrition: {
-    protein: number;
-    fats: number;
-    carbs: number;
-    calories: number;
-  };
-  cost: {
-    costPerKg: number;
-    unit: 'kg' | 'unit';
-    costEfficiency: number | null;
-  };
-  metadata: {
-    isUnitFood: boolean;
-    category: string;
-    proteinEfficiency: number;
-    addedAt: Date;
-    lastUpdated: Date;
-    useFixedAmount: boolean;
-    fixedAmount: number;
-    hidden: boolean;
-  };
-}
-
-export interface FoodFormData {
-  name: string;
-  nutrition: {
-    protein: number;
-    fats: number;
-    carbs: number;
-    calories: number;
-  };
-  cost: {
-    costPerKg: number;
-    unit: 'kg' | 'unit';
-  };
-  category: string;
-  isUnitFood: boolean;
-  useFixedAmount: boolean;
-  fixedAmount: number;
-  hidden: boolean;
-}
-
-// FirestoreFood = FirebaseFoodItem + document ID
-export interface FirestoreFood {
-  name: string;
-  nutrition: { protein: number; fats: number; carbs: number; calories: number };
-  cost: { costPerKg: number; unit: 'kg' | 'unit' };
-  metadata?: {
-    category?: string;
-    isUnitFood?: boolean;
-    useFixedAmount?: boolean;
-    fixedAmount?: number;
-    hidden?: boolean;
-    addedAt?: Date;
-    lastUpdated?: Date;
-  };
-  firestoreId: string;
-}
 
 /**
  * Get all foods from Firestore database
