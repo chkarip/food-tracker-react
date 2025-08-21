@@ -33,7 +33,7 @@ import {
   CircularProgress,
   Divider
 } from '@mui/material';
-import { AccentButton } from '../shared';
+import  AccentButton  from '../shared/AccentButton';
 import {
   Restaurant as FoodIcon,
   FitnessCenter as GymIcon,

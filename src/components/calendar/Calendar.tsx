@@ -24,7 +24,7 @@ import {
   alpha,
   useTheme
 } from '@mui/material';
-import { AccentButton } from '../shared';
+import  AccentButton  from '../shared/AccentButton';
 import {
   ChevronLeft as ChevronLeftIcon,
   ChevronRight as ChevronRightIcon,

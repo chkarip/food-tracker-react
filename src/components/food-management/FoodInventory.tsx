@@ -29,6 +29,7 @@
  * • Responsive layout: switch to card grid on <600 px width.
  */
 import React, { useState, useEffect } from 'react';
+import { NumberStepper } from '../shared/inputs';
 import {
   Box,
   Card,
@@ -421,15 +422,20 @@ const FoodInventory: React.FC = () => {
             />
             
             <Box sx={{ display: 'flex', gap: 2 }}>
-              <TextField
-                label="Quantity"
-                type="number"
-                value={formData.quantity}
-                onChange={(e) => setFormData(prev => ({ ...prev, quantity: e.target.value }))}
-                required
-                sx={{ flex: 2 }}
-                inputProps={{ min: 0, step: 0.1 }}
-              />
+              <Box sx={{ flex: 2 }}>
+                <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
+                  Quantity *
+                </Typography>
+                <NumberStepper
+                  value={parseFloat(formData.quantity) || 0}
+                  onChange={(value) => setFormData(prev => ({ ...prev, quantity: value.toString() }))}
+                  min={0}
+                  max={10000}
+                  step={0.1}
+                  unit=""
+                  size="medium"
+                />
+              </Box>
               <TextField
                 label="Unit"
                 select

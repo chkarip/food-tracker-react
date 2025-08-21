@@ -8,10 +8,9 @@ import {
   MenuItem,
   InputAdornment
 } from '@mui/material';
-import { AccentButton } from '../shared';
+import  AccentButton  from '../shared/AccentButton';
 import {
   Search as SearchIcon,
-  FilterList as FilterIcon
 } from '@mui/icons-material';
 
 interface ExerciseFiltersProps {

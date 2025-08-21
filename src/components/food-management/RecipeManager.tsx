@@ -53,16 +53,12 @@ import {
   MenuItem,
   Autocomplete,
   Alert,
-  Stack,
-  Avatar,
   CardActions,
-  Tooltip,
   FormControlLabel,
   Switch,
   Paper
 } from '@mui/material';
 import {
-  Add as AddIcon,
   Remove as RemoveIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
@@ -71,12 +67,10 @@ import {
   LocalDining as DifficultyIcon,
   AttachMoney as CostIcon,
   Fastfood as NutritionIcon,
-  Save as SaveIcon,
-  Clear as ClearIcon,
-  MenuBook as InstructionsIcon,
   RestaurantMenu as RecipeIcon
 } from '@mui/icons-material';
-import { AccentButton } from '../shared';
+import  AccentButton  from '../shared/AccentButton';
+import { NumberStepper } from '../shared/inputs';
 import {
   collection,
   addDoc,
@@ -90,7 +84,6 @@ import {
 import { db } from '../../config/firebase';
 import { Recipe, RecipeIngredient, RecipeFormData } from '../../types/recipe';
 import { useFoodDatabase } from '../../contexts/FoodContext';
-import { calculateMacros } from '../../utils/nutritionCalculations';
 import { addFood, deleteFood } from '../../services/firebase/nutrition/foodService';
 import { FoodFormData } from '../../types/food';
 
@@ -614,15 +607,15 @@ const RecipeManager: React.FC = () => {
           Create and manage your custom recipes with automatic nutrition and cost calculations
         </Typography>
         
-        <AccentButton
-          onClick={handleNewRecipe}
-          size="large"
-          disabled={loading}
-          variant="primary"
-        >
-          ➕ New Recipe
-        </AccentButton>
-      </Box>
+          <AccentButton
+            onClick={handleNewRecipe}
+            size="large"
+            disabled={loading}
+            variant="primary"
+          >
+            ➕ New Recipe
+          </AccentButton>
+        </Box>
 
       {/* Success/Error Messages */}
       {success && (
@@ -778,23 +771,35 @@ const RecipeManager: React.FC = () => {
                 />
 
                 <Box sx={{ display: 'flex', gap: 2 }}>
-                  <TextField
-                    label="Servings"
-                    type="number"
-                    value={formData.servings}
-                    onChange={(e) => setFormData(prev => ({ ...prev, servings: Math.max(1, Number(e.target.value)) }))}
-                    fullWidth
-                    inputProps={{ min: 1, step: 1 }}
-                  />
-                  
-                  <TextField
-                    label="Cooking Time (minutes)"
-                    type="number"
-                    value={formData.cookingTime}
-                    onChange={(e) => setFormData(prev => ({ ...prev, cookingTime: Math.max(1, Number(e.target.value)) }))}
-                    fullWidth
-                    inputProps={{ min: 1, step: 5 }}
-                  />
+                  <Box sx={{ flex: 1 }}>
+                    <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
+                      Servings
+                    </Typography>
+                    <NumberStepper
+                      value={formData.servings}
+                      onChange={(value) => setFormData(prev => ({ ...prev, servings: Math.max(1, value) }))}
+                      min={1}
+                      max={20}
+                      step={1}
+                      unit="servings"
+                      size="medium"
+                    />
+                  </Box>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
+                      Cooking Time
+                    </Typography>
+                    <NumberStepper
+                      value={formData.cookingTime}
+                      onChange={(value) => setFormData(prev => ({ ...prev, cookingTime: Math.max(1, value) }))}
+                      min={1}
+                      max={300}
+                      step={5}
+                      unit="min"
+                      size="medium"
+                    />
+                  </Box>
+                </Box>
                 </Box>
 
                 <Box sx={{ display: 'flex', gap: 2 }}>
@@ -883,13 +888,14 @@ const RecipeManager: React.FC = () => {
                       sx={{ flex: 2 }}
                     />
                     
-                    <TextField
-                      label={`Amount (${ingredient.unit})`}
-                      type="number"
+                    <NumberStepper
                       value={ingredient.amount}
-                      onChange={(e) => updateIngredient(index, 'amount', Number(e.target.value))}
-                      fullWidth
-                      inputProps={{ min: 0, step: ingredient.unit === 'g' ? 10 : 0.1 }}
+                      onChange={(value) => updateIngredient(index, 'amount', value)}
+                      min={0}
+                      max={ingredient.unit === 'g' ? 2000 : 20}
+                      step={ingredient.unit === 'g' ? 10 : 0.1}
+                      unit={ingredient.unit}
+                      size="small"
                     />
                     
                     <IconButton onClick={() => removeIngredient(index)} color="error">
@@ -995,7 +1001,6 @@ const RecipeManager: React.FC = () => {
                 </Box>
               </>
             )}
-          </Box>
         </DialogContent>
 
         <DialogActions sx={{ p: 3 }}>
@@ -1023,6 +1028,7 @@ const RecipeManager: React.FC = () => {
           </AccentButton>
         </DialogActions>
       </Dialog>
+      
 
       {/* Delete Confirmation Dialog */}
       <Dialog

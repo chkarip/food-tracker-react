@@ -4,13 +4,13 @@ import {
   Card,
   CardContent,
   Typography,
-  TextField,
   FormControlLabel,
   Checkbox,
   Collapse
 } from '@mui/material';
+import { NumberStepper } from '../shared/inputs';
 
-import { AccentButton } from '../shared';
+import  AccentButton  from '../shared/AccentButton';
 import { Restaurant as RestaurantIcon, Clear as ClearIcon } from '@mui/icons-material';
 import { ExternalNutrition } from '../../types/nutrition';
 
@@ -90,42 +90,69 @@ const ExternalNutritionInput: React.FC<ExternalNutritionInputProps> = ({
           </Typography>
 
           <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 2 }}>
-            <TextField
-              label="Protein (g)"
-              type="number"
-              value={nutrition.protein}                              // ✅ CHANGED prop name
-              onChange={(e) => handleChange('protein', Number(e.target.value))}
-              inputProps={{ min: 0, step: 0.1 }}
-              size="small"
-              fullWidth
-            />
-            <TextField
-              label="Fats (g)"
-              type="number"
-              value={nutrition.fats}                                 // ✅ CHANGED prop name
-              onChange={(e) => handleChange('fats', Number(e.target.value))}
-              inputProps={{ min: 0, step: 0.1 }}
-              size="small"
-              fullWidth
-            />
-            <TextField
-              label="Carbs (g)"
-              type="number"
-              value={nutrition.carbs}                                // ✅ CHANGED prop name
-              onChange={(e) => handleChange('carbs', Number(e.target.value))}
-              inputProps={{ min: 0, step: 0.1 }}
-              size="small"
-              fullWidth
-            />
-            <TextField
-              label="Calories"
-              type="number"
-              value={nutrition.calories}                             // ✅ CHANGED prop name
-              onChange={(e) => handleChange('calories', Number(e.target.value))}
-              inputProps={{ min: 0, step: 1 }}
-              size="small"
-              fullWidth
-            />
+            {/* Protein NumberStepper */}
+            <Box>
+              <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
+                Protein (g)
+              </Typography>
+              <NumberStepper
+                value={nutrition.protein}
+                onChange={(value) => handleChange('protein', value)}
+                min={0}
+                max={200}
+                step={0.1}
+                unit="g"
+                size="small"
+              />
+            </Box>
+
+            {/* Fats NumberStepper */}
+            <Box>
+              <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
+                Fats (g)
+              </Typography>
+              <NumberStepper
+                value={nutrition.fats}
+                onChange={(value) => handleChange('fats', value)}
+                min={0}
+                max={150}
+                step={0.1}
+                unit="g"
+                size="small"
+              />
+            </Box>
+
+            {/* Carbs NumberStepper */}
+            <Box>
+              <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
+                Carbs (g)
+              </Typography>
+              <NumberStepper
+                value={nutrition.carbs}
+                onChange={(value) => handleChange('carbs', value)}
+                min={0}
+                max={300}
+                step={0.1}
+                unit="g"
+                size="small"
+              />
+            </Box>
+
+            {/* Calories NumberStepper */}
+            <Box>
+              <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
+                Calories
+              </Typography>
+              <NumberStepper
+                value={nutrition.calories}
+                onChange={(value) => handleChange('calories', value)}
+                min={0}
+                max={2000}
+                step={1}
+                unit="cal"
+                size="small"
+              />
+            </Box>
           </Box>
 
           {hasExternalNutrition && (

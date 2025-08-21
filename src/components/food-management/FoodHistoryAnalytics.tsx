@@ -41,7 +41,6 @@ import {
   Chip,
   IconButton,
   Collapse,
-  LinearProgress,
   Alert,
   CircularProgress,
   Button,
@@ -57,9 +56,6 @@ import {
   History as HistoryIcon,
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
-  TrendingUp as TrendingUpIcon,
-  CalendarMonth as CalendarIcon,
-  Scale as ScaleIcon,
   QueryStats as StatsIcon,
   FileDownload as ExportIcon
 } from '@mui/icons-material';

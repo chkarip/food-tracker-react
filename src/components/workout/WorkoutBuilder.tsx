@@ -11,12 +11,11 @@ import {
   Alert
 } from '@mui/material';
 
-import { AccentButton } from '../shared';
-import { collection, doc, getDocs, setDoc, getDoc } from 'firebase/firestore';
+import  AccentButton  from '../shared/AccentButton';
+import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { useAuth } from '../../contexts/AuthContext';
-import { saveScheduledActivities, loadScheduledActivities } from '../../services/firebase';
-import { WorkoutType, Workout, WorkoutExercise } from '../../types/workout';
+import { WorkoutType, WorkoutExercise } from '../../types/workout';
 import { SaveTemplateInput } from '../../types/template'; // ✅ Proper import
 import WorkoutTable from './WorkoutTable';
 

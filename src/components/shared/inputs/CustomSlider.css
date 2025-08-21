@@ -1,0 +1,24 @@
+@import '../../../styles/colors.css';
+@import '../../../styles/spacing.css';
+@import '../../../styles/typography.css';
+
+.custom-slider {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.slider-input {
+  width: 120px;
+  accent-color: var(--color-primary-base);
+  background: var(--color-slider-track);
+  height: 4px;
+  border-radius: 2px;
+}
+
+.slider-value {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-light);
+  min-width: 32px;
+  text-align: right;
+}

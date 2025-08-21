@@ -1,1 +1,1 @@
-export { default as AccentButton } from './AccentButton';
+export * from './inputs';

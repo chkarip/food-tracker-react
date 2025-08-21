@@ -1,3 +1,22 @@
+/* Dark theme button overrides */
+[data-theme="dark"] .accent-button--primary {
+  background-color: var(--color-primary-base);
+  color: var(--color-button-text);
+}
+
+[data-theme="dark"] .accent-button--primary:hover:not(:disabled) {
+  background-color: var(--color-primary-hover);
+  box-shadow: 0 4px 12px var(--color-primary-shadow);
+}
+
+[data-theme="dark"] .accent-button--secondary {
+  background-color: var(--color-secondary-base);
+  color: var(--color-button-text);
+}
+
+[data-theme="dark"] .accent-button--secondary:hover:not(:disabled) {
+  background-color: var(--color-secondary-hover);
+}
 /* Add Exercise Hover Effect */
 .add-exercise-hover {
   font-weight: 500;
@@ -29,7 +48,7 @@
 }
 /* Base button styles */
 .accent-button {
-  border: none;
+  border: none !important;
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
@@ -37,71 +56,80 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 4px; /* Reduced gap */
   font-family: inherit;
   text-decoration: none;
   box-sizing: border-box;
+  min-width: auto !important; /* Override MUI's 64px default */
+  padding: 4px 8px !important; /* Smaller default padding */
 }
 
 /* Variants */
+
 .accent-button--primary {
-  background-color: #3b82f6;
-  color: white;
+  background-color: var(--color-primary-base);
+  color: var(--color-button-text);
+  max-width: 100px;
+  min-width: 10px !important;
+  padding: 4px 8px !important; /* Smaller padding */
 }
 
 .accent-button--primary:hover:not(:disabled) {
-  background-color: #2563eb;
+  background-color: var(--color-primary-hover);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+  box-shadow: 0 4px 12px var(--color-primary-shadow);
 }
 
 .accent-button--secondary {
-  background-color: #6b7280;
-  color: white;
+  background-color: var(--color-secondary-base);
+  color: var(--color-button-text);
 }
 
 .accent-button--secondary:hover:not(:disabled) {
-  background-color: #4b5563;
+  background-color: var(--color-secondary-hover);
   transform: translateY(-1px);
 }
 
 .accent-button--danger {
-  background-color: #ef4444;
-  color: white;
+  background-color: var(--color-danger-base);
+  color: var(--color-button-text);
 }
 
 .accent-button--danger:hover:not(:disabled) {
-  background-color: #dc2626;
+  background-color: var(--color-danger-hover);
   transform: translateY(-1px);
 }
 
 .accent-button--success {
-  background-color: #10b981;
-  color: white;
+  background-color: var(--color-success-base);
+  color: var(--color-button-text);
 }
 
 .accent-button--success:hover:not(:disabled) {
-  background-color: #059669;
+  background-color: var(--color-success-hover);
   transform: translateY(-1px);
 }
 
 /* Sizes */
 .accent-button--small {
-  padding: 6px 12px;
-  font-size: 0.875rem;
-  min-height: 32px;
+  padding: 2px 6px !important; /* Even smaller padding */
+  font-size: 0.75rem !important; /* Smaller font */
+  min-height: 24px !important; /* Smaller height */
+  min-width: auto !important;
+  gap: 2px; /* Smaller gap between icon and text */
 }
 
 .accent-button--medium {
-  padding: 8px 16px;
-  font-size: 1rem;
-  min-height: 40px;
+  padding: 4px 8px !important;
+  font-size: 0.875rem !important;
+  min-height: 28px !important;
+  min-width: auto !important;
 }
 
 .accent-button--large {
-  padding: 12px 24px;
-  font-size: 1.125rem;
-  min-height: 48px;
+  padding: 6px 12px !important;
+  font-size: 1rem !important;
+  min-height: 32px !important;
 }
 
 /* States */

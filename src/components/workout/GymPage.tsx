@@ -7,9 +7,8 @@ import {
   Tab,
   Alert,
 } from '@mui/material';
-import { AccentButton } from '../shared';
+import  AccentButton  from '../shared/AccentButton';
 import {
-  Add as AddIcon,
   FitnessCenter as GymIcon
 } from '@mui/icons-material';
 import { collection, getDocs, addDoc, doc, updateDoc } from 'firebase/firestore';

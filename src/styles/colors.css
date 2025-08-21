@@ -1,0 +1,50 @@
+/* ================================
+   GLOBAL COLOR SYSTEM
+   ================================ */
+
+:root {
+  /* Primary Colors */
+  --color-primary-base: #3b82f6;
+  --color-primary-hover: #2563eb;
+  --color-primary-light: rgba(59, 130, 246, 0.1);
+  --color-primary-shadow: rgba(59, 130, 246, 0.4);
+
+  /* Secondary Colors */
+  --color-secondary-base: #6b7280;
+  --color-secondary-hover: #4b5563;
+  
+  /* Success Colors */
+  --color-success-base: #10b981;
+  --color-success-hover: #059669;
+  
+  /* Danger Colors */  
+  --color-danger-base: #ef4444;
+  --color-danger-hover: #dc2626;
+  
+  /* Neutral Colors */
+  --color-white: #ffffff;
+  --color-black: #000000;
+  --color-gray-100: #f7fafc;
+  --color-gray-200: #edf2f7;
+  --color-gray-300: #e2e8f0;
+  --color-gray-400: #cbd5e0;
+  --color-gray-500: #a0aec0;
+  --color-gray-600: #718096;
+  --color-gray-700: #4a5568;
+  --color-gray-800: #2d3748;
+  --color-gray-900: #1a202c;
+  
+  /* Semantic Colors */
+  --color-background: var(--color-white);
+  --color-text: var(--color-gray-800);
+  --color-text-light: var(--color-gray-600);
+  --color-border: var(--color-gray-300);
+  --color-input-background: var(--color-white);
+  --color-input-border: var(--color-gray-300);
+  --color-input-border-focus: var(--color-primary-base);
+  
+  /* Component-specific Colors */
+  --color-button-text: var(--color-white);
+  --color-slider-track: var(--color-gray-200);
+  --color-slider-thumb: var(--color-primary-base);
+}

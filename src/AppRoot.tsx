@@ -1,35 +1,12 @@
 /**
- * AppRoot.tsx - Main Application Entry Point & Routing System
+ * AppRoot.tsx - Main Application Entry Point
  * 
- * BUSINESS PURPOSE:
- * Root component that orchestrates a comprehensive task scheduling and tracking application:
- * - Firebase authentication and user session management
- * - Application routing between dashboard, task modules, and activity tracking
- * - Global theme and Material-UI configuration
- * - Error boundaries and loading state management
- * - Progressive Web App (PWA) configuration for mobile task management
- * 
- * KEY BUSINESS LOGIC:
- * 1. AUTHENTICATION FLOW: Manages user login/logout with Firebase Auth
- * 2. ROUTE PROTECTION: Ensures authenticated access to all task management features
- * 3. MODULE NAVIGATION: Routes between dashboard, food tasks, gym tasks, finance tasks, and custom activities
- * 4. THEME MANAGEMENT: Dual-theme support (light/dark mode) with user preferences
- * 5. PWA CAPABILITIES: Offline support and mobile app-like experience for on-the-go task management
- * 
- * APPLICATION ARCHITECTURE:
- * - Dashboard: Central hub with calendar and comprehensive task overview
- * - Food Module: Nutrition and meal planning tasks (one of many task categories)
- * - Gym Module: Workout and fitness activity scheduling and tracking
- * - Finance Module: Budget and expense tracking tasks
- * - Custom Tasks: User-defined activities and goals (expandable system)
- * 
- * BUSINESS VALUE:
- * - Provides unified platform for scheduling and tracking ANY type of recurring activity
- * - Ensures secure, authenticated access to personal productivity and goal-tracking data
- * - Enables seamless navigation between different life management modules
- * - Supports consistent user experience across all task categories
- * - Maintains user preferences and long-term activity tracking for goal achievement
+ * Root component that manages:
+ * - Firebase authentication and routing
+ * - Theme management (light/dark mode)
+ * - Global providers and layout
  */
+
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import {
@@ -46,23 +23,36 @@ import GymPage from './components/workout/GymPage';
 import FinancePage from './modules/finance/pages/FinancePage';
 import AuthGuard from './components/auth/AuthGuard';
 import { AuthProvider } from './contexts/AuthContext';
-import { FoodProvider } from './contexts/FoodContext'; // ✅ NEW
+import { FoodProvider } from './contexts/FoodContext';
 
 function FoodTrackerApp() {
-  // Theme state
   const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
   const [darkMode, setDarkMode] = useState(prefersDarkMode);
 
-  // Create theme
   const theme = createTheme({
     palette: {
       mode: darkMode ? 'dark' : 'light',
-      primary: {
-        main: '#2563eb',
-      },
-      secondary: {
-        main: '#10b981',
-      },
+      ...(darkMode ? {
+        // Dark theme colors
+        background: {
+          default: '#121212',
+          paper: '#1e1e1e',
+        },
+        text: {
+          primary: '#EAEAEA',
+          secondary: '#A9A9A9',
+        },
+        primary: { main: '#3BBA75' },
+        secondary: { main: '#FF9800' },
+      } : {
+        // Light theme colors
+        background: {
+          default: '#ffffff',
+          paper: '#fafafa',
+        },
+        primary: { main: '#2563eb' },
+        secondary: { main: '#10b981' },
+      }),
     },
     typography: {
       fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
@@ -78,6 +68,14 @@ function FoodTrackerApp() {
           },
         },
       },
+      MuiCssBaseline: {
+        styleOverrides: {
+          body: {
+            backgroundColor: darkMode ? '#161616' : '#ffffff',
+            color: darkMode ? '#EAEAEA' : '#000000',
+          },
+        },
+      },
     },
   });
 
@@ -88,7 +86,7 @@ function FoodTrackerApp() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <FoodProvider> {/* ✅ NEW - Wrap routes with FoodProvider */}
+      <FoodProvider>
         <Router>
           <AuthGuard>
             <Layout darkMode={darkMode} toggleDarkMode={toggleDarkMode}>
@@ -101,12 +99,11 @@ function FoodTrackerApp() {
             </Layout>
           </AuthGuard>
         </Router>
-      </FoodProvider> {/* ✅ NEW - Close FoodProvider */}
+      </FoodProvider>
     </ThemeProvider>
   );
 }
 
-// Main App component with Auth Provider and Guard
 function App() {
   return (
     <AuthProvider>

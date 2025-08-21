@@ -14,8 +14,7 @@ import {
   Chip
 } from '@mui/material';
 
-import { AccentButton } from '../shared';
-
+import  AccentButton  from '../shared/AccentButton';
 // Exercise interface matching Firebase structure
 interface Exercise {
   id?: string;

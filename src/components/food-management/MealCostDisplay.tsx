@@ -25,10 +25,7 @@ import {
   Typography,
   Card,
   CardContent,
-  Divider,
-  Chip
 } from '@mui/material';
-import { Euro as EuroIcon } from '@mui/icons-material';
 import { SelectedFood } from '../../types/nutrition';
 import { calculateTotalMealCost, formatCost } from '../../services/firebase/nutrition/foodService';
 import { useFoodDatabase } from '../../contexts/FoodContext';

@@ -21,12 +21,8 @@ import {
   Slider
 } from '@mui/material';
 
-import { AccentButton } from '../shared';
-import {
-  Save as SaveIcon,
-  CloudDownload as LoadIcon,
-  History as HistoryIcon
-} from '@mui/icons-material';
+import  AccentButton  from '../shared/AccentButton';
+import {  History as HistoryIcon } from '@mui/icons-material';
 
 import { useAuth } from '../../contexts/AuthContext';
 import {

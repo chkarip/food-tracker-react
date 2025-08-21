@@ -6,51 +6,16 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box,
-  Card,
-  CardContent,
   Typography,
-  Button,
-  Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Chip,
-  IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Collapse,
-  LinearProgress,
-  Divider,
-  Tabs,
-  Tab,
   Alert,
   CircularProgress
 } from '@mui/material';
-import {
-  History as HistoryIcon,
-  ExpandMore as ExpandMoreIcon,
-  ExpandLess as ExpandLessIcon,
-  Delete as DeleteIcon,
-  RestaurantMenu as MealIcon,
-  CalendarToday as CalendarIcon,
-  TrendingUp as StatsIcon,
-  Analytics as AnalyticsIcon
-} from '@mui/icons-material';
 
-import FoodHistoryAnalytics from './FoodHistoryAnalytics';
 import { useAuth } from '../../contexts/AuthContext';
-import { getRecentDailyPlans, deleteDailyPlan } from '../../services/firebase';
+import { getRecentDailyPlans } from '../../services/firebase';
 import { DailyPlanDocument } from '../../types/firebase';
 import { useFoodDatabase } from '../../contexts/FoodContext';
-import foodHistoryService, {
-  MealProgramFood                        // ← NEW: import the interface
-} from '../../services/firebase/nutrition/foodConsumptionService';
+import foodHistoryService, {  MealProgramFood } from '../../services/firebase/nutrition/foodConsumptionService';
 
 /* ------------------------------------------------------------------ */
 /*  LOCAL TYPES                                                        */

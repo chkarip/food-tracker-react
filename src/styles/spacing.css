@@ -1,0 +1,20 @@
+/* ================================
+   GLOBAL SPACING SYSTEM
+   ================================ */
+
+:root {
+  --spacing-xxs: 2px;
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 40px;
+  --spacing-3xl: 48px;
+  --spacing-4xl: 64px;
+  --spacing-5xl: 80px;
+  --spacing-section: 96px;
+  --spacing-gutter: 16px;
+  --spacing-card-padding: 24px;
+  --spacing-input-padding: 12px;
+}

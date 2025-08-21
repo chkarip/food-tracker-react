@@ -9,7 +9,6 @@ import {
   Card,
   CardContent,
   Typography,
-  TextField,
   FormControl,
   InputLabel,
   Select,
@@ -30,15 +29,14 @@ import {
   DialogActions,
   Stack
 } from '@mui/material';
+import SmartTextInput from '../shared/inputs/SmartTextInput';
+import { NumberStepper } from '../shared/inputs';
 
-import { AccentButton } from '../shared';
+import  AccentButton  from '../shared/AccentButton';
 import {
-  Add as AddIcon,
   Restaurant as FoodIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
-  Save as SaveIcon,
-  Cancel as CancelIcon
 } from '@mui/icons-material';
 import { useFoodDatabase } from '../../contexts/FoodContext';
 import { addFood, updateFood, deleteFood } from '../../services/firebase/nutrition/foodService';
@@ -140,21 +138,22 @@ const AddFoodManager: React.FC = () => {
   const handleInputChange = (field: string, value: any) => {
     if (field.startsWith('nutrition.')) {
       const k = field.split('.')[1] as keyof FoodFormData['nutrition'];
-      setFormData(prev => ({
+  setFormData((prev: FoodFormData) => ({
         ...prev,
-        nutrition: { ...prev.nutrition, [k]: parseFloat(value) || 0 }
+        nutrition: { ...prev.nutrition, [k]: typeof value === 'number' ? value : parseFloat(value) || 0 }
       }));
     } else if (field.startsWith('cost.')) {
       const k = field.split('.')[1] as keyof FoodFormData['cost'];
-      setFormData(prev => ({
+  setFormData((prev: FoodFormData) => ({
         ...prev,
         cost: {
           ...prev.cost,
-          [k]: k === 'unit' ? value : parseFloat(value) || 0
+          [k]: k === 'unit' ? value : (typeof value === 'number' ? value : parseFloat(value) || 0)
         }
       }));
     } else {
-      setFormData(prev => ({ ...prev, [field]: value }));
+      const numericValue = typeof value === 'number' ? value : parseFloat(value) || 0;
+  setFormData((prev: FoodFormData) => ({ ...prev, [field]: field === 'fixedAmount' ? numericValue : value }));
     }
   };
 
@@ -265,13 +264,17 @@ const AddFoodManager: React.FC = () => {
           <Box component="form" onSubmit={handleSubmit}>
             {/* Basic information */}
             <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
-              <TextField
-                label="Food Name"
-                value={formData.name}
-                onChange={(e) => handleInputChange('name', e.target.value)}
-                required
-                sx={{ flex: 1 }}
-              />
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
+                  Food Name
+                </Typography>
+                <SmartTextInput
+                  value={formData.name}
+                  placeholder="Food Name"
+                  onChange={(value) => handleInputChange('name', value)}
+                  disabled={loading}
+                />
+              </Box>
               
               <FormControl sx={{ flex: 1 }}>
                 <InputLabel>Category</InputLabel>
@@ -321,18 +324,23 @@ const AddFoodManager: React.FC = () => {
             </Stack>
 
             {formData.useFixedAmount && (
-              <TextField
-                label="Fixed Amount"
-                type="number"
-                value={formData.fixedAmount}
-                onChange={(e) => handleInputChange('fixedAmount', e.target.value)}
-                inputProps={{
-                  min: 0,
-                  step: formData.isUnitFood ? 1 : 10
-                }}
-                sx={{ mt: 2 }}
-                helperText={`Default amount when selected in Meal Planner (${formData.isUnitFood ? 'units' : 'g'})`}
-              />
+              <Box sx={{ mt: 2 }}>
+                <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
+                  Fixed Amount
+                </Typography>
+                <NumberStepper
+                  value={formData.fixedAmount}
+                  onChange={(value) => handleInputChange('fixedAmount', value)}
+                  min={0}
+                  max={formData.isUnitFood ? 10 : 500}
+                  step={formData.isUnitFood ? 1 : 10}
+                  unit={formData.isUnitFood ? 'units' : 'g'}
+                  size="small"
+                />
+                <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                  Default amount when selected in Meal Planner ({formData.isUnitFood ? 'units' : 'g'})
+                </Typography>
+              </Box>
             )}
 
             <Divider sx={{ my: 2 }} />
@@ -343,15 +351,20 @@ const AddFoodManager: React.FC = () => {
             </Typography>
             <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
               {(['protein', 'fats', 'carbs', 'calories'] as const).map(field => (
-                <TextField
-                  key={field}
-                  label={field.charAt(0).toUpperCase() + field.slice(1)}
-                  type="number"
-                  value={formData.nutrition[field]}
-                  onChange={(e) => handleInputChange(`nutrition.${field}`, e.target.value)}
-                  inputProps={{ min: 0, step: field === 'calories' ? 1 : 0.1 }}
-                  sx={{ flex: 1, minWidth: 120 }}
-                />
+                <Box key={field} sx={{ flex: 1, minWidth: 120 }}>
+                  <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
+                    {field.charAt(0).toUpperCase() + field.slice(1)} ({field === 'calories' ? 'kcal' : 'g'})
+                  </Typography>
+                  <NumberStepper
+                    value={formData.nutrition[field]}
+                    onChange={(value) => handleInputChange(`nutrition.${field}`, value)}
+                    min={0}
+                    max={field === 'calories' ? 1000 : 100}
+                    step={field === 'calories' ? 1 : 0.1}
+                    unit={field === 'calories' ? 'kcal' : 'g'}
+                    size="small"
+                  />
+                </Box>
               ))}
             </Stack>
 
@@ -360,14 +373,20 @@ const AddFoodManager: React.FC = () => {
             {/* Cost */}
             <Typography variant="h6" gutterBottom>Cost</Typography>
             <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
-              <TextField
-                label="Cost"
-                type="number"
-                value={formData.cost.costPerKg}
-                onChange={(e) => handleInputChange('cost.costPerKg', e.target.value)}
-                inputProps={{ min: 0, step: 0.01 }}
-                sx={{ flex: 1 }}
-              />
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
+                  Cost per {formData.cost.unit}
+                </Typography>
+                <NumberStepper
+                  value={formData.cost.costPerKg}
+                  onChange={(value) => handleInputChange('cost.costPerKg', value)}
+                  min={0}
+                  max={100}
+                  step={0.01}
+                  unit="€"
+                  size="small"
+                />
+              </Box>
               
               <FormControl sx={{ minWidth: 120 }}>
                 <InputLabel>Unit</InputLabel>
@@ -428,28 +447,28 @@ const AddFoodManager: React.FC = () => {
                   <ListItemText
                     primary={
                       <>
-                        {food.name}{' '}
-                        {food.metadata?.isUnitFood && (
+                        {(food as FirestoreFood).name}{' '}
+                        {(food as FirestoreFood).metadata?.isUnitFood && (
                           <Chip label="unit" size="small" />
                         )}
-                        {food.metadata?.useFixedAmount && (
+                        {(food as FirestoreFood).metadata?.useFixedAmount && (
                           <Chip label="fixed" size="small" color="secondary" />
                         )}
                       </>
                     }
                     secondary={
                       <>
-                        Protein: {formatNumber(food.nutrition.protein)}g | Fats:{' '}
-                        {formatNumber(food.nutrition.fats)}g | Carbs:{' '}
-                        {formatNumber(food.nutrition.carbs)}g | Calories:{' '}
-                        {formatNumber(food.nutrition.calories)}kcal | Cost:{' '}
-                        €{food.cost.costPerKg.toFixed(2)}/{food.cost.unit}
-                        {food.metadata?.useFixedAmount && (
+                        Protein: {formatNumber((food as FirestoreFood).nutrition.protein)}g | Fats:{' '}
+                        {formatNumber((food as FirestoreFood).nutrition.fats)}g | Carbs:{' '}
+                        {formatNumber((food as FirestoreFood).nutrition.carbs)}g | Calories:{' '}
+                        {formatNumber((food as FirestoreFood).nutrition.calories)}kcal | Cost:{' '}
+                        €{(food as FirestoreFood).cost.costPerKg.toFixed(2)}/{(food as FirestoreFood).cost.unit}
+                        {(food as FirestoreFood).metadata?.useFixedAmount && (
                           <>
                             {' '}
                             | Default:{' '}
-                            {food.metadata.fixedAmount}{' '}
-                            {food.metadata.isUnitFood ? 'units' : 'g'}
+                            {(food as FirestoreFood).metadata?.fixedAmount}{' '}
+                            {(food as FirestoreFood).metadata?.isUnitFood ? 'units' : 'g'}
                           </>
                         )}
                       </>
@@ -457,14 +476,14 @@ const AddFoodManager: React.FC = () => {
                   />
                   <ListItemSecondaryAction>
                     <IconButton
-                      onClick={() => handleEdit(food)}
+                      onClick={() => handleEdit(food as FirestoreFood)}
                       sx={{ mr: 1 }}
                     >
                       <EditIcon />
                     </IconButton>
                     <IconButton 
                       color="error"
-                      onClick={() => setDeleteDialog(food)}
+                      onClick={() => setDeleteDialog(food as FirestoreFood)}
                     >
                       <DeleteIcon />
                     </IconButton>

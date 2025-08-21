@@ -40,9 +40,9 @@ import {
   IconButton,
 } from '@mui/material';
 
-import { AccentButton } from '../shared';
+import  AccentButton  from '../shared/AccentButton';
+import { NumberStepper } from '../shared/inputs';
 import {
-  Add as AddIcon,
   SwapHoriz as SwapIcon,
   Delete as DeleteIcon,
 } from '@mui/icons-material';
@@ -186,18 +186,24 @@ const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = ({
       {/* ---------- amount input & add button ---------- */}
       {selectedFoodName && (
         <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
-          <TextField
-            type="number"
-            size="small"
-            label={getFoodUnit(selectedFoodName)}
-            value={amount}
-            onChange={(e) => setAmount(Number(e.target.value))}
-            sx={{ width: 120 }}
-            inputProps={{ min: 0 }}
-          />
+          <Box sx={{ width: 120 }}>
+            <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
+              Amount
+            </Typography>
+            <NumberStepper
+              value={amount}
+              onChange={setAmount}
+              min={0}
+              max={1000}
+              step={getFoodUnit(selectedFoodName) === 'units' ? 1 : 5}
+              unit={getFoodUnit(selectedFoodName)}
+              size="small"
+            />
+          </Box>
           <AccentButton
             onClick={handleAdd}
             variant="primary"
+            size='small'
           >
             ➕ Add {selectedFoodName}
           </AccentButton>
@@ -239,16 +245,14 @@ const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = ({
                 >
                   <Typography sx={{ flex: 1 }}>{food.name}</Typography>
 
-                  <TextField
-                    type="number"
-                    size="small"
-                    sx={{ width: 90 }}
-                    label={getFoodUnit(food.name)}
+                  <NumberStepper
                     value={food.amount}
-                    onChange={(e) =>
-                      onUpdateAmount(idx, Number(e.target.value))
-                    }
-                    inputProps={{ min: 0 }}
+                    onChange={(value) => onUpdateAmount(idx, value)}
+                    min={0}
+                    max={1000}
+                    step={getFoodUnit(food.name) === 'units' ? 1 : 5}
+                    unit={getFoodUnit(food.name)}
+                    size="small"
                   />
 
                   <Typography variant="caption" sx={{ width: 110 }}>

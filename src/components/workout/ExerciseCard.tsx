@@ -10,11 +10,10 @@ import {
   Tooltip
 } from '@mui/material';
 
-import { AccentButton } from '../shared';
+import  AccentButton  from '../shared/AccentButton';
 import {
   Edit as EditIcon,
   Delete as DeleteIcon,
-  PlayArrow as StartIcon
 } from '@mui/icons-material';
 
 // Exercise interface matching Firebase structure

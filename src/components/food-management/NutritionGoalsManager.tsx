@@ -10,11 +10,11 @@ import {
   Card,
   CardContent,
   Typography,
-  TextField,
   Button,
   Stack,
   Alert
 } from '@mui/material';
+import { NumberStepper } from '../shared/inputs';
 
 /* ---------- types ---------- */
 export interface NutritionGoals {
@@ -78,14 +78,20 @@ const NutritionGoalsManager: React.FC<Props> = ({ onGoalsChange }) => {
 
         <Stack spacing={2}>
           {(['protein', 'fats', 'carbs', 'calories'] as const).map(key => (
-            <TextField
-              key={key}
-              label={key.charAt(0).toUpperCase() + key.slice(1)}
-              type="number"
-              value={goals[key]}
-              onChange={e => handleChange(key, e.target.value)}
-              inputProps={{ min: 0 }}
-            />
+            <Box key={key} sx={{ mb: 2 }}>
+              <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
+                {key.charAt(0).toUpperCase() + key.slice(1)} ({key === 'calories' ? 'kcal' : 'g'})
+              </Typography>
+              <NumberStepper
+                value={goals[key]}
+                onChange={(value) => handleChange(key, value.toString())}
+                min={0}
+                max={key === 'calories' ? 5000 : key === 'carbs' ? 800 : 300}
+                step={key === 'calories' ? 10 : 1}
+                unit={key === 'calories' ? 'kcal' : 'g'}
+                size="medium"
+              />
+            </Box>
           ))}
 
           <Box>

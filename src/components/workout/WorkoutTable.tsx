@@ -48,11 +48,7 @@ import {
   Snackbar,
   Alert
 } from '@mui/material';
-import { AccentButton } from '../shared';
-import {
-  Add as AddIcon,
-  Schedule as ScheduleIcon
-} from '@mui/icons-material';
+import  AccentButton  from '../shared/AccentButton';
 
 import { WorkoutExercise, WorkoutType } from '../../types/workout';
 import WorkoutTableRow from './WorkoutTableRow';

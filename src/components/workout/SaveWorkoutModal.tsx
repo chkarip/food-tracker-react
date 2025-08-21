@@ -18,10 +18,9 @@ import {
   InputAdornment
 } from '@mui/material';
 
-import { AccentButton } from '../shared';
+import  AccentButton  from '../shared/AccentButton';
 
 import {
-  Save as SaveIcon,
   Schedule as ScheduleIcon,
   FitnessCenter as GymIcon,
   Timer as TimerIcon,

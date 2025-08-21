@@ -1,0 +1,132 @@
+/* NumberStepper Component Styles */
+.number-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+/* Input Container */
+.number-stepper__input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+/* Input Field */
+.number-stepper__input {
+  width: 80px;
+  text-align: center;
+  font-weight: 600;
+  font-family: inherit;
+  border: 2px solid var(--color-gray-300);
+  border-radius: 8px;
+  background-color: var(--color-white);
+  color: var(--color-gray-800);
+  transition: all 0.2s ease-in-out;
+  outline: none;
+  box-sizing: border-box;
+  
+  /* Remove default number input styles */
+  -webkit-appearance: none;
+  -moz-appearance: textfield;
+}
+
+.number-stepper__input::-webkit-outer-spin-button,
+.number-stepper__input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.number-stepper__input:focus {
+  border-color: var(--color-primary-base);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.number-stepper__input:disabled {
+  background-color: var(--color-gray-100);
+  color: var(--color-gray-500);
+  cursor: not-allowed;
+}
+
+/* Unit Label */
+.number-stepper__unit {
+  position: absolute;
+  right: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-gray-600);
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Size Variants */
+.number-stepper--small .number-stepper__input {
+  width: 60px;
+  padding: 4px 8px;
+  font-size: 0.875rem;
+  min-height: 32px;
+}
+
+.number-stepper--small .number-stepper__unit {
+  font-size: 0.75rem;
+  right: 6px;
+}
+
+.number-stepper--medium .number-stepper__input {
+  width: 80px;
+  padding: 6px 12px;
+  font-size: 1rem;
+  min-height: 40px;
+}
+
+.number-stepper--medium .number-stepper__unit {
+  font-size: 0.875rem;
+  right: 8px;
+}
+
+.number-stepper--large .number-stepper__input {
+  width: 100px;
+  padding: 8px 16px;
+  font-size: 1.125rem;
+  min-height: 48px;
+}
+
+.number-stepper--large .number-stepper__unit {
+  font-size: 1rem;
+  right: 12px;
+}
+
+/* Disabled State */
+.number-stepper--disabled {
+  opacity: 0.6;
+}
+
+.number-stepper--disabled .number-stepper__input {
+  background-color: var(--color-gray-100);
+  border-color: var(--color-gray-200);
+  color: var(--color-gray-500);
+}
+
+/* Button Spacing Adjustments */
+.number-stepper__button {
+  min-width: unset;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2em;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* Focus States for Accessibility */
+.number-stepper:focus-within .number-stepper__input {
+  border-color: var(--color-primary-base);
+}
+
+/* Hover Effects */
+.number-stepper:hover:not(.number-stepper--disabled) .number-stepper__input {
+  border-color: var(--color-gray-400);
+}

@@ -39,8 +39,8 @@ import {
   Stack,
   Chip,
   IconButton,
-  TextField,
 } from '@mui/material';
+import {NumberStepper}  from '../shared/inputs';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import SwapIcon from '@mui/icons-material/SwapHoriz';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -70,7 +70,7 @@ const CategoryAccordion: React.FC<Props> = ({
   onRemove,
   onSwap,
 }) => {
-  const { foodDatabase } = useFoodDatabase();
+const { foodDatabase } = useFoodDatabase();
 
   /* default-expand if it contains foods */
   const [open, setOpen] = useState<boolean>(foods.length > 0);
@@ -133,15 +133,14 @@ const CategoryAccordion: React.FC<Props> = ({
                   </Typography>
 
                   {/* amount editor */}
-                  <TextField
-                    type="number"
+                  <NumberStepper
                     value={food.amount}
-                    onChange={(e) =>
-                      onUpdateAmount(idx, Number(e.target.value))
-                    }
+                    onChange={(value) => onUpdateAmount(idx, value)}
+                    min={0}
+                    max={1000}
+                    step={getFoodUnit(food.name) === 'units' ? 1 : 5}
+                    unit={getFoodUnit(food.name) === 'units' ? 'units' : 'g'}
                     size="small"
-                    sx={{ width: 90 }}
-                    inputProps={{ min: 0 }}
                   />
 
                   {/* kcal mini-display */}
