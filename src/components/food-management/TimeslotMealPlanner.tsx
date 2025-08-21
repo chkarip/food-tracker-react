@@ -2,9 +2,9 @@
  * FILE: TimeslotMealPlanner.tsx
  * ------------------------------------------------------------------
  * PURPOSE
- * • The **core meal-planning workspace**: two fixed timeslots (6 pm and
- * 9:30 pm) where a user selects foods, adds external macros, tracks
- * progress and sees live cost.
+ * • Core meal-planning workspace with two fixed timeslots (6 pm and
+ *   9:30 pm) where a user selects foods, adds external macros, tracks
+ *   progress and sees live cost.
  *
  * MAJOR COMPONENT COMPOSITION
  * ┌ Tabs (6 pm / 9:30 pm)
@@ -21,29 +21,21 @@
  *
  * BUSINESS-LOGIC NOTES
  * • Macro totals use `calculateTotalMacros` which respects unit-vs-weight
- * foods and fixed amounts from the admin panel.
+ *   foods and fixed amounts from the admin panel.
  * • Swapping food between timeslots is O(1) and keeps amounts intact.
  * • All child components communicate upward via pure callbacks, so this
- * file remains the single source-of-truth for meal-draft state.
+ *   file remains the single source-of-truth for meal-draft state.
  *
  * EXTENSIBILITY
  * • TIMESLOTS array is the only place to add breakfast / lunch etc.
  * • Ready for dark/light theme thanks to MUI token usage.
  */
 
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  Tabs,
-  Tab,
-  Stack
-} from '@mui/material';
+import React, { useState, useCallback, useMemo } from 'react';
+import { Box, Tabs, Tab } from '@mui/material';
 import {
   WbSunny as AfternoonIcon,
-  Nightlight as EveningIcon
+  Nightlight as EveningIcon,
 } from '@mui/icons-material';
 
 import MacroProgress from './MacroProgress';
@@ -51,228 +43,209 @@ import FoodSelectorWithFirebase from './FoodSelectorWithFirebase';
 import ExternalNutritionInput from './ExternalNutritionInput';
 import SaveLoadPlan from './SaveLoadPlan';
 import MealCostDisplay from './MealCostDisplay';
-import { SelectedFood, ExternalNutrition, NutritionData } from '../../types/nutrition';
+
+import {
+  SelectedFood,
+  ExternalNutrition,
+  NutritionData,
+} from '../../types/nutrition';
 import { calculateTotalMacros } from '../../utils/nutritionCalculations';
 import { useFoodDatabase } from '../../contexts/FoodContext';
 
+/* ---------- local types ---------- */
 interface TimeslotData {
   selectedFoods: SelectedFood[];
   externalNutrition: ExternalNutrition;
 }
 
+/* ---------- constants ---------- */
 const TIMESLOTS = [
   {
     id: '6pm',
     label: '6:00 PM',
-    description: 'Afternoon Meal',
-    icon: <AfternoonIcon />
+    icon: <AfternoonIcon />,
   },
   {
     id: '9:30pm',
     label: '9:30 PM',
-    description: 'Evening Meal',
-    icon: <EveningIcon />
-  }
+    icon: <EveningIcon />,
+  },
 ];
 
+/* ================================================================== */
 const TimeslotMealPlanner: React.FC = () => {
+  /* ---------- state ---------- */
   const [currentTimeslot, setCurrentTimeslot] = useState(0);
   const { foodDatabase } = useFoodDatabase();
 
-  const [timeslotData, setTimeslotData] = useState<Record<string, TimeslotData>>({
-    '6pm': {
-      selectedFoods: [],
-      externalNutrition: { protein: 0, fats: 0, carbs: 0, calories: 0 }
+  const [timeslotData, setTimeslotData] = useState<Record<string, TimeslotData>>(
+    {
+      '6pm': {
+        selectedFoods: [],
+        externalNutrition: { protein: 0, fats: 0, carbs: 0, calories: 0 },
+      },
+      '9:30pm': {
+        selectedFoods: [],
+        externalNutrition: { protein: 0, fats: 0, carbs: 0, calories: 0 },
+      },
     },
-    '9:30pm': {
-      selectedFoods: [],
-      externalNutrition: { protein: 0, fats: 0, carbs: 0, calories: 0 }
-    }
-  });
+  );
 
-  const getCurrentTimeslotId = useCallback(() => TIMESLOTS[currentTimeslot].id, [currentTimeslot]);
-  const getCurrentData = useCallback(() => timeslotData[getCurrentTimeslotId()], [timeslotData, getCurrentTimeslotId]);
+  /* ---------- helpers ---------- */
+  const getCurrentTimeslotId = useCallback(
+    () => TIMESLOTS[currentTimeslot].id,
+    [currentTimeslot],
+  );
 
-  // Calculate combined food macros using Firebase food database
+  const getCurrentData = useCallback(
+    () => timeslotData[getCurrentTimeslotId()],
+    [timeslotData, getCurrentTimeslotId],
+  );
+
+  /* ---------- macro totals ---------- */
   const getCombinedFoodMacros = useMemo((): NutritionData => {
-    // Wait for food database to load
-    if (Object.keys(foodDatabase).length === 0) {
+    if (!Object.keys(foodDatabase).length)
       return { protein: 0, fats: 0, carbs: 0, calories: 0 };
-    }
 
-    const combined = { protein: 0, fats: 0, carbs: 0, calories: 0 };
-    Object.values(timeslotData).forEach(data => {
-      const foodMacros = calculateTotalMacros(data.selectedFoods, foodDatabase);
-      combined.protein += foodMacros.protein;
-      combined.fats += foodMacros.fats;
-      combined.carbs += foodMacros.carbs;
-      combined.calories += foodMacros.calories;
+    const c = { protein: 0, fats: 0, carbs: 0, calories: 0 };
+    Object.values(timeslotData).forEach((d) => {
+      const m = calculateTotalMacros(d.selectedFoods, foodDatabase);
+      c.protein += m.protein;
+      c.fats += m.fats;
+      c.carbs += m.carbs;
+      c.calories += m.calories;
     });
-    return combined;
+    return c;
   }, [timeslotData, foodDatabase]);
 
-  // Calculate combined external nutrition from both timeslots
-  const getCombinedExternalNutrition = useMemo((): ExternalNutrition => {
-    const combined = { protein: 0, fats: 0, carbs: 0, calories: 0 };
-    Object.values(timeslotData).forEach(data => {
-      combined.protein += data.externalNutrition.protein;
-      combined.fats += data.externalNutrition.fats;
-      combined.carbs += data.externalNutrition.carbs;
-      combined.calories += data.externalNutrition.calories;
+  const getCombinedExternal = useMemo((): ExternalNutrition => {
+    const c = { protein: 0, fats: 0, carbs: 0, calories: 0 };
+    Object.values(timeslotData).forEach((d) => {
+      c.protein += d.externalNutrition.protein;
+      c.fats += d.externalNutrition.fats;
+      c.carbs += d.externalNutrition.carbs;
+      c.calories += d.externalNutrition.calories;
     });
-    return combined;
+    return c;
   }, [timeslotData]);
 
-  // ✅ Combine food + external macros for MacroProgress (single prop)
   const getTotalMacros = useMemo((): NutritionData => {
     const food = getCombinedFoodMacros;
-    const external = getCombinedExternalNutrition;
+    const ext = getCombinedExternal;
     return {
-      protein: food.protein + external.protein,
-      fats: food.fats + external.fats,
-      carbs: food.carbs + external.carbs,
-      calories: food.calories + external.calories
+      protein: food.protein + ext.protein,
+      fats: food.fats + ext.fats,
+      carbs: food.carbs + ext.carbs,
+      calories: food.calories + ext.calories,
     };
-  }, [getCombinedFoodMacros, getCombinedExternalNutrition]);
+  }, [getCombinedFoodMacros, getCombinedExternal]);
 
-  const updateTimeslotData = useCallback((timeslotId: string, updates: Partial<TimeslotData>) => {
-    setTimeslotData(prev => ({
-      ...prev,
-      [timeslotId]: {
-        ...prev[timeslotId],
-        ...updates
-      }
-    }));
-  }, []);
+  /* ---------- updaters ---------- */
+  const updateTimeslotData = useCallback(
+    (id: string, updates: Partial<TimeslotData>) => {
+      setTimeslotData((prev) => ({ ...prev, [id]: { ...prev[id], ...updates } }));
+    },
+    [],
+  );
 
-  const handleAddFood = useCallback((food: SelectedFood) => {
-    const timeslotId = getCurrentTimeslotId();
-    const currentData = getCurrentData();
-    updateTimeslotData(timeslotId, {
-      selectedFoods: [...currentData.selectedFoods, food]
-    });
-  }, [getCurrentTimeslotId, getCurrentData, updateTimeslotData]);
+  const handleAddFood = useCallback(
+    (food: SelectedFood) => {
+      const id = getCurrentTimeslotId();
+      const d = getCurrentData();
+      updateTimeslotData(id, { selectedFoods: [...d.selectedFoods, food] });
+    },
+    [getCurrentTimeslotId, getCurrentData, updateTimeslotData],
+  );
 
-  const handleUpdateAmount = useCallback((index: number, amount: number) => {
-    const timeslotId = getCurrentTimeslotId();
-    const currentData = getCurrentData();
-    updateTimeslotData(timeslotId, {
-      selectedFoods: currentData.selectedFoods.map((food, i) =>
-        i === index ? { ...food, amount } : food
-      )
-    });
-  }, [getCurrentTimeslotId, getCurrentData, updateTimeslotData]);
+  const handleUpdateAmount = useCallback(
+    (idx: number, amount: number) => {
+      const id = getCurrentTimeslotId();
+      const d = getCurrentData();
+      updateTimeslotData(id, {
+        selectedFoods: d.selectedFoods.map((f, i) =>
+          i === idx ? { ...f, amount } : f,
+        ),
+      });
+    },
+    [getCurrentTimeslotId, getCurrentData, updateTimeslotData],
+  );
 
-  const handleRemoveFood = useCallback((index: number) => {
-    const timeslotId = getCurrentTimeslotId();
-    const currentData = getCurrentData();
-    updateTimeslotData(timeslotId, {
-      selectedFoods: currentData.selectedFoods.filter((_, i) => i !== index)
-    });
-  }, [getCurrentTimeslotId, getCurrentData, updateTimeslotData]);
+  const handleRemoveFood = useCallback(
+    (idx: number) => {
+      const id = getCurrentTimeslotId();
+      const d = getCurrentData();
+      updateTimeslotData(id, {
+        selectedFoods: d.selectedFoods.filter((_, i) => i !== idx),
+      });
+    },
+    [getCurrentTimeslotId, getCurrentData, updateTimeslotData],
+  );
 
-  const handleUpdateExternal = useCallback((nutrition: ExternalNutrition) => {
-    const timeslotId = getCurrentTimeslotId();
-    updateTimeslotData(timeslotId, {
-      externalNutrition: nutrition
-    });
-  }, [getCurrentTimeslotId, updateTimeslotData]);
+  const handleSwapFood = useCallback(
+    (idx: number) => {
+      const fromId = getCurrentTimeslotId();
+      const fromData = getCurrentData();
+      const food = fromData.selectedFoods[idx];
 
-  const handleSwapFood = useCallback((index: number) => {
-    const currentTimeslotId = getCurrentTimeslotId();
-    const currentData = getCurrentData();
-    const foodToSwap = currentData.selectedFoods[index];
+      updateTimeslotData(fromId, {
+        selectedFoods: fromData.selectedFoods.filter((_, i) => i !== idx),
+      });
 
-    // Remove from current timeslot
-    updateTimeslotData(currentTimeslotId, {
-      selectedFoods: currentData.selectedFoods.filter((_, i) => i !== index)
-    });
+      const toId = fromId === '6pm' ? '9:30pm' : '6pm';
+      updateTimeslotData(toId, {
+        selectedFoods: [...timeslotData[toId].selectedFoods, food],
+      });
+    },
+    [getCurrentTimeslotId, getCurrentData, updateTimeslotData, timeslotData],
+  );
 
-    // Add to other timeslot
-    const otherTimeslotId = currentTimeslotId === '6pm' ? '9:30pm' : '6pm';
-    const otherData = timeslotData[otherTimeslotId];
-    updateTimeslotData(otherTimeslotId, {
-      selectedFoods: [...otherData.selectedFoods, foodToSwap]
-    });
-  }, [getCurrentTimeslotId, getCurrentData, updateTimeslotData, timeslotData]);
+  const handleUpdateExternal = useCallback(
+    (n: ExternalNutrition) =>
+      updateTimeslotData(getCurrentTimeslotId(), { externalNutrition: n }),
+    [getCurrentTimeslotId, updateTimeslotData],
+  );
 
+  /* ---------- render ---------- */
   const currentData = getCurrentData();
 
-  // Debug logging for food database
-  useEffect(() => {
-    if (Object.keys(foodDatabase).length > 0) {
-      console.log('🔍 Food database loaded:', Object.keys(foodDatabase));
-    }
-  }, [foodDatabase]);
-
   return (
-    <Box sx={{ display: 'flex', gap: 3, maxWidth: 1200, mx: 'auto' }}>
-      {/* Left Column: Meal Planner */}
-      <Card sx={{ flex: 2 }}>
-        <CardContent>
-          {/* Timeslot Tabs */}
-          <Tabs
-            value={currentTimeslot}
-            onChange={(_, newValue) => setCurrentTimeslot(newValue)}
-            aria-label="meal timeslot tabs"
-            variant="fullWidth"
-            sx={{ mb: 2 }}
-          >
-            {TIMESLOTS.map((timeslot, index) => (
-              <Tab
-                key={timeslot.id}
-                icon={timeslot.icon}
-                label={
-                  <Box>
-                    <Typography variant="body2">{timeslot.label}</Typography>
-                    <Typography variant="caption">{timeslot.description}</Typography>
-                  </Box>
-                }
-                sx={{ minHeight: 'auto', p: 1.5 }}
-              />
-            ))}
-          </Tabs>
+    <Box>
+      {/* Timeslot picker */}
+      <Tabs
+        value={currentTimeslot}
+        onChange={(_, v) => setCurrentTimeslot(v)}
+        variant="fullWidth"
+        sx={{ mb: 2 }}
+      >
+        {TIMESLOTS.map((t) => (
+          <Tab key={t.id} icon={t.icon} label={t.label} />
+        ))}
+      </Tabs>
 
-          {/* Food Selector for Current Timeslot */}
-          <FoodSelectorWithFirebase
-            selectedFoods={currentData.selectedFoods}
-            onAddFood={handleAddFood}
-            onUpdateAmount={handleUpdateAmount}
-            onRemoveFood={handleRemoveFood}
-            onSwapFood={handleSwapFood}
-          />
+      {/* Food selector - handles both categorized chips AND flat selected list */}
+      <FoodSelectorWithFirebase
+        selectedFoods={currentData.selectedFoods}
+        onAddFood={handleAddFood}
+        onUpdateAmount={handleUpdateAmount}
+        onRemoveFood={handleRemoveFood}
+        onSwapFood={handleSwapFood}
+      />
 
-          {/* ✅ External Nutrition Input - use standard prop names */}
-          <ExternalNutritionInput
-            nutrition={currentData.externalNutrition}
-            onUpdateNutrition={handleUpdateExternal}
-          />
-        </CardContent>
-      </Card>
+      {/* ❌ REMOVED: CategoryAccordion usage - no more grouping for selected foods */}
 
-      {/* Right Column: Progress and Actions */}
-      <Stack spacing={2} sx={{ flex: 1 }}>
-        {/* ✅ Combined Nutrition Progress - single macros prop */}
-        <MacroProgress
-          macros={getTotalMacros}
-        />
+      {/* External nutrition input */}
+      <ExternalNutritionInput
+        nutrition={currentData.externalNutrition}
+        onUpdateNutrition={handleUpdateExternal}
+      />
 
-        {/* Meal Cost Display */}
-        <MealCostDisplay timeslotData={timeslotData} />
-
-        {/* ✅ Save/Load Plan - standard prop name */}
-        <Card>
-          <CardContent>
-            <Typography variant="h6" gutterBottom>
-              💾 Manage Plan
-            </Typography>
-            <SaveLoadPlan
-              timeslotData={timeslotData}
-              onLoad={setTimeslotData}
-            />
-          </CardContent>
-        </Card>
-      </Stack>
+      {/* Totals, cost, save */}
+      <MacroProgress macros={getTotalMacros} />
+      <MealCostDisplay timeslotData={timeslotData} />
+      <SaveLoadPlan 
+        timeslotData={timeslotData} 
+        onLoad={(loaded) => setTimeslotData(loaded)} 
+      />
     </Box>
   );
 };

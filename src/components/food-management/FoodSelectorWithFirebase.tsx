@@ -10,16 +10,16 @@
  * • Convert the cached data → legacy in-memory shape expected by
  *   the macro-calculation engine.
  * • Allow the user to:
- *     – pick a food (chip UI),
- *     – adjust amount,
- *     – preview macros + € cost,
- *     – swap foods between timeslots,
- *     – remove foods.
+ *   – pick a food (chip UI),
+ *   – adjust amount,
+ *   – preview macros + € cost,
+ *   – swap foods between timeslots,
+ *   – remove foods.
  * • Emit pure callback events so the parent (TimeslotMealPlanner) owns
  *   all state; the selector itself stays stateless/presentational.
  *
  * BUSINESS RULE HIGHLIGHTS
- * • Fixed-amount & unit foods are respected when defaulting the "amount".
+ * • Fixed-amount & unit foods are respected when defaulting the amount.
  * • All nutrition/cost maths are delegated to utility helpers; this file
  *   owns zero arithmetic logic, only UI + orchestration.
  */
@@ -27,27 +27,32 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import {
   Box,
-  Card,
-  CardContent,
   Typography,
   TextField,
   Button,
   Chip,
   Divider,
   Alert,
-  CircularProgress
+  CircularProgress,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Stack,
 } from '@mui/material';
-import { 
-  Add as AddIcon, 
-  SwapHoriz as SwapIcon, 
-  Delete as DeleteIcon 
+import {
+  Add as AddIcon,
+  SwapHoriz as SwapIcon,
+  Delete as DeleteIcon,
 } from '@mui/icons-material';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
 import { useFoodDatabase } from '../../contexts/FoodContext';
+import groupFoodsByCategory from '../../utils/groupFoodsByCategory';
 import { calculateMacros, formatMacroValue } from '../../utils/nutritionCalculations';
 import { calculatePortionCost, formatCost } from '../../services/firebase/nutrition/foodService';
 import { SelectedFood } from '../../types/nutrition';
 
+/* ---------- props ---------- */
 interface FoodSelectorWithFirebaseProps {
   selectedFoods: SelectedFood[];
   onAddFood: (food: SelectedFood) => void;
@@ -56,300 +61,231 @@ interface FoodSelectorWithFirebaseProps {
   onSwapFood?: (index: number) => void;
 }
 
+/* ================================================================== */
+/* COMPONENT                                                          */
+/* ================================================================== */
 const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = ({
   selectedFoods,
   onAddFood,
   onUpdateAmount,
   onRemoveFood,
-  onSwapFood
+  onSwapFood,
 }) => {
-  // ✅ Use cached food data from FoodContext instead of direct Firebase calls
+  /* ---------- data ---------- */
   const { foodDatabase, loading, error } = useFoodDatabase();
-
   const [selectedFoodName, setSelectedFoodName] = useState('');
   const [amount, setAmount] = useState(100);
 
-  // ✅ Food database is already in legacy format from context
-  const availableFoods = useMemo(() => Object.keys(foodDatabase), [foodDatabase]);
+  /* ---------- helpers ---------- */
+  const getFoodUnit = useCallback(
+    (n: string) => (foodDatabase[n]?.isUnitFood ? 'units' : 'g'),
+    [foodDatabase],
+  );
 
-  // Get food unit helper function (memoized)
-  const getFoodUnit = useCallback((foodName: string): string => {
-    const foodItem = foodDatabase[foodName];
-    if (!foodItem) {
-      console.warn(`⚠️ Food not found in database: ${foodName}`);
-      return 'g';
-    }
-    return foodItem.isUnitFood ? 'units' : 'g';
-  }, [foodDatabase]);
+  const getDefaultAmount = useCallback(
+    (n: string) => {
+      const f = foodDatabase[n];
+      if (!f) return 100;
+      if (f.useFixedAmount && f.fixedAmount) return f.fixedAmount;
+      if (f.isUnitFood) return n === 'Eggs' ? 2 : 1;
+      return 100;
+    },
+    [foodDatabase],
+  );
 
-  // Calculate macros helper function (memoized)
-  const calculateFoodMacros = useCallback((foodName: string, amount: number) => {
-    const foodItem = foodDatabase[foodName];
-    if (!foodItem) {
-      console.warn(`⚠️ Cannot calculate macros for missing food: ${foodName}`);
-      return { protein: 0, fats: 0, carbs: 0, calories: 0 };
-    }
+  const handleFoodSelect = useCallback(
+    (n: string) => {
+      setSelectedFoodName(n);
+      setAmount(getDefaultAmount(n));
+    },
+    [getDefaultAmount],
+  );
 
-    const multiplier = foodItem.isUnitFood ? amount : amount / 100;
-    return {
-      protein: (foodItem.nutrition?.protein || 0) * multiplier,
-      fats: (foodItem.nutrition?.fats || 0) * multiplier,
-      carbs: (foodItem.nutrition?.carbs || 0) * multiplier,
-      calories: (foodItem.nutrition?.calories || 0) * multiplier
-    };
-  }, [foodDatabase]);
-
-  const handleAddFood = useCallback(() => {
+  const handleAdd = useCallback(() => {
     if (!selectedFoodName) return;
-    const foodItem = foodDatabase[selectedFoodName];
-    if (!foodItem) {
-      console.error(`❌ Cannot add missing food: ${selectedFoodName}`);
-      return;
-    }
-
-    onAddFood({
-      name: selectedFoodName,
-      amount: amount
-    });
-
-    // Reset form
+    onAddFood({ name: selectedFoodName, amount });
     setSelectedFoodName('');
     setAmount(100);
-  }, [selectedFoodName, amount, onAddFood, foodDatabase]);
+  }, [selectedFoodName, amount, onAddFood]);
 
-  const getFoodEmoji = useCallback((foodName: string): string => {
-    const emojiMap: Record<string, string> = {
-      'Greek yogurt': '🥛',
-      'Peanut-butter': '🥜',
-      'Dry rice': '🍚',
-      'Dry lentils': '🌾',
-      'Bulk oats': '🌾',
-      'Chicken-breast': '🍗',
-      'Edamame': '🫛',
-      'Canned tuna': '🐟',
-      'Whey isolate': '💪',
-      'Eggs': '🥚',
-      'Tortilla wrap': '🌯',
-      'Almonds/Walnuts': '🥜',
-      'Dark-chocolate 74%': '🍫',
-      'Oatmeal': '🥣',
-      'rice-cake': '🍚'
-    };
-    return emojiMap[foodName] || '🍽️';
-  }, []);
-
-  const getDefaultAmount = useCallback((foodName: string): number => {
-    const foodItem = foodDatabase[foodName];
-    if (!foodItem) return 100;
-
-    // Use fixed amount if enabled
-    if (foodItem.useFixedAmount && (foodItem.fixedAmount ?? 0) > 0) {
-      return foodItem.fixedAmount ?? 0;
-    }
-
-    // Fallback to default amounts
-    if (foodItem.isUnitFood) {
-      switch (foodName) {
-        case 'Eggs': return 2;
-        case 'Tortilla wrap': return 1;
-        case 'Canned tuna': return 1;
-        default: return 1;
-      }
-    }
-    return 100; // default grams for weight foods
+  /* ---------- group catalogue by category ---------- */
+  const groupedAvailable = useMemo(() => {
+    // Filter out hidden foods from the available selection
+    const visibleFoodNames = Object.keys(foodDatabase).filter(
+      name => !foodDatabase[name]?.metadata?.hidden
+    );
+    const dummy = visibleFoodNames.map((name) => ({ name, amount: 0 }));
+    return groupFoodsByCategory(dummy, foodDatabase);
   }, [foodDatabase]);
 
-  const handleFoodSelect = useCallback((foodName: string) => {
-    setSelectedFoodName(foodName);
-    setAmount(getDefaultAmount(foodName));
-  }, [getDefaultAmount]);
-
-  // ✅ Loading state from context
-  if (loading) {
+  /* ---------- guards ---------- */
+  if (loading)
     return (
-      <Alert severity="info" icon={<CircularProgress size={18} />}>
-        Loading foods from database...
+      <Alert icon={<CircularProgress size={18} />} severity="info">
+        Loading foods…
       </Alert>
     );
-  }
 
-  // ✅ Error state from context
-  if (error) {
+  if (error)
     return (
-      <Alert severity="error">
+      <Alert severity="error" sx={{ whiteSpace: 'pre-wrap' }}>
         {error}
-        <Button onClick={() => window.location.reload()} sx={{ ml: 2 }}>
-          Retry Loading Foods
-        </Button>
       </Alert>
     );
-  }
 
-  // ✅ No foods state
-  if (availableFoods.length === 0) {
-    return (
-      <Alert severity="warning">
-        No foods found in database. Please add some foods using the "Manage Foods" tab.
-        <Button onClick={() => window.location.reload()} sx={{ ml: 2 }}>
-          Refresh
-        </Button>
-      </Alert>
-    );
-  }
+  if (Object.keys(foodDatabase).length === 0)
+    return <Alert severity="warning">No foods found in the database.</Alert>;
 
+  /* ---------------------------------------------------------------- */
+  /* RENDER                                                           */
+  /* ---------------------------------------------------------------- */
   return (
-    <Card>
-      <CardContent>
-        {/* Header */}
-        <Typography variant="h6" gutterBottom>
-          Food Selector
-        </Typography>
+    <Box>
+      <Typography variant="subtitle1" sx={{ mb: 1 }}>
+        Available Foods ({Object.keys(foodDatabase).length})
+      </Typography>
 
-        {/* Food Selection */}
-        <Typography variant="body2" gutterBottom>
-          Available Foods ({availableFoods.length})
-        </Typography>
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 2 }}>
-          {availableFoods.map((foodName) => {
-            const foodItem = foodDatabase[foodName];
-            const hasFixedAmount = foodItem?.useFixedAmount;
-            const isSelected = selectedFoods.some(food => food.name === foodName);
+      {/* ---------- grouped chip picker ---------- */}
+      {Object.entries(groupedAvailable).map(([cat, foods]) => (
+        <Accordion key={cat} defaultExpanded sx={{ mb: 1 }}>
+          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+            <Typography variant="subtitle2">{cat}</Typography>
+          </AccordionSummary>
+          <AccordionDetails>
+            <Stack direction="row" flexWrap="wrap" gap={1}>
+              {foods.map(({ name }) => {
+                const isSel = selectedFoods.some((f) => f.name === name);
+                const hasFixed = foodDatabase[name]?.useFixedAmount;
+                return (
+                  <Chip
+                    key={name}
+                    label={name}
+                    onClick={() => handleFoodSelect(name)}
+                    variant={
+                      selectedFoodName === name || isSel ? 'filled' : 'outlined'
+                    }
+                    color={
+                      selectedFoodName === name
+                        ? 'primary'
+                        : isSel
+                        ? 'secondary'
+                        : hasFixed
+                        ? 'success'
+                        : 'default'
+                    }
+                  />
+                );
+              })}
+            </Stack>
+          </AccordionDetails>
+        </Accordion>
+      ))}
+
+      {/* ---------- amount input & add button ---------- */}
+      {selectedFoodName && (
+        <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
+          <TextField
+            type="number"
+            size="small"
+            label={getFoodUnit(selectedFoodName)}
+            value={amount}
+            onChange={(e) => setAmount(Number(e.target.value))}
+            sx={{ width: 120 }}
+            inputProps={{ min: 0 }}
+          />
+          <Button
+            startIcon={<AddIcon />}
+            variant="contained"
+            onClick={handleAdd}
+          >
+            Add {selectedFoodName}
+          </Button>
+        </Stack>
+      )}
+
+      {/* ---------- selected foods list ---------- */}
+      {selectedFoods.length > 0 && (
+        <>
+          <Divider sx={{ my: 2 }} />
+          <Typography variant="subtitle1" sx={{ mb: 1 }}>
+            Selected Foods ({selectedFoods.length})
+          </Typography>
+
+          {selectedFoods.map((food, idx) => {
+            const macros = calculateMacros(food.name, food.amount, foodDatabase);
+            const cost = calculatePortionCost(
+              food.name,
+              food.amount,
+              foodDatabase,
+            );
 
             return (
-              <Chip
-                key={foodName}
-                label={foodName}
-                onClick={() => handleFoodSelect(foodName)}
-                variant={selectedFoodName === foodName ? 'filled' : (isSelected ? 'filled' : 'outlined')}
-                color={selectedFoodName === foodName ? 'primary' : (isSelected ? 'secondary' : (hasFixedAmount ? 'success' : 'default'))}
-                sx={{
-                  cursor: 'pointer',
-                  ...(isSelected && {
-                    backgroundColor: 'secondary.light',
-                    color: 'secondary.contrastText'
-                  })
-                }}
-              />
-            );
-          })}
-        </Box>
-
-        {/* Amount Input & Add Button */}
-        {selectedFoodName && (
-          <Box sx={{ display: 'flex', gap: 1, mb: 3 }}>
-            <TextField
-              type="number"
-              value={amount}
-              onChange={e => setAmount(Number(e.target.value))}
-              label={getFoodUnit(selectedFoodName)}
-              sx={{ flex: 1, minWidth: 120 }}
-              size="small"
-            />
-            <Button
-              startIcon={<AddIcon />}
-              variant="contained"
-              onClick={handleAddFood}
-              disabled={!selectedFoodName || amount <= 0}
-              sx={{ whiteSpace: 'nowrap' }}
-            >
-              Add {selectedFoodName}
-            </Button>
-          </Box>
-        )}
-
-        {/* Selected Foods List */}
-        {selectedFoods.length > 0 && (
-          <>
-            <Divider sx={{ mb: 2 }} />
-            <Typography variant="subtitle1" gutterBottom>
-              Selected Foods ({selectedFoods.length})
-            </Typography>
-
-            {selectedFoods.map((food, index) => {
-              const macros = calculateFoodMacros(food.name, food.amount);
-              // ✅ Pass foodDatabase to calculatePortionCost
-              const portionCost = calculatePortionCost(food.name, food.amount, foodDatabase);
-
-              return (
-                <Box
-                  key={`${food.name}-${index}`}
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    p: 1,
-                    mb: 1,
-                    borderRadius: 2,
-                    bgcolor: theme => theme.palette.mode === 'dark' ? 'grey.800' : 'grey.50',
-                    border: theme => theme.palette.mode === 'dark'
-                      ? '1px solid rgba(255, 255, 255, 0.12)'
-                      : '1px solid rgba(0, 0, 0, 0.12)'
-                  }}
+              <Box
+                key={`${food.name}_${idx}`}
+                sx={(theme) => ({
+                  p: 1,
+                  mb: 1,
+                  borderRadius: 1,
+                  bgcolor:
+                    theme.palette.mode === 'dark' ? 'grey.900' : 'grey.50',
+                })}
+              >
+                <Stack
+                  direction="row"
+                  alignItems="center"
+                  justifyContent="space-between"
+                  spacing={1}
                 >
-                  <Typography sx={{ flex: 2, color: theme => theme.palette.mode === 'dark' ? 'grey.100' : 'grey.800' }}>
-                    {getFoodEmoji(food.name)} {food.name}
-                  </Typography>
+                  <Typography sx={{ flex: 1 }}>{food.name}</Typography>
 
                   <TextField
                     type="number"
                     size="small"
-                    value={food.amount}
-                    onChange={e => onUpdateAmount(index, Number(e.target.value))}
+                    sx={{ width: 90 }}
                     label={getFoodUnit(food.name)}
-                    sx={{ width: 120 }}
+                    value={food.amount}
+                    onChange={(e) =>
+                      onUpdateAmount(idx, Number(e.target.value))
+                    }
+                    inputProps={{ min: 0 }}
                   />
 
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      flex: 3,
-                      ml: 1,
-                      color: theme => theme.palette.mode === 'dark' ? 'grey.300' : 'grey.600',
-                      fontWeight: 500
-                    }}
-                  >
-                    💪 {formatMacroValue(macros.protein)}g |{' '}
-                    🥑 {formatMacroValue(macros.fats)}g |{' '}
-                    🍞 {formatMacroValue(macros.carbs)}g |{' '}
-                    🔥 {formatMacroValue(macros.calories, 0)} kcal
+                  <Typography variant="caption" sx={{ width: 110 }}>
+                    {formatMacroValue(macros.protein)}g P ·{' '}
+                    {formatMacroValue(macros.fats)}g F ·{' '}
+                    {formatMacroValue(macros.carbs)}g C
                   </Typography>
 
-                  {/* ✅ Show cost if available */}
-                  {portionCost !== null && (
-                    <Typography variant="body2" sx={{ flex: 1, ml: 1 }}>
-                      💰 {formatCost(portionCost)}
+                  {cost !== null && (
+                    <Typography variant="caption" sx={{ width: 60 }}>
+                      {formatCost(cost)}
                     </Typography>
                   )}
 
-                  {/* Swap button (if provided) */}
                   {onSwapFood && (
                     <Button
+                      onClick={() => onSwapFood(idx)}
                       size="small"
-                      onClick={() => onSwapFood(index)}
-                      sx={{ minWidth: 40, p: 1 }}
-                      title="Swap to other timeslot"
+                      sx={{ minWidth: 0 }}
                     >
-                      <SwapIcon />
+                      <SwapIcon fontSize="inherit" />
                     </Button>
                   )}
 
-                  {/* Remove button */}
                   <Button
+                    onClick={() => onRemoveFood(idx)}
                     size="small"
-                    color="error"
-                    onClick={() => onRemoveFood(index)}
-                    sx={{ minWidth: 40, p: 1 }}
-                    title="Remove food"
+                    sx={{ minWidth: 0 }}
                   >
-                    <DeleteIcon />
+                    <DeleteIcon fontSize="inherit" />
                   </Button>
-                </Box>
-              );
-            })}
-          </>
-        )}
-      </CardContent>
-    </Card>
+                </Stack>
+              </Box>
+            );
+          })}
+        </>
+      )}
+    </Box>
   );
 };
 

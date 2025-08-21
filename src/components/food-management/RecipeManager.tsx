@@ -303,7 +303,8 @@ const RecipeManager: React.FC = () => {
         category: cleanRecipeData.category || 'Other',
         isUnitFood: false, // Per 100g, not per unit
         useFixedAmount: false,
-        fixedAmount: 100
+        fixedAmount: 100,
+        hidden: false // ← ADD THIS LINE
       };
 
       // Use the foodService.addFood function to create the food item

@@ -20,7 +20,11 @@ export const FoodProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const unsubscribe = subscribeToFoods(
       (firestoreFoods) => {
         // Convert to legacy format with cost data
-        const legacyDB = convertToLegacyFoodFormat(firestoreFoods);
+            const legacyDB = convertToLegacyFoodFormat(firestoreFoods);
+            /* DEBUG: verify category field made it through */
+            console.log('🟡 First 5 foods after convert:',
+              Object.entries(legacyDB).slice(0, 5).map(([k, v]) => [k, v?.metadata?.category])
+            );
         setFoodDatabase(legacyDB);
         setLoading(false);
         setError(null);

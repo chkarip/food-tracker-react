@@ -1,7 +1,7 @@
 /**
- * Firebase Firestore Service  
+ * Firebase Firestore Service
  * ------------------------------------------------------------------
- * Handles all database operations for food management with real-time 
+ * Handles all database operations for food management with real-time
  * subscriptions, cost data, and legacy format conversion.
  */
 
@@ -16,7 +16,7 @@ import {
   orderBy,
   where,
   onSnapshot,
-  Timestamp
+  Timestamp,
 } from 'firebase/firestore';
 import { db } from '../../../config/firebase';
 
@@ -42,6 +42,7 @@ export interface FirebaseFoodItem {
     lastUpdated: Date;
     useFixedAmount: boolean;
     fixedAmount: number;
+    hidden: boolean;
   };
 }
 
@@ -61,10 +62,25 @@ export interface FoodFormData {
   isUnitFood: boolean;
   useFixedAmount: boolean;
   fixedAmount: number;
+  hidden: boolean;
 }
 
 // FirestoreFood = FirebaseFoodItem + document ID
-export type FirestoreFood = FirebaseFoodItem & { firestoreId: string };
+export interface FirestoreFood {
+  name: string;
+  nutrition: { protein: number; fats: number; carbs: number; calories: number };
+  cost: { costPerKg: number; unit: 'kg' | 'unit' };
+  metadata?: {
+    category?: string;
+    isUnitFood?: boolean;
+    useFixedAmount?: boolean;
+    fixedAmount?: number;
+    hidden?: boolean;
+    addedAt?: Date;
+    lastUpdated?: Date;
+  };
+  firestoreId: string;
+}
 
 /**
  * Get all foods from Firestore database
@@ -73,8 +89,8 @@ export const getAllFoods = async (): Promise<FirestoreFood[]> => {
   const foodsRef = collection(db, 'foods');
   const q = query(foodsRef, orderBy('name'));
   const querySnapshot = await getDocs(q);
-
   const foods: FirestoreFood[] = [];
+  
   querySnapshot.forEach((doc) => {
     const data = doc.data() as FirebaseFoodItem;
     foods.push({
@@ -91,7 +107,6 @@ export const getAllFoods = async (): Promise<FirestoreFood[]> => {
       },
     });
   });
-
   return foods;
 };
 
@@ -101,7 +116,7 @@ export const getAllFoods = async (): Promise<FirestoreFood[]> => {
 export const addFood = async (foodData: FoodFormData): Promise<string> => {
   const timestamp = new Date();
   const documentId = foodData.name.toLowerCase().replace(/[^a-z0-9]/g, '-');
-
+  
   const costEfficiency = foodData.nutrition.protein > 0
     ? (foodData.cost.unit === 'unit'
         ? foodData.cost.costPerKg
@@ -122,13 +137,14 @@ export const addFood = async (foodData: FoodFormData): Promise<string> => {
       costEfficiency: costEfficiency,
     },
     metadata: {
-      isUnitFood: foodData.isUnitFood,
       category: foodData.category,
+      isUnitFood: foodData.isUnitFood,
+      useFixedAmount: foodData.useFixedAmount,
+      fixedAmount: foodData.fixedAmount,
+      hidden: foodData.hidden,
       proteinEfficiency: proteinEfficiency,
       addedAt: timestamp,
       lastUpdated: timestamp,
-      useFixedAmount: foodData.useFixedAmount,
-      fixedAmount: foodData.fixedAmount,
     },
   };
 
@@ -161,12 +177,15 @@ export const updateFood = async (firestoreId: string, foodData: FoodFormData): P
       unit: foodData.cost.unit,
       costEfficiency: costEfficiency,
     },
-    'metadata.category': foodData.category,
-    'metadata.isUnitFood': foodData.isUnitFood,
-    'metadata.proteinEfficiency': proteinEfficiency,
-    'metadata.lastUpdated': timestamp,
-    'metadata.useFixedAmount': foodData.useFixedAmount ?? false,
-    'metadata.fixedAmount': foodData.fixedAmount ?? 0,
+    metadata: {
+      category: foodData.category,
+      isUnitFood: foodData.isUnitFood,
+      useFixedAmount: foodData.useFixedAmount,
+      fixedAmount: foodData.fixedAmount,
+      hidden: foodData.hidden,
+      proteinEfficiency: proteinEfficiency,
+      lastUpdated: timestamp,
+    },
   };
 
   const foodRef = doc(db, 'foods', firestoreId);
@@ -195,7 +214,7 @@ export const getFoodsByCategory = async (category: string): Promise<FirestoreFoo
   );
   const querySnapshot = await getDocs(q);
   const foods: FirestoreFood[] = [];
-
+  
   querySnapshot.forEach((doc) => {
     const data = doc.data() as FirebaseFoodItem;
     foods.push({
@@ -212,7 +231,6 @@ export const getFoodsByCategory = async (category: string): Promise<FirestoreFoo
       },
     });
   });
-
   return foods;
 };
 
@@ -223,18 +241,15 @@ export const getFoodCategories = async (): Promise<string[]> => {
   const categoriesRef = collection(db, 'categories');
   const querySnapshot = await getDocs(categoriesRef);
   const categories: string[] = [];
-
   querySnapshot.forEach((doc) => {
     const data = doc.data();
     categories.push(data.name);
   });
-
   return categories.sort();
 };
 
 /**
  * Real-time listener for foods collection
- * ✅ NOW ACCEPTS OPTIONAL ERROR HANDLER
  */
 export const subscribeToFoods = (
   onNext: (foods: FirestoreFood[]) => void,
@@ -281,10 +296,11 @@ export const convertToLegacyFoodFormat = (foods: FirestoreFood[]): Record<string
     legacyFormat[food.name] = {
       name: food.name,
       nutrition: food.nutrition,
-      isUnitFood: food.metadata.isUnitFood,
-      useFixedAmount: food.metadata.useFixedAmount,
-      fixedAmount: food.metadata.fixedAmount,
-      cost: food.cost  // ✅ THIS IS THE KEY - includes costPerKg + unit
+      isUnitFood: food.metadata?.isUnitFood ?? false,
+      useFixedAmount: food.metadata?.useFixedAmount ?? false,
+      fixedAmount: food.metadata?.fixedAmount ?? 0,
+      cost: food.cost,
+      metadata: { ...food.metadata },
     };
   });
   return legacyFormat;
@@ -302,9 +318,11 @@ export const calculatePortionCost = (
   if (!food || !food.cost || food.cost.costPerKg == null) return null;
 
   const { costPerKg, unit } = food.cost;
+
   if ((unit ?? (food.isUnitFood ? 'unit' : 'kg')) === 'unit') {
     return costPerKg * amount; // unit-based (eggs, tuna cans…)
   }
+
   return (costPerKg / 1_000) * amount; // €/kg → €/g
 };
 

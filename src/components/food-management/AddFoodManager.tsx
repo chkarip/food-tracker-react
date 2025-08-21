@@ -94,6 +94,7 @@ const AddFoodManager: React.FC = () => {
             isUnitFood: false,
             useFixedAmount: false,
             fixedAmount: 0,
+            hidden: false,
             ...food.metadata
           },
           firestoreId: food.name.toLowerCase().replace(/[^a-z0-9]/g, '-')
@@ -103,13 +104,14 @@ const AddFoodManager: React.FC = () => {
 
   /* ---------- form state ---------- */
   const [formData, setFormData] = useState<FoodFormData>({
-    name: '',
-    nutrition: { protein: 0, fats: 0, carbs: 0, calories: 0 },
-    cost: { costPerKg: 0, unit: 'kg' },
-    category: 'Other',
-    isUnitFood: false,
-    useFixedAmount: false,
-    fixedAmount: 100
+  name: '',
+  nutrition: { protein: 0, fats: 0, carbs: 0, calories: 0 },
+  cost: { costPerKg: 0, unit: 'kg' },
+  category: 'Other',
+  isUnitFood: false,
+  useFixedAmount: false,
+  fixedAmount: 100,
+  hidden: false // ← NEW
   });
 
   /* ---------- ui state ---------- */
@@ -131,7 +133,8 @@ const AddFoodManager: React.FC = () => {
       category: 'Other',
       isUnitFood: false,
       useFixedAmount: false,
-      fixedAmount: 100
+      fixedAmount: 100,
+      hidden: false // ← NEW
     });
     setEditingFood(null);
     setError(null);
@@ -219,7 +222,8 @@ const AddFoodManager: React.FC = () => {
       category: food.metadata?.category ?? 'Other',
       isUnitFood: food.metadata?.isUnitFood ?? false,
       useFixedAmount: food.metadata?.useFixedAmount ?? false,
-      fixedAmount: food.metadata?.fixedAmount ?? 0
+      fixedAmount: food.metadata?.fixedAmount ?? 0,
+      hidden: typeof food.metadata?.hidden === 'boolean' ? food.metadata.hidden : false
     });
     setEditingFood(food);
     setError(null);
@@ -306,6 +310,16 @@ const AddFoodManager: React.FC = () => {
                   />
                 }
                 label="Use fixed amount"
+                sx={{ ml: 2 }}
+              />
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={formData.hidden}
+                    onChange={(e) => handleInputChange('hidden', e.target.checked)}
+                  />
+                }
+                label="Hidden (exclude from meal plans)"
                 sx={{ ml: 2 }}
               />
             </Stack>
