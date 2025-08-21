@@ -1,4 +1,19 @@
 
+
+:root {
+  --color-primary-base: #2563eb;
+  --color-primary-base-rgb: 37, 99, 235;
+  --color-secondary-base: #10b981;
+  --color-secondary-base-rgb: 16, 185, 129;
+}
+
+[data-theme="dark"] {
+  --color-primary-base: #3BBA75;
+  --color-primary-base-rgb: 59, 186, 117;
+  --color-secondary-base: #FF9800;
+  --color-secondary-base-rgb: 255, 152, 0;
+}
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',

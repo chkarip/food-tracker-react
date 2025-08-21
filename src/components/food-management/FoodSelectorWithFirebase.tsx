@@ -33,9 +33,6 @@ import {
   Divider,
   Alert,
   CircularProgress,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
   Stack,
   IconButton,
 } from '@mui/material';
@@ -46,7 +43,7 @@ import {
   SwapHoriz as SwapIcon,
   Delete as DeleteIcon,
 } from '@mui/icons-material';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import CollapsiblePanel from '../shared/CollapsiblePanel';
 
 import { useFoodDatabase } from '../../contexts/FoodContext';
 import groupFoodsByCategory from '../../utils/groupFoodsByCategory';
@@ -61,6 +58,8 @@ interface FoodSelectorWithFirebaseProps {
   onUpdateAmount: (index: number, amount: number) => void;
   onRemoveFood: (index: number) => void;
   onSwapFood?: (index: number) => void;
+  onFoodPreview?: (foodName: string, amount: number) => void;
+  onClearPreview?: () => void;
 }
 
 /* ================================================================== */
@@ -72,6 +71,8 @@ const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = ({
   onUpdateAmount,
   onRemoveFood,
   onSwapFood,
+  onFoodPreview,
+  onClearPreview,
 }) => {
   /* ---------- data ---------- */
   const { foodDatabase, loading, error } = useFoodDatabase();
@@ -98,16 +99,33 @@ const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = ({
   const handleFoodSelect = useCallback(
     (n: string) => {
       setSelectedFoodName(n);
-      setAmount(getDefaultAmount(n));
+      const amt = getDefaultAmount(n);
+      setAmount(amt);
+      if (onFoodPreview) onFoodPreview(n, amt);
     },
-    [getDefaultAmount],
+    [getDefaultAmount, onFoodPreview],
   );
+  // Update amount and trigger preview
+  const handleAmountChange = useCallback((newAmount: number) => {
+    setAmount(newAmount);
+    if (selectedFoodName && onFoodPreview) {
+      onFoodPreview(selectedFoodName, newAmount);
+    }
+  }, [selectedFoodName, onFoodPreview]);
 
-  const handleAdd = useCallback(() => {
-    if (!selectedFoodName) return;
-    onAddFood({ name: selectedFoodName, amount });
+  // Clear preview when deselecting
+  const handleClearSelection = useCallback(() => {
     setSelectedFoodName('');
     setAmount(100);
+    if (onClearPreview) onClearPreview();
+  }, [onClearPreview]);
+
+  const handleAdd = useCallback(() => {
+  if (!selectedFoodName) return;
+  onAddFood({ name: selectedFoodName, amount });
+  setSelectedFoodName('');
+  setAmount(100);
+  if (onClearPreview) onClearPreview();
   }, [selectedFoodName, amount, onAddFood]);
 
   /* ---------- group catalogue by category ---------- */
@@ -149,38 +167,39 @@ const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = ({
 
       {/* ---------- grouped chip picker ---------- */}
       {Object.entries(groupedAvailable).map(([cat, foods]) => (
-        <Accordion key={cat} defaultExpanded sx={{ mb: 1 }}>
-          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Typography variant="subtitle2">{cat}</Typography>
-          </AccordionSummary>
-          <AccordionDetails>
-            <Stack direction="row" flexWrap="wrap" gap={1}>
-              {foods.map(({ name }) => {
-                const isSel = selectedFoods.some((f) => f.name === name);
-                const hasFixed = foodDatabase[name]?.useFixedAmount;
-                return (
-                  <Chip
-                    key={name}
-                    label={name}
-                    onClick={() => handleFoodSelect(name)}
-                    variant={
-                      selectedFoodName === name || isSel ? 'filled' : 'outlined'
-                    }
-                    color={
-                      selectedFoodName === name
-                        ? 'primary'
-                        : isSel
-                        ? 'secondary'
-                        : hasFixed
-                        ? 'success'
-                        : 'default'
-                    }
-                  />
-                );
-              })}
-            </Stack>
-          </AccordionDetails>
-        </Accordion>
+        <CollapsiblePanel
+          key={cat}
+          title={cat}
+          variant="primary"
+          size="small"
+          defaultExpanded={cat === 'Protein'}
+        >
+          <Stack direction="row" flexWrap="wrap" gap={1}>
+            {foods.map(({ name }) => {
+              const isSel = selectedFoods.some((f) => f.name === name);
+              const hasFixed = foodDatabase[name]?.useFixedAmount;
+              return (
+                <Chip
+                  key={name}
+                  label={name}
+                  onClick={() => handleFoodSelect(name)}
+                  variant={
+                    selectedFoodName === name || isSel ? 'filled' : 'outlined'
+                  }
+                  color={
+                    selectedFoodName === name
+                      ? 'primary'
+                      : isSel
+                      ? 'secondary'
+                      : hasFixed
+                      ? 'success'
+                      : 'default'
+                  }
+                />
+              );
+            })}
+          </Stack>
+        </CollapsiblePanel>
       ))}
 
       {/* ---------- amount input & add button ---------- */}
@@ -192,7 +211,7 @@ const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = ({
             </Typography>
             <NumberStepper
               value={amount}
-              onChange={setAmount}
+              onChange={handleAmountChange}
               min={0}
               max={1000}
               step={getFoodUnit(selectedFoodName) === 'units' ? 1 : 5}
@@ -206,6 +225,14 @@ const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = ({
             size='small'
           >
             ➕ Add {selectedFoodName}
+          </AccentButton>
+          <AccentButton
+            onClick={handleClearSelection}
+            variant="secondary"
+            size="small"
+            style={{ marginLeft: 8 }}
+          >
+            Clear
           </AccentButton>
         </Stack>
       )}
@@ -229,13 +256,14 @@ const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = ({
             return (
               <Box
                 key={`${food.name}_${idx}`}
-                sx={(theme) => ({
+                sx={{
                   p: 1,
                   mb: 1,
                   borderRadius: 1,
-                  bgcolor:
-                    theme.palette.mode === 'dark' ? 'grey.900' : 'grey.50',
-                })}
+                  bgcolor: 'background.paper',
+                  border: '1px solid',
+                  borderColor: 'divider',
+                }}
               >
                 <Stack
                   direction="row"

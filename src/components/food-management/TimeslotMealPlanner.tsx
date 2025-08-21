@@ -32,7 +32,7 @@
  */
 
 import React, { useState, useCallback, useMemo } from 'react';
-import { Box, Tabs, Tab } from '@mui/material';
+import { Box, Tabs, Tab, Typography, Paper, Divider } from '@mui/material';
 import {
   WbSunny as AfternoonIcon,
   Nightlight as EveningIcon,
@@ -40,6 +40,7 @@ import {
 
 import MacroProgress from './MacroProgress';
 import FoodSelectorWithFirebase from './FoodSelectorWithFirebase';
+import { calculateMacros } from '../../utils/nutritionCalculations';
 import ExternalNutritionInput from './ExternalNutritionInput';
 import SaveLoadPlan from './SaveLoadPlan';
 import MealCostDisplay from './MealCostDisplay';
@@ -73,6 +74,11 @@ const TIMESLOTS = [
 ];
 
 /* ================================================================== */
+interface PreviewFood {
+  name: string;
+  amount: number;
+}
+
 const TimeslotMealPlanner: React.FC = () => {
   /* ---------- state ---------- */
   const [currentTimeslot, setCurrentTimeslot] = useState(0);
@@ -90,6 +96,9 @@ const TimeslotMealPlanner: React.FC = () => {
       },
     },
   );
+
+  // Live preview state
+  const [previewFood, setPreviewFood] = useState<PreviewFood | null>(null);
 
   /* ---------- helpers ---------- */
   const getCurrentTimeslotId = useCallback(
@@ -205,47 +214,115 @@ const TimeslotMealPlanner: React.FC = () => {
     [getCurrentTimeslotId, updateTimeslotData],
   );
 
+  // Calculate preview macros including tentative selection
+  const getPreviewMacros = useMemo((): NutritionData => {
+    if (!previewFood || !foodDatabase[previewFood.name]) return getTotalMacros;
+    // Add preview food macros to current selection
+    const previewMacros = calculateMacros(previewFood.name, previewFood.amount, foodDatabase);
+    return {
+      protein: getTotalMacros.protein + previewMacros.protein,
+      fats: getTotalMacros.fats + previewMacros.fats,
+      carbs: getTotalMacros.carbs + previewMacros.carbs,
+      calories: getTotalMacros.calories + previewMacros.calories,
+    };
+  }, [previewFood, getTotalMacros, foodDatabase]);
+
   /* ---------- render ---------- */
   const currentData = getCurrentData();
 
   return (
-    <Box>
-      {/* Timeslot picker */}
-      <Tabs
-        value={currentTimeslot}
-        onChange={(_, v) => setCurrentTimeslot(v)}
-        variant="fullWidth"
-        sx={{ mb: 2 }}
+    <Box 
+      sx={{ 
+        display: 'flex', 
+        gap: 3, 
+        height: '100%', 
+        p: 2,
+        flexDirection: { xs: 'column', md: 'row' }
+      }}
+    >
+      {/* ========== LEFT COLUMN: Food Selection & Settings ========== */}
+      <Box 
+        sx={{ 
+          flexBasis: { xs: '100%', md: '60%' },
+          minWidth: 0,
+          overflowY: 'auto'
+        }}
       >
-        {TIMESLOTS.map((t) => (
-          <Tab key={t.id} icon={t.icon} label={t.label} />
-        ))}
-      </Tabs>
+        {/* Timeslot picker */}
+        <Tabs
+          value={currentTimeslot}
+          onChange={(_, v) => setCurrentTimeslot(v)}
+          variant="fullWidth"
+          sx={{ mb: 3 }}
+        >
+          {TIMESLOTS.map((t) => (
+            <Tab
+              key={t.id}
+              label={t.label}
+              icon={t.icon}
+              iconPosition="start"
+            />
+          ))}
+        </Tabs>
 
-      {/* Food selector - handles both categorized chips AND flat selected list */}
-      <FoodSelectorWithFirebase
-        selectedFoods={currentData.selectedFoods}
-        onAddFood={handleAddFood}
-        onUpdateAmount={handleUpdateAmount}
-        onRemoveFood={handleRemoveFood}
-        onSwapFood={handleSwapFood}
-      />
+        {/* Food selector - your existing component */}
+        <Box sx={{ mb: 3 }}>
+          <FoodSelectorWithFirebase
+            selectedFoods={currentData.selectedFoods}
+            onAddFood={handleAddFood}
+            onUpdateAmount={handleUpdateAmount}
+            onRemoveFood={handleRemoveFood}
+            onSwapFood={handleSwapFood}
+            onFoodPreview={(name, amount) => setPreviewFood({ name, amount })}
+            onClearPreview={() => setPreviewFood(null)}
+          />
+        </Box>
 
-      {/* ❌ REMOVED: CategoryAccordion usage - no more grouping for selected foods */}
+        {/* External nutrition input - your existing component */}
+        <Box sx={{ mb: 3 }}>
+          <ExternalNutritionInput
+            nutrition={currentData.externalNutrition}
+            onUpdateNutrition={handleUpdateExternal}
+          />
+        </Box>
+      </Box>
 
-      {/* External nutrition input */}
-      <ExternalNutritionInput
-        nutrition={currentData.externalNutrition}
-        onUpdateNutrition={handleUpdateExternal}
-      />
+      {/* ========== RIGHT COLUMN: Progress & Costs (Sticky) ========== */}
+      <Box 
+        sx={{ 
+          flexBasis: { xs: '100%', md: '40%' },
+          position: { md: 'sticky' },
+          top: { md: 16 },
+          alignSelf: { md: 'flex-start' },
+          height: { md: 'fit-content' }
+        }}
+      >
+        {/* Macro progress - your existing component */}
+        <Box sx={{ mb: 3 }}>
+          <MacroProgress
+            current={getTotalMacros}
+            preview={getPreviewMacros}
+            showPreview={!!previewFood}
+            foodMacros={getCombinedFoodMacros}
+            externalMacros={getCombinedExternal}
+          />
+        </Box>
 
-      {/* Totals, cost, save */}
-      <MacroProgress macros={getTotalMacros} />
-      <MealCostDisplay timeslotData={timeslotData} />
-      <SaveLoadPlan 
-        timeslotData={timeslotData} 
-        onLoad={(loaded) => setTimeslotData(loaded)} 
-      />
+        {/* Meal cost display - your existing component */}
+        <Box sx={{ mb: 3 }}>
+          <MealCostDisplay
+            timeslotData={timeslotData}
+          />
+        </Box>
+
+        <Divider sx={{ my: 2 }} />
+
+        {/* Save/load plan - your existing component */}
+        <SaveLoadPlan
+          timeslotData={timeslotData}
+          onLoad={setTimeslotData}
+        />
+      </Box>
     </Box>
   );
 };
