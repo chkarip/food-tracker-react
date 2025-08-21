@@ -10,7 +10,6 @@ import {
   CardContent,
   Typography,
   TextField,
-  Button,
   FormControl,
   InputLabel,
   Select,
@@ -31,6 +30,8 @@ import {
   DialogActions,
   Stack
 } from '@mui/material';
+
+import { AccentButton } from '../shared';
 import {
   Add as AddIcon,
   Restaurant as FoodIcon,
@@ -181,8 +182,8 @@ const AddFoodManager: React.FC = () => {
   /* CRUD */
   /* ------------------------------------------------------------------ */
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     if (!validateForm()) return;
 
     try {
@@ -383,24 +384,24 @@ const AddFoodManager: React.FC = () => {
 
             {/* Buttons */}
             <Stack direction="row" spacing={2}>
-              <Button
-                type="submit"
-                variant="contained"
-                startIcon={editingFood ? <SaveIcon /> : <AddIcon />}
+              <AccentButton
+                onClick={handleSubmit}
                 disabled={loading}
+                loading={loading}
+                variant="primary"
+                size="medium"
               >
-                {editingFood ? 'Update' : 'Add'}
-              </Button>
-              
+                {editingFood ? '✏️ Update' : '➕ Add'}
+              </AccentButton>
               {editingFood && (
-                <Button
-                  variant="outlined"
-                  startIcon={<CancelIcon />}
+                <AccentButton
                   onClick={resetForm}
                   disabled={loading}
+                  variant="secondary"
+                  size="medium"
                 >
                   Cancel
-                </Button>
+                </AccentButton>
               )}
             </Stack>
           </Box>
@@ -487,15 +488,24 @@ const AddFoodManager: React.FC = () => {
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteDialog(null)}>Cancel</Button>
-          <Button
-            onClick={() => deleteDialog && handleDelete(deleteDialog)}
-            color="error"
-            variant="contained"
-            disabled={loading}
+          <AccentButton 
+            onClick={() => setDeleteDialog(null)}
+            variant="secondary"
           >
-            Delete
-          </Button>
+            Cancel
+          </AccentButton>
+          <AccentButton
+            onClick={() => {
+              if (deleteDialog) {
+                handleDelete(deleteDialog);
+              }
+            }}
+            variant="danger"
+            disabled={loading}
+            loading={loading}
+          >
+            🗑️ Delete
+          </AccentButton>
         </DialogActions>
       </Dialog>
     </Box>

@@ -1,0 +1,147 @@
+/* Add Exercise Hover Effect */
+.add-exercise-hover {
+  font-weight: 500;
+  transition: all 0.2s ease-in-out;
+}
+
+.add-exercise-hover:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+/* Schedule Workout Button */
+.schedule-workout-button {
+  min-width: 140px;
+}
+/* Floating Action Button (GymPage) */
+.floating-action-button {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  border-radius: 50%;
+  min-width: 56px;
+  width: 56px;
+  height: 56px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.floating-action-button:hover {
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+}
+/* Base button styles */
+.accent-button {
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: inherit;
+  text-decoration: none;
+  box-sizing: border-box;
+}
+
+/* Variants */
+.accent-button--primary {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.accent-button--primary:hover:not(:disabled) {
+  background-color: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+}
+
+.accent-button--secondary {
+  background-color: #6b7280;
+  color: white;
+}
+
+.accent-button--secondary:hover:not(:disabled) {
+  background-color: #4b5563;
+  transform: translateY(-1px);
+}
+
+.accent-button--danger {
+  background-color: #ef4444;
+  color: white;
+}
+
+.accent-button--danger:hover:not(:disabled) {
+  background-color: #dc2626;
+  transform: translateY(-1px);
+}
+
+.accent-button--success {
+  background-color: #10b981;
+  color: white;
+}
+
+.accent-button--success:hover:not(:disabled) {
+  background-color: #059669;
+  transform: translateY(-1px);
+}
+
+/* Sizes */
+.accent-button--small {
+  padding: 6px 12px;
+  font-size: 0.875rem;
+  min-height: 32px;
+}
+
+.accent-button--medium {
+  padding: 8px 16px;
+  font-size: 1rem;
+  min-height: 40px;
+}
+
+.accent-button--large {
+  padding: 12px 24px;
+  font-size: 1.125rem;
+  min-height: 48px;
+}
+
+/* States */
+.accent-button--disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.accent-button--full-width {
+  width: 100%;
+}
+
+.accent-button--loading {
+  cursor: not-allowed;
+}
+
+/* Loading spinner */
+.accent-button__spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 1s ease-in-out infinite;
+}
+
+.accent-button__text--loading {
+  opacity: 0.7;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Focus states for accessibility */
+.accent-button:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+}

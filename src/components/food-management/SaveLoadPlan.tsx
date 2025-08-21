@@ -9,7 +9,6 @@ import {
   Card,
   CardContent,
   Typography,
-  Button,
   Box,
   Alert,
   CircularProgress,
@@ -21,6 +20,8 @@ import {
   DialogActions,
   Slider
 } from '@mui/material';
+
+import { AccentButton } from '../shared';
 import {
   Save as SaveIcon,
   CloudDownload as LoadIcon,
@@ -220,25 +221,23 @@ const SaveLoadPlan: React.FC<SaveLoadPlanProps> = ({ timeslotData, onLoad }) => 
         )}
 
         <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-          <Button
-            startIcon={loading ? <CircularProgress size={16} /> : <SaveIcon />}
+          <AccentButton
             onClick={() => setShowMultiDayDialog(true)}
             disabled={loading || !hasAnySelectedFoods || !isAuthenticated}
+            variant="primary"
             size="small"
-            variant="contained"
           >
-            Save Plan
-          </Button>
+            💾 Save Plan
+          </AccentButton>
 
-          <Button
-            startIcon={<LoadIcon />}
-            onClick={handleLoadPlan}                     // ✅ CHANGED function name
+          <AccentButton
+            onClick={handleLoadPlan}
             disabled={loading || !isAuthenticated}
             size="small"
-            variant="outlined"
+            variant="secondary"
           >
-            Load Today
-          </Button>
+            📥 Load Today
+          </AccentButton>
 
           {currentScheduledActivities && (
             <Chip 
@@ -289,14 +288,21 @@ const SaveLoadPlan: React.FC<SaveLoadPlanProps> = ({ timeslotData, onLoad }) => 
             </Typography>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setShowMultiDayDialog(false)}>Cancel</Button>
-            <Button 
-              onClick={numberOfDays === 1 ? handleSingleDaySave : handleMultiDaySave}
-              variant="contained"
-              disabled={loading}
+            <AccentButton 
+              onClick={() => setShowMultiDayDialog(false)}
+              variant="secondary"
+              size="medium"
             >
-              {loading ? <CircularProgress size={16} /> : 'Save'}
-            </Button>
+              Cancel
+            </AccentButton>
+            <AccentButton
+              onClick={numberOfDays === 1 ? handleSingleDaySave : handleMultiDaySave}
+              variant="primary"
+              disabled={loading}
+              loading={loading}
+            >
+              💾 Save
+            </AccentButton>
           </DialogActions>
         </Dialog>
       </CardContent>

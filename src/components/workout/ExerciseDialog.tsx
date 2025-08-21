@@ -9,11 +9,12 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Button,
   Box,
   Autocomplete,
   Chip
 } from '@mui/material';
+
+import { AccentButton } from '../shared';
 
 // Exercise interface matching Firebase structure
 interface Exercise {
@@ -180,14 +181,19 @@ const ExerciseDialog: React.FC<ExerciseDialogProps> = ({
         </Box>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
-        <Button 
-          onClick={onSave} 
-          variant="contained"
+        <AccentButton 
+          onClick={onClose}
+          variant="secondary"
+        >
+          Cancel
+        </AccentButton>
+        <AccentButton 
+          onClick={onSave}
+          variant="primary"
           disabled={!exerciseForm.name || !exerciseForm.primaryMuscle || !exerciseForm.equipment}
         >
-          {exercise ? 'Update' : 'Add'} Exercise
-        </Button>
+          {exercise ? '✏️ Update' : '➕ Add'} Exercise
+        </AccentButton>
       </DialogActions>
     </Dialog>
   );

@@ -18,7 +18,7 @@ import {
   Typography,
   Card,
   CardContent,
-  Button,
+  // Button removed
   Dialog,
   DialogTitle,
   DialogContent,
@@ -33,6 +33,7 @@ import {
   CircularProgress,
   Divider
 } from '@mui/material';
+import { AccentButton } from '../shared';
 import {
   Restaurant as FoodIcon,
   FitnessCenter as GymIcon,
@@ -353,9 +354,12 @@ const DayModal: React.FC<DayModalProps> = ({
       </DialogContent>
       
       <DialogActions>
-        <Button onClick={onClose}>
-          Close
-        </Button>
+        <AccentButton 
+          onClick={onClose}
+          variant="secondary"
+        >
+          ✖️ Close
+        </AccentButton>
       </DialogActions>
     </Dialog>
   );

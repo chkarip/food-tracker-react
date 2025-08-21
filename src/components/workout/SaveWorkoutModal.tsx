@@ -4,7 +4,6 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Button,
   TextField,
   Box,
   Typography,
@@ -18,6 +17,8 @@ import {
   OutlinedInput,
   InputAdornment
 } from '@mui/material';
+
+import { AccentButton } from '../shared';
 
 import {
   Save as SaveIcon,
@@ -288,19 +289,22 @@ const SaveWorkoutModal: React.FC<SaveWorkoutModalProps> = ({
       </DialogContent>
 
       <DialogActions sx={{ p: 3, gap: 2 }}>
-        <Button onClick={onClose} size="large">
-          Cancel
-        </Button>
-        <Button 
-          onClick={handleSave}
-          variant="contained"
-          disabled={!workoutName.trim() || exercises.length === 0 || saving}
-          startIcon={<SaveIcon />}
-          size="large"
-          sx={{ minWidth: 140 }}
+        <AccentButton 
+          onClick={onClose}
+          variant="secondary"
         >
-          {saving ? 'Scheduling...' : 'Schedule Workout'}
-        </Button>
+          Cancel
+        </AccentButton>
+        <AccentButton
+          onClick={handleSave}
+          variant="primary"
+          disabled={!workoutName.trim() || exercises.length === 0 || saving}
+          loading={saving}
+          size="large"
+          className="schedule-workout-button"
+        >
+          {saving ? 'Scheduling...' : '📅 Schedule Workout'}
+        </AccentButton>
       </DialogActions>
     </Dialog>
   );

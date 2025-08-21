@@ -5,11 +5,12 @@ import {
   CardContent,
   Typography,
   TextField,
-  Button,
   FormControlLabel,
   Checkbox,
   Collapse
 } from '@mui/material';
+
+import { AccentButton } from '../shared';
 import { Restaurant as RestaurantIcon, Clear as ClearIcon } from '@mui/icons-material';
 import { ExternalNutrition } from '../../types/nutrition';
 
@@ -72,14 +73,13 @@ const ExternalNutritionInput: React.FC<ExternalNutritionInputProps> = ({
             }
           />
           {hasExternalNutrition && isExternalEnabled && (
-            <Button
-              startIcon={<ClearIcon />}
+            <AccentButton
               onClick={clearAll}
               size="small"
-              color="secondary"
+              variant="secondary"
             >
-              Clear All
-            </Button>
+              🧹 Clear All
+            </AccentButton>
           )}
         </Box>
 

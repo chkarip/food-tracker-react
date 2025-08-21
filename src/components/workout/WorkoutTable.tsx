@@ -37,7 +37,6 @@ import {
   Paper,
   Box,
   Typography,
-  Button,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -49,6 +48,7 @@ import {
   Snackbar,
   Alert
 } from '@mui/material';
+import { AccentButton } from '../shared';
 import {
   Add as AddIcon,
   Schedule as ScheduleIcon
@@ -253,20 +253,18 @@ const WorkoutTable: React.FC<WorkoutTableProps> = ({
   return (
     <Box>
       {/* ✅ IMPROVED: Button group with consistent spacing (Add Exercise button removed as requested) */}
-      <Box sx={{ mb: 3, display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-        <Typography variant="h6" component="h2" sx={{ mr: 'auto' }}>
+      <Box style={{ marginBottom: 24, display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+        <Typography variant="h6" component="h2" style={{ marginRight: 'auto' }}>
           {workoutType} Workout
         </Typography>
-        <Button
-          variant="contained"
-          color="success"
-          startIcon={<ScheduleIcon />}
+        <AccentButton
+          variant="success"
           onClick={() => setOpenSaveWorkoutModal(true)}
           disabled={exercises.length === 0}
-          sx={{ minWidth: 140 }}
+          style={{ minWidth: '140px' }}
         >
-          {exercises.length === 0 ? 'No Exercises' : `Schedule Workout (${exercises.length})`}
-        </Button>
+          {exercises.length === 0 ? 'No Exercises' : `📅 Schedule Workout (${exercises.length})`}
+        </AccentButton>
       </Box>
 
       <TableContainer component={Paper}>
@@ -303,22 +301,14 @@ const WorkoutTable: React.FC<WorkoutTableProps> = ({
                   <TableRow>
                     <TableCell colSpan={10} sx={{ py: 1, borderBottom: 'none' }}>
                       <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-                        <Button
+                        <AccentButton
                           size="small"
-                          variant="contained"
-                          color="primary"
-                          startIcon={<AddIcon />}
+                          variant="primary"
                           onClick={() => handleAddExerciseAtIndex(index + 1)}
-                          sx={{ 
-                            fontWeight: 500,
-                            '&:hover': {
-                              transform: 'translateY(-1px)',
-                              boxShadow: 3,
-                            }
-                          }}
+                          className="add-exercise-hover"
                         >
-                          Add Exercise Here
-                        </Button>
+                          ➕ Add Exercise Here
+                        </AccentButton>
                       </Box>
                     </TableCell>
                   </TableRow>
@@ -329,26 +319,24 @@ const WorkoutTable: React.FC<WorkoutTableProps> = ({
         </Table>
 
         {exercises.length === 0 && (
-          <Box sx={{ p: 6, textAlign: 'center' }}>
+          <Box style={{ padding: 48, textAlign: 'center' }}>
             <Typography variant="h6" color="text.secondary" gutterBottom>
               🏋️ Ready to build your workout?
             </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            <Typography variant="body2" color="text.secondary" style={{ marginBottom: 24 }}>
               Start by adding exercises to create your {workoutType} routine
             </Typography>
-            <Button
-              variant="contained"
-              color="primary"
+            <AccentButton
+              variant="primary"
               size="large"
-              startIcon={<AddIcon />}
               onClick={() => {
                 setInsertAtIndex(null);
                 setOpenAddDialog(true);
               }}
-              sx={{ fontWeight: 600 }}
+              style={{ fontWeight: 600 }}
             >
-              Add First Exercise
-            </Button>
+              🏋️ Add First Exercise
+            </AccentButton>
           </Box>
         )}
       </TableContainer>
@@ -359,9 +347,9 @@ const WorkoutTable: React.FC<WorkoutTableProps> = ({
         autoHideDuration={6000}
         onClose={handleCloseUndoSnackbar}
         action={
-          <Button color="secondary" size="small" onClick={handleUndoDelete}>
+              <AccentButton variant="secondary" size="small" onClick={handleUndoDelete}>
             UNDO
-          </Button>
+              </AccentButton>
         }
       >
         <Alert onClose={handleCloseUndoSnackbar} severity="info" sx={{ width: '100%' }}>
@@ -428,20 +416,24 @@ const WorkoutTable: React.FC<WorkoutTableProps> = ({
           </FormControl>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => {
-            setOpenAddDialog(false);
-            setInsertAtIndex(null);
-          }} size="large">
-            Cancel
-          </Button>
-          <Button
-            onClick={handleAddExercise}
-            variant="contained"
-            disabled={!selectedExerciseId}
-            size="large"
-          >
-            Add Exercise
-          </Button>
+            <AccentButton 
+              onClick={() => {
+                setOpenAddDialog(false);
+                setInsertAtIndex(null);
+              }} 
+              size="large"
+              variant="secondary"
+            >
+              Cancel
+            </AccentButton>
+            <AccentButton
+              onClick={handleAddExercise}
+              variant="primary"
+              disabled={!selectedExerciseId}
+              size="large"
+            >
+              ➕ Add Exercise
+            </AccentButton>
         </DialogActions>
       </Dialog>
     </Box>

@@ -19,11 +19,12 @@ import {
   Typography,
   Card,
   CardContent,
-  Button,
+  // Button removed
   IconButton,
   alpha,
   useTheme
 } from '@mui/material';
+import { AccentButton } from '../shared';
 import {
   ChevronLeft as ChevronLeftIcon,
   ChevronRight as ChevronRightIcon,
@@ -63,14 +64,13 @@ const Calendar: React.FC<CalendarProps> = ({
             {monthYear}
           </Typography>
           <Box sx={{ display: 'flex', gap: 1 }}>
-            <Button
-              variant="outlined"
-              size="small"
-              startIcon={<TodayIcon />}
+            <AccentButton 
               onClick={onGoToToday}
+              variant="secondary"
+              size="small"
             >
-              Today
-            </Button>
+              📅 Today
+            </AccentButton>
             <IconButton onClick={() => onNavigateMonth('prev')}>
               <ChevronLeftIcon />
             </IconButton>

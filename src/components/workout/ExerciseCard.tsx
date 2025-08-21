@@ -4,12 +4,13 @@ import {
   Typography,
   Card,
   CardContent,
-  Button,
   Chip,
   IconButton,
   CardActions,
   Tooltip
 } from '@mui/material';
+
+import { AccentButton } from '../shared';
 import {
   Edit as EditIcon,
   Delete as DeleteIcon,
@@ -115,15 +116,16 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
       </CardContent>
 
       <CardActions sx={{ justifyContent: 'space-between', pt: 0 }}>
-        <Button
-          size="small"
-          startIcon={<StartIcon />}
-          variant="contained"
-          color="primary"
-          onClick={() => onAddToWorkout && onAddToWorkout(exercise)}
+        <AccentButton
+          onClick={() => {
+            if (onAddToWorkout) {
+              onAddToWorkout(exercise);
+            }
+          }}
+          variant="primary"
         >
-          Add to Workout
-        </Button>
+          💪 Add to Workout
+        </AccentButton>
         
         <Box>
           <Tooltip title="Edit Exercise">

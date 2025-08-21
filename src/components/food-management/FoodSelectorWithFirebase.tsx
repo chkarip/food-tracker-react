@@ -29,7 +29,6 @@ import {
   Box,
   Typography,
   TextField,
-  Button,
   Chip,
   Divider,
   Alert,
@@ -38,7 +37,10 @@ import {
   AccordionSummary,
   AccordionDetails,
   Stack,
+  IconButton,
 } from '@mui/material';
+
+import { AccentButton } from '../shared';
 import {
   Add as AddIcon,
   SwapHoriz as SwapIcon,
@@ -193,13 +195,12 @@ const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = ({
             sx={{ width: 120 }}
             inputProps={{ min: 0 }}
           />
-          <Button
-            startIcon={<AddIcon />}
-            variant="contained"
+          <AccentButton
             onClick={handleAdd}
+            variant="primary"
           >
-            Add {selectedFoodName}
-          </Button>
+            ➕ Add {selectedFoodName}
+          </AccentButton>
         </Stack>
       )}
 
@@ -263,22 +264,22 @@ const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = ({
                   )}
 
                   {onSwapFood && (
-                    <Button
+                    <IconButton
                       onClick={() => onSwapFood(idx)}
                       size="small"
                       sx={{ minWidth: 0 }}
                     >
                       <SwapIcon fontSize="inherit" />
-                    </Button>
+                    </IconButton>
                   )}
 
-                  <Button
+                  <IconButton
                     onClick={() => onRemoveFood(idx)}
                     size="small"
                     sx={{ minWidth: 0 }}
                   >
                     <DeleteIcon fontSize="inherit" />
-                  </Button>
+                  </IconButton>
                 </Stack>
               </Box>
             );

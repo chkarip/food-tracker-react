@@ -6,8 +6,8 @@ import {
   Tabs,
   Tab,
   Alert,
-  Fab
 } from '@mui/material';
+import { AccentButton } from '../shared';
 import {
   Add as AddIcon,
   FitnessCenter as GymIcon
@@ -245,13 +245,13 @@ const GymPage: React.FC = () => {
         )}
 
         {/* Floating Action Button */}
-        <Fab
-          color="primary"
-          sx={{ position: 'fixed', bottom: 16, right: 16 }}
+        <AccentButton
           onClick={handleAddExercise}
+          variant="primary"
+          className="floating-action-button"
         >
-          <AddIcon />
-        </Fab>
+          ➕
+        </AccentButton>
       </TabPanel>
 
       {/* Tab 2: My Workouts */}

@@ -40,7 +40,6 @@ import {
   CardContent,
   Typography,
   TextField,
-  Button,
   Divider,
   Chip,
   IconButton,
@@ -67,7 +66,6 @@ import {
   Remove as RemoveIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
-  Restaurant as RecipeIcon,
   Timer as TimerIcon,
   People as ServingsIcon,
   LocalDining as DifficultyIcon,
@@ -75,8 +73,10 @@ import {
   Fastfood as NutritionIcon,
   Save as SaveIcon,
   Clear as ClearIcon,
-  MenuBook as InstructionsIcon
+  MenuBook as InstructionsIcon,
+  RestaurantMenu as RecipeIcon
 } from '@mui/icons-material';
+import { AccentButton } from '../shared';
 import {
   collection,
   addDoc,
@@ -614,15 +614,14 @@ const RecipeManager: React.FC = () => {
           Create and manage your custom recipes with automatic nutrition and cost calculations
         </Typography>
         
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
+        <AccentButton
           onClick={handleNewRecipe}
           size="large"
           disabled={loading}
+          variant="primary"
         >
-          New Recipe
-        </Button>
+          ➕ New Recipe
+        </AccentButton>
       </Box>
 
       {/* Success/Error Messages */}
@@ -712,9 +711,14 @@ const RecipeManager: React.FC = () => {
             </CardContent>
             
             <CardActions>
-              <Button size="small" onClick={() => handleEditRecipe(recipe)} disabled={loading}>
-                View Details
-              </Button>
+              <AccentButton 
+                size="small" 
+                onClick={() => handleEditRecipe(recipe)} 
+                disabled={loading}
+                variant="primary"
+              >
+                👁️ View Details
+              </AccentButton>
             </CardActions>
           </Card>
         ))}
@@ -729,9 +733,12 @@ const RecipeManager: React.FC = () => {
           <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
             Create your first recipe to get started with automatic nutrition and cost calculations.
           </Typography>
-          <Button variant="contained" startIcon={<AddIcon />} onClick={handleNewRecipe}>
-            Create Your First Recipe
-          </Button>
+          <AccentButton
+            variant="primary"
+            onClick={handleNewRecipe}
+          >
+            ➕ Create Your First Recipe
+          </AccentButton>
         </Paper>
       )}
 
@@ -854,9 +861,13 @@ const RecipeManager: React.FC = () => {
             <Box>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                 <Typography variant="h6">Ingredients</Typography>
-                <Button startIcon={<AddIcon />} onClick={addIngredient} disabled={availableFoods.length === 0}>
-                  Add Ingredient
-                </Button>
+                <AccentButton 
+                  onClick={addIngredient} 
+                  disabled={availableFoods.length === 0}
+                  variant="success"
+                >
+                  ➕ Add Ingredient
+                </AccentButton>
               </Box>
 
               {formData.ingredients.map((ingredient, index) => (
@@ -903,9 +914,12 @@ const RecipeManager: React.FC = () => {
             <Box>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                 <Typography variant="h6">Instructions</Typography>
-                <Button startIcon={<AddIcon />} onClick={addInstruction}>
-                  Add Step
-                </Button>
+                <AccentButton 
+                  onClick={addInstruction}
+                  variant="success"
+                >
+                  ➕ Add Step
+                </AccentButton>
               </Box>
 
               {formData.instructions.map((instruction, index) => (
@@ -985,13 +999,28 @@ const RecipeManager: React.FC = () => {
         </DialogContent>
 
         <DialogActions sx={{ p: 3 }}>
-          <Button onClick={() => setDialogOpen(false)} disabled={loading}>Cancel</Button>
-          <Button onClick={resetForm} startIcon={<ClearIcon />} disabled={loading}>
-            Clear Form
-          </Button>
-          <Button onClick={handleSaveRecipe} variant="contained" startIcon={<SaveIcon />} disabled={loading}>
-            {editingRecipe ? 'Update Recipe' : 'Save Recipe'}
-          </Button>
+          <AccentButton 
+            onClick={() => setDialogOpen(false)} 
+            disabled={loading}
+            variant="secondary"
+          >
+            Cancel
+          </AccentButton>
+          <AccentButton 
+            onClick={resetForm}
+            disabled={loading}
+            variant="secondary"
+          >
+            🧹 Clear Form
+          </AccentButton>
+          <AccentButton 
+            onClick={handleSaveRecipe}
+            variant="primary"
+            disabled={loading}
+            loading={loading}
+          >
+            {editingRecipe ? '💾 Update Recipe' : '💾 Save Recipe'}
+          </AccentButton>
         </DialogActions>
       </Dialog>
 
@@ -1007,15 +1036,25 @@ const RecipeManager: React.FC = () => {
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(null)} disabled={loading}>Cancel</Button>
-          <Button
-            onClick={() => deleteDialogOpen && handleDeleteRecipe(deleteDialogOpen)}
-            color="error"
-            variant="contained"
+          <AccentButton 
+            onClick={() => setDeleteDialogOpen(null)} 
             disabled={loading}
+            variant="secondary"
           >
-            Delete
-          </Button>
+            Cancel
+          </AccentButton>
+          <AccentButton
+            onClick={() => {
+              if (deleteDialogOpen) {
+                handleDeleteRecipe(deleteDialogOpen);
+              }
+            }}
+            variant="danger"
+            disabled={loading}
+            loading={loading}
+          >
+            🗑️ Delete
+          </AccentButton>
         </DialogActions>
       </Dialog>
     </Box>

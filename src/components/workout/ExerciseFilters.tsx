@@ -6,9 +6,9 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Button,
   InputAdornment
 } from '@mui/material';
+import { AccentButton } from '../shared';
 import {
   Search as SearchIcon,
   FilterList as FilterIcon
@@ -81,13 +81,12 @@ const ExerciseFilters: React.FC<ExerciseFiltersProps> = ({
         </Select>
       </FormControl>
 
-      <Button
-        variant="outlined"
-        startIcon={<FilterIcon />}
+      <AccentButton
         onClick={onClearFilters}
+        variant="secondary"
       >
-        Clear Filters
-      </Button>
+        🧹 Clear Filters
+      </AccentButton>
     </Box>
   );
 };

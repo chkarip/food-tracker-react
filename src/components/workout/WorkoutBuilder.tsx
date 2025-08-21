@@ -8,9 +8,10 @@ import {
   Select,
   MenuItem,
   Paper,
-  Alert,
-  Button
+  Alert
 } from '@mui/material';
+
+import { AccentButton } from '../shared';
 import { collection, doc, getDocs, setDoc, getDoc } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { useAuth } from '../../contexts/AuthContext';
@@ -202,12 +203,12 @@ const WorkoutBuilder: React.FC = () => {
       {/* Template Controls */}
       <Box sx={{ mb: 3, display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
         {/* Load Template Button */}
-        <Button 
-          variant="outlined"
+        <AccentButton 
           onClick={fetchTemplates}
+          variant="secondary"
         >
-          Load Template
-        </Button>
+          📁 Load Template
+        </AccentButton>
 
         {/* Template Dropdown */}
         {templates.length > 0 && (
@@ -232,22 +233,22 @@ const WorkoutBuilder: React.FC = () => {
         )}
 
         {/* Save/Update Template Button */}
-        <Button 
-          variant="contained"
+        <AccentButton 
           onClick={handleSaveTemplate}
+          variant="primary"
           disabled={currentWorkout.exercises.length === 0}
         >
-          {selectedTemplate ? `Update "${selectedTemplate.name}"` : 'Save as New Template'}
-        </Button>
+          {selectedTemplate ? `💾 Update "${selectedTemplate.name}"` : '💾 Save as New Template'}
+        </AccentButton>
 
         {/* Clear Selection Button */}
         {selectedTemplate && (
-          <Button 
-            variant="text"
+          <AccentButton 
             onClick={clearSelectedTemplate}
+            variant="secondary"
           >
-            Clear Selection
-          </Button>
+            🧹 Clear Selection
+          </AccentButton>
         )}
       </Box>
 
