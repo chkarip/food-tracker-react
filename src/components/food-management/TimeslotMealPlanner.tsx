@@ -32,7 +32,7 @@
  */
 
 import React, { useState, useCallback, useMemo } from 'react';
-import { Box, Tabs, Tab, Typography, Paper, Divider } from '@mui/material';
+import { Box, Tabs, Tab,Divider } from '@mui/material';
 import {
   WbSunny as AfternoonIcon,
   Nightlight as EveningIcon,
