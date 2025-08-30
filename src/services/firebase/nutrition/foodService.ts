@@ -9,9 +9,6 @@
 import {
   FoodFormData,
   FirestoreFood,
-  LegacyFoodItem,
-  FoodNutrition,
-  FoodCost,
   FirebaseFoodItem
 } from '../../../types/food';
 import {

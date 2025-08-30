@@ -31,8 +31,10 @@
  * • Ready for dark/light theme thanks to MUI token usage.
  */
 
-import React, { useState, useCallback, useMemo } from 'react';
-import { Box, Tabs, Tab,Divider } from '@mui/material';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import { subscribeToNutritionGoal } from '../../services/firebase/nutrition/nutritionGoalService';
+import { useAuth } from '../../contexts/AuthContext';
+import { Box, Tabs, Tab, Divider, Typography } from '@mui/material';
 import {
   WbSunny as AfternoonIcon,
   Nightlight as EveningIcon,
@@ -83,6 +85,7 @@ const TimeslotMealPlanner: React.FC = () => {
   /* ---------- state ---------- */
   const [currentTimeslot, setCurrentTimeslot] = useState(0);
   const { foodDatabase } = useFoodDatabase();
+  const { user } = useAuth();
 
   const [timeslotData, setTimeslotData] = useState<Record<string, TimeslotData>>(
     {
@@ -97,8 +100,39 @@ const TimeslotMealPlanner: React.FC = () => {
     },
   );
 
+  // Nutrition goals state
+  const [nutritionGoals, setNutritionGoals] = useState<{
+    protein: number;
+    fats: number;
+    carbs: number;
+    calories: number;
+  } | null>(null);
+
   // Live preview state
   const [previewFood, setPreviewFood] = useState<PreviewFood | null>(null);
+  // Subscribe to nutrition goals from Firebase
+  useEffect(() => {
+    if (!user?.uid) return;
+
+    const unsubscribe = subscribeToNutritionGoal(
+      user.uid,
+      (goals) => {
+        if (goals) {
+          setNutritionGoals({
+            protein: goals.protein,
+            fats: goals.fats,
+            carbs: goals.carbs,
+            calories: goals.calories
+          });
+        }
+      },
+      (error) => {
+        console.error('Failed to load nutrition goals:', error);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [user?.uid]);
 
   /* ---------- helpers ---------- */
   const getCurrentTimeslotId = useCallback(
@@ -299,13 +333,18 @@ const TimeslotMealPlanner: React.FC = () => {
       >
         {/* Macro progress - your existing component */}
         <Box sx={{ mb: 3 }}>
-          <MacroProgress
-            current={getTotalMacros}
-            preview={getPreviewMacros}
-            showPreview={!!previewFood}
-            foodMacros={getCombinedFoodMacros}
-            externalMacros={getCombinedExternal}
-          />
+          {nutritionGoals ? (
+            <MacroProgress
+              current={getTotalMacros}
+              preview={getPreviewMacros}
+              showPreview={!!previewFood}
+              foodMacros={getCombinedFoodMacros}
+              externalMacros={getCombinedExternal}
+              goals={nutritionGoals}
+            />
+          ) : (
+            <Typography>Loading nutrition goals...</Typography>
+          )}
         </Box>
 
         {/* Meal cost display - your existing component */}

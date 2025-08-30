@@ -1,3 +1,95 @@
+/**
+ * Central food type definitions - Single source of truth
+ */
+
+// ✅ Consolidated GoalType with all options
+export type GoalType = 
+  // Range-based goals (new format)
+  | 'lose_2_3'
+  | 'lose_3_5' 
+  | 'lose_5_10'
+  | 'lose_10_15'
+  | 'lose_15_20'
+  | 'lose_20_25'
+  | 'maintain'
+  | 'gain_2_3'
+  | 'gain_3_5'
+  | 'gain_5_10'
+  | 'gain_10_15'
+  | 'gain_15_20'
+  | 'gain_20_25'
+  // Legacy values (for backward compatibility)
+  | 'lose_weight'
+  | 'gain_muscle'
+  | 'lose_aggressive'
+  | 'lose_moderate'
+  | 'lose_gradual' 
+  | 'lose_conservative'
+  | 'lose_mild'
+  | 'gain_mild'
+  | 'gain_conservative'
+  | 'gain_gradual'
+  | 'gain_moderate'
+  | 'gain_aggressive';
+
+// ✅ User Profile interfaces
+export interface UserProfile {
+  userId: string;
+  gender: 'male' | 'female';
+  age: number;
+  height: number; // cm
+  weight: number; // kg
+  activityLevel: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
+  goal: GoalType;
+  bodyFatPercentage?: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface UserProfileFormData {
+  gender: 'male' | 'female';
+  age: number;
+  height: number;
+  weight: number;
+  activityLevel: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
+  goal: GoalType;
+  bodyFatPercentage?: number;
+}
+
+export interface UserProfileFormData {
+  gender: 'male' | 'female';
+  age: number;
+  height: number;
+  weight: number;
+  activityLevel: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
+  goal: GoalType;
+}
+
+export interface CalculatedMacros {
+  bmr: number;
+  tdee: number;
+  adjustedCalories: number;
+  protein: number;
+  carbs: number;
+  fats: number;
+  calories: number;
+}
+export interface NutritionGoal {
+  protein: number;
+  fats: number;
+  carbs: number;
+  calories: number;
+  userId: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface NutritionGoalFormData {
+  protein: number;
+  fats: number;
+  carbs: number;
+  calories: number;
+}
 export interface FirebaseFoodItem {
   id: string;
   name: string;

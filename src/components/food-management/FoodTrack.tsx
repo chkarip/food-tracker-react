@@ -16,6 +16,8 @@ import { getRecentDailyPlans } from '../../services/firebase';
 import { DailyPlanDocument } from '../../types/firebase';
 import { useFoodDatabase } from '../../contexts/FoodContext';
 import foodHistoryService, {  MealProgramFood } from '../../services/firebase/nutrition/foodConsumptionService';
+import { NutritionGoalFormData } from '../../types/food';
+import { getNutritionGoal } from '../../services/firebase/nutrition/nutritionGoalService';
 
 /* ------------------------------------------------------------------ */
 /*  LOCAL TYPES                                                        */
@@ -55,23 +57,16 @@ interface DayProgram {
   };
 }
 
-interface NutritionGoals {
-  protein: number;
-  fats: number;
-  carbs: number;
-  calories: number;
-}
+/* ------------------------------------------------------------------ */
+/*  COMPONENT                                                          */
+/* ------------------------------------------------------------------ */
 
-const DEFAULT_GOALS: NutritionGoals = {
+const DEFAULT_GOALS = {
   protein: 127,
   fats: 65,
   carbs: 300,
   calories: 2300
 };
-
-/* ------------------------------------------------------------------ */
-/*  COMPONENT                                                          */
-/* ------------------------------------------------------------------ */
 
 const FoodTrack: React.FC = () => {
   const { user } = useAuth();
@@ -84,13 +79,13 @@ const FoodTrack: React.FC = () => {
     open: false,
     date: ''
   });
-  const [goals, setGoals] = useState<NutritionGoals>(DEFAULT_GOALS);
+  const [goals, setGoals] = useState(DEFAULT_GOALS);
   const [activeTab, setActiveTab] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   /* ------------------------------------------------------------------ */
-  /*  LOAD HISTORY + GOALS                                              */
+  /* LOAD HISTORY + GOALS                                              */
   /* ------------------------------------------------------------------ */
 
   useEffect(() => {
@@ -99,11 +94,9 @@ const FoodTrack: React.FC = () => {
         setLoading(false);
         return;
       }
-
       try {
         setLoading(true);
         setError(null);
-
         const recentPlans = await getRecentDailyPlans(user.uid, 30);
 
         /* Convert Firebase → DayProgram */
@@ -167,15 +160,14 @@ const FoodTrack: React.FC = () => {
       }
     };
 
-    /* restore goals */
+    /* Restore: localStorage usage for goals */
     const saved = localStorage.getItem('nutritionGoals');
     if (saved) setGoals(JSON.parse(saved));
-
     loadHistory();
   }, [user?.uid, foodDatabase]);
 
   /* ------------------------------------------------------------------ */
-  /*  SYNC TO FOOD HISTORY ANALYTICS                                    */
+  /* SYNC TO FOOD HISTORY ANALYTICS                                    */
   /* ------------------------------------------------------------------ */
 
   const importMealDataToHistory = async (plans: DailyPlanDocument[]) => {
@@ -225,7 +217,7 @@ const FoodTrack: React.FC = () => {
   };
 
   /* ------------------------------------------------------------------ */
-  /*  UI HELPERS (unchanged)                                            */
+  /* UI HELPERS (unchanged)                                            */
   /* ------------------------------------------------------------------ */
 
   const toggleDayExpansion = (date: string) => {
@@ -236,10 +228,8 @@ const FoodTrack: React.FC = () => {
     });
   };
 
-  /* … (other helpers & render logic remain exactly as you had them) … */
-
   /* ------------------------------------------------------------------ */
-  /*  RENDER                                                            */
+  /* RENDER                                                            */
   /* ------------------------------------------------------------------ */
 
   if (loading) {
@@ -269,9 +259,7 @@ const FoodTrack: React.FC = () => {
   /* ---------- render your full UI below ---------- */
   return (
     <Box sx={{ p: 3 }}>
-      {/* Tab navigation, history timeline, analytics tab, dialogs, etc.
-          Keep all your existing JSX here – unchanged logic-wise.
-          The only edits needed were the typing fixes above. */}
+      {/* Tab navigation, history timeline, analytics tab, dialogs, etc. */}
       <Typography variant="h6">Food-Tracking interface (content omitted)</Typography>
     </Box>
   );

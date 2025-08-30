@@ -7,6 +7,12 @@ interface MacroProgressProps {
   showPreview?: boolean;
   foodMacros: NutritionData;
   externalMacros: ExternalNutrition;
+  goals: {
+    protein: number;
+    fats: number;
+    carbs: number;
+    calories: number;
+  };
 }
 
 const MacroProgress: React.FC<MacroProgressProps> = ({
@@ -15,16 +21,9 @@ const MacroProgress: React.FC<MacroProgressProps> = ({
   showPreview = false,
   foodMacros,
   externalMacros,
+  goals,
 }) => {
   const theme = useTheme();
-  
-  // Define your macro goals
-  const goals = {
-    protein: 127, // grams
-    fats: 65,     // grams
-    carbs: 300,   // grams
-    calories: 2300 // calories
-  };
 
   const renderMacroBar = (
     label: string,

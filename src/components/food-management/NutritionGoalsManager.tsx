@@ -1,113 +1,185 @@
 /**
  * components/food-management/NutritionGoalsManager.tsx
- * ----------------------------------------------------
- * Simple editor for the app-wide daily macro targets.
+ * Simple two-column layout using Flexbox - no Grid component needed
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
-  Card,
-  CardContent,
   Typography,
   Button,
   Stack,
   Alert
 } from '@mui/material';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
 import { NumberStepper } from '../shared/inputs';
-
-/* ---------- types ---------- */
-export interface NutritionGoals {
-  protein: number;
-  fats: number;
-  carbs: number;
-  calories: number;
-}
+import { saveNutritionGoal, getNutritionGoal } from '../../services/firebase/nutrition/nutritionGoalService';
+import { useAuth } from '../../contexts/AuthContext';
+import { NutritionGoalFormData, CalculatedMacros } from '../../types/food';
+import MacroCalculator from './MacroCalculator';
 
 interface Props {
-  onGoalsChange?: (goals: NutritionGoals) => void;
+  onGoalsChange?: (goals: NutritionGoalFormData) => void;
 }
 
-/* ---------- defaults ---------- */
-const DEFAULT_GOALS: NutritionGoals = {
-  protein: 127,
-  fats: 65,
-  carbs: 300,
-  calories: 2_300
-};
-
-const STORAGE_KEY = 'nutritionGoals';
-
-/* ==================================================== */
-/*  COMPONENT                                            */
-/* ==================================================== */
-
 const NutritionGoalsManager: React.FC<Props> = ({ onGoalsChange }) => {
-  const [goals, setGoals] = useState<NutritionGoals>(DEFAULT_GOALS);
+  const [goals, setGoals] = useState<NutritionGoalFormData | null>(null);
   const [saved, setSaved] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
 
-  /* load goals once */
+  // Load goals from Firebase on mount
   useEffect(() => {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) setGoals(JSON.parse(raw));
-  }, []);
+    const loadGoals = async () => {
+      if (!user?.uid) {
+        setLoading(false);
+        return;
+      }
 
-  /* propagate to parent when goals change */
+      try {
+        let firestoreGoals = await getNutritionGoal(user.uid);
+
+        if (!firestoreGoals) {
+          const defaultGoals: NutritionGoalFormData = {
+            protein: 127,
+            fats: 65,
+            carbs: 300,
+            calories: 2300
+          };
+          await saveNutritionGoal(user.uid, defaultGoals);
+          firestoreGoals = await getNutritionGoal(user.uid);
+        }
+
+        if (firestoreGoals) {
+          setGoals({
+            protein: firestoreGoals.protein,
+            fats: firestoreGoals.fats,
+            carbs: firestoreGoals.carbs,
+            calories: firestoreGoals.calories
+          });
+        }
+      } catch (error) {
+        console.error('Failed to load nutrition goals:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadGoals();
+  }, [user?.uid]);
+
   useEffect(() => {
-    onGoalsChange?.(goals);
+    if (goals) {
+      onGoalsChange?.(goals);
+    }
   }, [goals, onGoalsChange]);
 
-  /* handlers */
-  const handleChange = (field: keyof NutritionGoals, value: string) => {
-    setGoals(prev => ({ ...prev, [field]: Number(value) || 0 }));
+  const handleChange = (field: keyof NutritionGoalFormData, value: string) => {
+    if (!goals) return;
+    setGoals(prev => ({ ...prev!, [field]: Number(value) || 0 }));
   };
 
-  const handleSave = () => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(goals));
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2_000);
+  const handleSave = async () => {
+    if (!user?.uid || !goals) return;
+
+    try {
+      await saveNutritionGoal(user.uid, goals);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (error) {
+      console.error('Failed to save nutrition goals:', error);
+    }
   };
 
-  /* render */
+  // Handle calculated macros from calculator
+  const handleCalculatedMacros = useCallback((macros: CalculatedMacros) => {
+    setGoals({
+      protein: macros.protein,
+      fats: macros.fats,
+      carbs: macros.carbs,
+      calories: macros.calories
+    });
+  }, []);
+
+  if (loading) {
+    return <Typography>Loading nutrition goals...</Typography>;
+  }
+
   return (
-    <Card sx={{ maxWidth: 480, mx: 'auto' }}>
-      <CardContent>
-        <Typography variant="h6" gutterBottom>
-          Daily Nutrition Targets
-        </Typography>
+    <Box sx={{ p: 3 }}>
+      <Typography variant="h4" gutterBottom>
+        Nutrition Goals
+      </Typography>
 
-        <Stack spacing={2}>
-          {(['protein', 'fats', 'carbs', 'calories'] as const).map(key => (
-            <Box key={key} sx={{ mb: 2 }}>
-              <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
-                {key.charAt(0).toUpperCase() + key.slice(1)} ({key === 'calories' ? 'kcal' : 'g'})
+      {/* ✅ Flexbox two-column layout - no Grid needed */}
+      <Box sx={{ 
+        display: 'flex',
+        flexDirection: { xs: 'column', md: 'row' },
+        gap: 3,
+        alignItems: 'flex-start'
+      }}>
+        
+        {/* Left Column - Manual Input */}
+        <Box sx={{ 
+          flex: 1,
+          minWidth: 0, // Prevents flex overflow
+          width: { xs: '100%', md: 'auto' }
+        }}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                Manual Input
               </Typography>
-              <NumberStepper
-                value={goals[key]}
-                onChange={(value) => handleChange(key, value.toString())}
-                min={0}
-                max={key === 'calories' ? 5000 : key === 'carbs' ? 800 : 300}
-                step={key === 'calories' ? 10 : 1}
-                unit={key === 'calories' ? 'kcal' : 'g'}
-                size="medium"
-              />
-            </Box>
-          ))}
+              
+              {goals && (
+                <Stack spacing={3}>
+                  {(['protein', 'fats', 'carbs', 'calories'] as const).map(key => (
+                    <Box key={key}>
+                      <Typography variant="body2" sx={{ mb: 1 }}>
+                        {key.charAt(0).toUpperCase() + key.slice(1)} ({key === 'calories' ? 'kcal' : 'g'})
+                      </Typography>
+                      <NumberStepper
+                        value={goals[key]}
+                        onChange={(value) => handleChange(key, value.toString())}
+                        min={0}
+                        max={key === 'calories' ? 5000 : key === 'carbs' ? 800 : 300}
+                        step={key === 'calories' ? 10 : 1}
+                        unit={key === 'calories' ? 'kcal' : 'g'}
+                        size="medium"
+                      />
+                    </Box>
+                  ))}
+                  
+                  <Button 
+                    variant="contained" 
+                    onClick={handleSave}
+                    disabled={!user?.uid}
+                  >
+                    Save Goals
+                  </Button>
+                  
+                  {saved && (
+                    <Alert severity="success">
+                      Goals saved!
+                    </Alert>
+                  )}
+                </Stack>
+              )}
+            </CardContent>
+          </Card>
+        </Box>
 
-          <Box>
-            <Button variant="contained" onClick={handleSave}>
-              Save Goals
-            </Button>
-          </Box>
-
-          {saved && (
-            <Alert severity="success" sx={{ mt: 1 }}>
-              Goals saved!
-            </Alert>
-          )}
-        </Stack>
-      </CardContent>
-    </Card>
+        {/* Right Column - Calculator */}
+        <Box sx={{ 
+          flex: 1,
+          minWidth: 0, // Prevents flex overflow
+          width: { xs: '100%', md: 'auto' }
+        }}>
+          <MacroCalculator onCalculatedMacros={handleCalculatedMacros} />
+        </Box>
+      </Box>
+    </Box>
   );
 };
 
