@@ -35,6 +35,9 @@ import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { subscribeToNutritionGoal } from '../../services/firebase/nutrition/nutritionGoalService';
 import { useAuth } from '../../contexts/AuthContext';
 import { Box, Divider, Typography } from '@mui/material';
+import { GenericCard } from '../shared/cards/GenericCard';
+import  AccentButton  from '../shared/AccentButton';
+import { Clear as ClearIcon } from '@mui/icons-material';
 import {
   WbSunny as AfternoonIcon,
   Nightlight as EveningIcon,
@@ -44,6 +47,7 @@ import MacroProgress from './MacroProgress';
 import FoodSelectorWithFirebase from './FoodSelectorWithFirebase';
 import { calculateMacros } from '../../utils/nutritionCalculations';
 import ExternalNutritionInput from './ExternalNutritionInput';
+import SaveLoadPlan from './SaveLoadPlan';
 import MealCostDisplay from './MealCostDisplay';
 
 import {
@@ -422,9 +426,9 @@ const TimeslotMealPlanner: React.FC = () => {
     <Box 
       sx={{ 
         display: 'flex', 
-        gap: 4, 
+        gap: 3, 
         height: '100%', 
-        p: 3,
+        p: 1.5,
         flexDirection: { xs: 'column', md: 'row' },
         background: 'linear-gradient(135deg, var(--meal-bg-card) 0%, rgba(255,255,255,0.5) 100%)',
         borderRadius: 3,
@@ -435,14 +439,13 @@ const TimeslotMealPlanner: React.FC = () => {
       <Box 
         sx={{ 
           flexBasis: { xs: '100%', md: '60%' },
-          minWidth: 0,
-          overflowY: 'auto'
+          minWidth: 0
         }}
       >
         {/* Timeslot picker - Simple section without card wrapper */}
-        <Box sx={{ mb: 4 }}>
+        <Box sx={{ mb: 3 }}>
           <Typography variant="h6" sx={{ 
-            mb: 2, 
+            mb: 1.5, 
             color: 'var(--text-primary)', 
             fontWeight: 600,
             opacity: 0.94,
@@ -576,7 +579,7 @@ const TimeslotMealPlanner: React.FC = () => {
         </Box>
 
         {/* Food selector - your existing component */}
-        <Box sx={{ mb: 3 }}>
+        <Box sx={{ mb: 1.5 }}>
           <FoodSelectorWithFirebase
             selectedFoods={currentData.selectedFoods}
             onAddFood={handleAddFood}
@@ -601,11 +604,13 @@ const TimeslotMealPlanner: React.FC = () => {
             onRemoveFoodForTimeslot={handleRemoveFoodForTimeslot}
             onSwapFoodForTimeslot={handleSwapFoodForTimeslot}
             selectedFromFavorite={selectedFoodName}
+            externalNutrition={currentData.externalNutrition}
+            onUpdateExternalNutrition={handleUpdateExternal}
           />
         </Box>
 
         {/* External nutrition input - your existing component */}
-        <Box sx={{ mb: 3 }}>
+        <Box sx={{ mb: 1 }}>
           <ExternalNutritionInput
             nutrition={currentData.externalNutrition}
             onUpdateNutrition={handleUpdateExternal}
@@ -624,7 +629,7 @@ const TimeslotMealPlanner: React.FC = () => {
         }}
       >
         {/* Macro progress - your existing component */}
-        <Box sx={{ mb: 3 }}>
+        <Box sx={{ mb: 1.5 }}>
           {nutritionGoals ? (
             <MacroProgress
               current={getTotalMacros}
@@ -633,53 +638,60 @@ const TimeslotMealPlanner: React.FC = () => {
               foodMacros={getCombinedFoodMacros}
               externalMacros={getCombinedExternal}
               goals={nutritionGoals}
-              timeslotData={timeslotData}
-              onLoad={setTimeslotData}
-              favoriteFoods={getAvailableFavoriteFoods}
-              onSelectFavorite={(foodName: string) => {
-                // Handle special format from SaveLoadPlan: "foodName|amount"
-                const parts = foodName.split('|');
-                const actualFoodName = parts[0];
-                const amount = parts[1] ? parseInt(parts[1]) : undefined;
-                
-                if (amount !== undefined) {
-                  // This is a direct add from SaveLoadPlan
-                  const foodToAdd: SelectedFood = { name: actualFoodName, amount };
-                  handleAddFood(foodToAdd);
-                  setSelectedFoodName('');
-                  setAmount(100);
-                  setPreviewFood(null);
-                } else {
-                  // This is a selection for configuration
-                  setSelectedFoodName(actualFoodName);
-                  const defaultAmount = foodDatabase[actualFoodName]?.isUnitFood 
-                    ? (actualFoodName === 'Eggs' ? 2 : 1) 
-                    : (foodDatabase[actualFoodName]?.useFixedAmount ? foodDatabase[actualFoodName]?.fixedAmount || 100 : 100);
-                  setAmount(defaultAmount);
-                  setPreviewFood({ name: actualFoodName, amount: defaultAmount });
-                  
-                  // Find and expand the category containing this food
-                  const foodCategory = foodDatabase[actualFoodName]?.metadata?.category || 'Other';
-                  // We need to trigger the FoodSelectorWithFirebase to expand this category
-                  // This will be handled by the FoodSelectorWithFirebase component's handleFoodSelect
-                }
-              }}
-              onClear={handleClearPlan}
-              size="compact"
             />
           ) : (
             <Typography>Loading nutrition goals...</Typography>
           )}
         </Box>
 
-        {/* Meal cost display - your existing component */}
-        <Box sx={{ mb: 3 }}>
-          <MealCostDisplay
-            timeslotData={timeslotData}
+        {/* Meal cost display - expandable */}
+        <Box sx={{ mb: 1.5 }}>
+          <MealCostDisplay 
+            timeslotData={timeslotData} 
+            previewFood={previewFood}
+            currentTimeslot={getCurrentTimeslotId()}
           />
         </Box>
 
-        <Divider sx={{ my: 2 }} />
+        {/* Save/Load/Clear Actions */}
+        <Box sx={{ mb: 1 }}>
+          <GenericCard
+            variant="default"
+            content={
+              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                <AccentButton
+                  onClick={() => {
+                    // TODO: Implement save functionality
+                    console.log('Save plan clicked');
+                  }}
+                  variant="primary"
+                  size="compact"
+                >
+                  Save Plan
+                </AccentButton>
+
+                <AccentButton
+                  onClick={() => {
+                    // TODO: Implement load functionality
+                    console.log('Load today clicked');
+                  }}
+                  size="compact"
+                  variant="secondary"
+                >
+                  Load Today
+                </AccentButton>
+
+                <AccentButton
+                  onClick={handleClearPlan}
+                  size="compact"
+                  variant="danger"
+                >
+                  Clear Plan
+                </AccentButton>
+              </Box>
+            }
+          />
+        </Box>
       </Box>
     </Box>
   );

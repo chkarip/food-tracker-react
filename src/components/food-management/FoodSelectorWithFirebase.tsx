@@ -40,14 +40,14 @@ import  AccentButton  from '../shared/AccentButton';
 import { NumberStepper } from '../shared/inputs';
 import CollapsiblePanel from '../shared/CollapsiblePanel';
 import { GenericCard } from '../shared/cards/GenericCard';
-import { ViewList as ViewListIcon, Restaurant as RestaurantIcon } from '@mui/icons-material';
-import { KeyboardArrowRight as ArrowRightIcon, KeyboardArrowLeft as ArrowLeftIcon } from '@mui/icons-material';
-
 import { useFoodDatabase } from '../../contexts/FoodContext';
 import groupFoodsByCategory from '../../utils/groupFoodsByCategory';
 import { calculateMacros, formatMacroValue } from '../../utils/nutritionCalculations';
 import { calculatePortionCost, formatCost } from '../../services/firebase/nutrition/foodService';
 import { SelectedFood } from '../../types/nutrition';
+import ExternalNutritionInput from './ExternalNutritionInput';
+import { ViewToggle } from '../shared';
+import { scrollIntoViewSafe } from '../../utils/scrollIntoViewSafe';
 
 /* ---------- props ---------- */
 interface FoodSelectorWithFirebaseProps {
@@ -68,6 +68,9 @@ interface FoodSelectorWithFirebaseProps {
   onRemoveFoodForTimeslot?: (timeslotId: string, index: number) => void;
   onSwapFoodForTimeslot?: (timeslotId: string, index: number) => void;
   selectedFromFavorite?: string | null;
+  // External nutrition props
+  externalNutrition?: { protein: number; fats: number; carbs: number; calories: number };
+  onUpdateExternalNutrition?: (nutrition: { protein: number; fats: number; carbs: number; calories: number }) => void;
 }
 
 /* ================================================================== */
@@ -90,6 +93,9 @@ const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = ({
   onRemoveFoodForTimeslot,
   onSwapFoodForTimeslot,
   selectedFromFavorite,
+  // External nutrition props
+  externalNutrition,
+  onUpdateExternalNutrition,
 }) => {
   /* ---------- data ---------- */
   const { foodDatabase, loading, error } = useFoodDatabase();
@@ -101,9 +107,24 @@ const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = ({
 
   // Refs for smooth scrolling after cancel - one per category
   const categoryRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const pendingScrollRef = useRef<string | null>(null);
 
   // Ref for smooth scrolling after cancel
   const headerRef = useRef<HTMLDivElement>(null);
+
+  // Ref for the scrollable container
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+
+  // Ref for the true scrolling list container (diagnostic)
+  const listContainerRef = useRef<HTMLDivElement | null>(null);
+
+
+
+  // Dynamic ref to find the actual scrollable element (simplified for window-only scrolling)
+  const findScrollableContainer = useCallback((): HTMLElement | null => {
+    // Always return null since we use window scrolling on this page
+    return null;
+  }, []);
 
   /* ---------- group catalogue by category ---------- */
   const groupedAvailable = useMemo(() => {
@@ -117,16 +138,17 @@ const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = ({
 
   // Auto-expand category when selectedFoodName changes (for favorite food selection)
   useEffect(() => {
-    if (selectedFoodName && groupedAvailable) {
-      const category = Object.entries(groupedAvailable).find(([cat, foods]) => 
-        foods.some(f => f.name === selectedFoodName)
-      )?.[0];
-      
-      if (category && expandedCategory !== category) {
-        setExpandedCategory(category);
-      }
+    if (!selectedFoodName || !groupedAvailable) return;
+    const isFavorite = !!foodDatabase[selectedFoodName]?.metadata?.favorite;
+    if (isFavorite) return; // do not jump when selection came from Favorites
+
+    const category = Object.entries(groupedAvailable).find(([cat, foods]) =>
+      foods.some(f => f.name === selectedFoodName)
+    )?.[0];
+    if (category && expandedCategory !== category) {
+      setExpandedCategory(category);
     }
-  }, [selectedFoodName, groupedAvailable, expandedCategory]);
+  }, [selectedFoodName, groupedAvailable, expandedCategory, foodDatabase]);
 
   // Handle selection from favorite foods
   useEffect(() => {
@@ -135,19 +157,107 @@ const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = ({
     }
   }, [selectedFromFavorite]);
 
-  // Auto-collapse on mobile when food is selected
+  // Handle scrolling after category expansion
   useEffect(() => {
-    if (selectedFoodName && window.innerWidth < 768) { // Mobile breakpoint
-      // Find which category contains the selected food
-      const categoryWithSelection = Object.entries(groupedAvailable).find(([cat, foods]) => 
-        foods.some(f => f.name === selectedFoodName)
-      )?.[0];
-      
-      if (categoryWithSelection && expandedCategory !== categoryWithSelection) {
-        setExpandedCategory(categoryWithSelection);
+    if (!expandedCategory || !pendingScrollRef.current) return;
+    if (pendingScrollRef.current !== expandedCategory) return;
+
+    console.log('[FSWF] expandedCategory', expandedCategory, 'pending', pendingScrollRef.current);
+
+    // Use double requestAnimationFrame to ensure layout is committed
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const el = categoryRefs.current[expandedCategory];
+        console.log('[FSWF] headerEl', el?.tagName, el?.className);
+        if (el) {
+          console.log('[FSWF] invoked SIV', expandedCategory);
+          scrollIntoViewSafe(el, {
+            behavior: 'smooth',
+            topOffset: 72,
+            forceWindow: true // Always use window scrolling on this page
+          });
+        }
+
+        // Improved nudge delay with minimum smooth timing
+        setTimeout(() => {
+          const el2 = categoryRefs.current[expandedCategory];
+          if (el2) {
+            console.log('[FSWF] nudge scroll for category expansion');
+            scrollIntoViewSafe(el2, {
+              behavior: 'auto', // Use auto for nudge to avoid double animation
+              topOffset: 72,
+              forceWindow: true // Always use window scrolling on this page
+            });
+          }
+          pendingScrollRef.current = null;
+        }, 350); // Slightly longer delay for smooth feel
+      });
+    });
+  }, [expandedCategory]);
+
+  // Handle scrolling to inline controls when food is selected
+  useEffect(() => {
+    if (!selectedFoodName) return;
+
+    console.log('[FSWF] selectedFoodName changed to', selectedFoodName);
+
+    // Use double requestAnimationFrame to ensure controls are rendered
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const controlsEl = document.querySelector(`[data-food-controls="${selectedFoodName}"]`) as HTMLElement;
+        console.log('[FSWF] controlsEl for', selectedFoodName, controlsEl?.tagName, controlsEl?.className);
+        if (controlsEl) {
+          // Check if controls are already visible before scrolling
+          const rect = controlsEl.getBoundingClientRect();
+          const isVisible = rect.top >= 72 && rect.bottom <= window.innerHeight - 20; // 72px top offset + 20px bottom margin
+
+          console.log('[FSWF] controls visibility check:', {
+            top: rect.top,
+            bottom: rect.bottom,
+            windowHeight: window.innerHeight,
+            isVisible,
+            willScroll: !isVisible
+          });
+
+          if (!isVisible) {
+            console.log('[FSWF] scrolling to inline controls for', selectedFoodName);
+            scrollIntoViewSafe(controlsEl, {
+              behavior: 'smooth',
+              topOffset: 72,
+              forceWindow: true // Always use window scrolling on this page
+            });
+          } else {
+            console.log('[FSWF] controls already visible, skipping scroll');
+          }
+        }
+      });
+    });
+  }, [selectedFoodName]);
+
+  // One-time keyboard tracer to identify the real scroller
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'K') return;
+      const pt = document.elementFromPoint(window.innerWidth * 0.25, window.innerHeight * 0.7) as HTMLElement;
+      let node: HTMLElement | null = pt;
+      console.log('[TRACE] start from', pt?.tagName, pt?.className);
+      while (node) {
+        const cs = getComputedStyle(node);
+        const info = {
+          tag: node.tagName,
+          class: node.className,
+          oy: cs.overflowY,
+          scrollTop: node.scrollTop,
+          clientHeight: node.clientHeight,
+          scrollHeight: node.scrollHeight,
+        };
+        console.log('[TRACE] node', info);
+        node = node.parentElement;
       }
-    }
-  }, [selectedFoodName, groupedAvailable, expandedCategory]);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   /* ---------- helpers ---------- */
   const getFoodUnit = useCallback(
@@ -190,26 +300,67 @@ const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = ({
     return Object.values(timeslotData).reduce((total, data) => total + data.selectedFoods.length, 0);
   }, [timeslotData, selectedFoods]);
 
+  // Handle scrolling when switching to selected foods view
+  useEffect(() => {
+    if (viewMode !== 'selected' || totalSelectedFoods === 0) return;
+
+    console.log('[FSWF] viewMode changed to selected, totalSelectedFoods:', totalSelectedFoods);
+
+    // Use double requestAnimationFrame to ensure the view is rendered
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const selectedContainer = document.querySelector('[data-selected-foods-container]') as HTMLElement;
+        console.log('[FSWF] selectedContainer found:', selectedContainer?.tagName, selectedContainer?.className);
+        if (selectedContainer) {
+          // Check if container is already visible before scrolling
+          const rect = selectedContainer.getBoundingClientRect();
+          const isVisible = rect.top >= 72 && rect.bottom <= window.innerHeight - 20;
+
+          console.log('[FSWF] selected container visibility check:', {
+            top: rect.top,
+            bottom: rect.bottom,
+            windowHeight: window.innerHeight,
+            isVisible,
+            willScroll: !isVisible
+          });
+
+          if (!isVisible) {
+            console.log('[FSWF] scrolling to selected foods container');
+            scrollIntoViewSafe(selectedContainer, {
+              behavior: 'smooth',
+              topOffset: 72,
+              forceWindow: true // Always use window scrolling on this page
+            });
+          } else {
+            console.log('[FSWF] selected container already visible, skipping scroll');
+          }
+        }
+      });
+    });
+  }, [viewMode, totalSelectedFoods]);
+
   const handleFoodSelect = useCallback(
-    (n: string) => {
+    (n: string, source: 'favorites' | 'category' = 'category') => {
       setSelectedFoodName(n);
       const amt = getDefaultAmount(n);
       setAmount(amt);
-      if (onFoodPreview) onFoodPreview(n, amt);
-      if (onFoodSelect) onFoodSelect(n);
-      
-      // Find the category of the selected food and expand it
-      const category = Object.entries(groupedAvailable).find(([cat, foods]) => 
-        foods.some(f => f.name === n)
-      )?.[0];
-      
-      if (category) {
-        setExpandedCategory(category);
+      onFoodPreview?.(n, amt);
+      onFoodSelect?.(n);
+
+      if (source === 'favorites') {
+        setExpandedCategory('favorites'); // stay in Favorites
+        // Scroll will be handled by the useEffect above
+      } else {
+        const category = Object.entries(groupedAvailable).find(([cat, foods]) =>
+          foods.some(f => f.name === n)
+        )?.[0];
+        if (category) setExpandedCategory(category);
       }
-      
-      // Auto-collapse on mobile when selection is made
-      if (window.innerWidth < 768) {
-        setExpandedCategory('');
+
+      // Mobile: do not auto-collapse favorites
+      if (window.innerWidth < 768 && source !== 'favorites') {
+        // keep current behavior or no-op; do not force switch away from favorites
+        // Example no-op: setExpandedCategory(prev => prev);
       }
     },
     [getDefaultAmount, onFoodPreview, onFoodSelect, groupedAvailable],
@@ -227,13 +378,28 @@ const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = ({
     setSelectedFoodName('');
     setAmount(100);
     if (onClearPreview) onClearPreview();
-    
+
     // Smooth scroll to current category header after cancel to avoid jump sensation
-    setTimeout(() => {
-      if (expandedCategory && categoryRefs.current[expandedCategory]) {
-        categoryRefs.current[expandedCategory]?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-      }
-    }, 100);
+    if (expandedCategory) {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          const el = categoryRefs.current[expandedCategory];
+          if (el) {
+            const scrollableContainer = findScrollableContainer();
+            console.log('[FSWF] cancel scroll to', expandedCategory, 'container:', {
+              tag: scrollableContainer?.tagName,
+              class: scrollableContainer?.className,
+              canScroll: scrollableContainer ? scrollableContainer.scrollHeight > scrollableContainer.clientHeight : false
+            });
+            scrollIntoViewSafe(el, {
+              behavior: 'smooth',
+              topOffset: 72,
+              forceWindow: true // Always use window scrolling on this page
+            });
+          }
+        });
+      });
+    }
   }, [onClearPreview, expandedCategory]);
 
   const handleAdd = useCallback(() => {
@@ -249,7 +415,15 @@ const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = ({
   }, [selectedFoodName, amount, onAddFood]);
 
   const handleCategoryToggle = (category: string) => {
+    console.log('[FSWF] request scroll for category', category);
     setExpandedCategory(prev => {
+      const next = prev === category ? null : category;
+
+      // Set pending scroll for the category being expanded
+      if (next) {
+        pendingScrollRef.current = category;
+      }
+
       // If clicking the currently expanded category, close it
       if (prev === category) {
         // Clear selection when closing the category
@@ -260,14 +434,14 @@ const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = ({
         }
         return null;
       }
-      
+
       // If switching to a different category, clear the current selection first
       if (selectedFoodName) {
         setSelectedFoodName('');
         setAmount(100);
         if (onClearPreview) onClearPreview();
       }
-      
+
       // Open the new category (accordion behavior - only one open at a time)
       return category;
     });
@@ -295,64 +469,265 @@ const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = ({
   /* RENDER                                                           */
   /* ---------------------------------------------------------------- */
   return (
-    <Box sx={{ position: 'relative' }}>
-      {/* Toggle Button - Positioned beside the title */}
+    <Box 
+      sx={{ position: 'relative' }}
+      data-component="food-selector"
+    >
+      {/* View Toggle - Custom Component */}
       <Box
         sx={{
           position: 'absolute',
           top: 16,
           right: 16,
           zIndex: 20,
-          backgroundColor: 'var(--card-bg)',
-          borderRadius: '8px',
-          border: '1px solid var(--border-color)',
-          boxShadow: 'var(--elevation-2)',
-          '&:hover': {
-            boxShadow: 'var(--elevation-3)',
-            transform: 'translateY(-1px)',
-          },
-          transition: 'all 0.2s ease',
         }}
       >
-        <AccentButton
-          onClick={() => setViewMode(viewMode === 'available' ? 'selected' : 'available')}
-          variant="secondary"
-          size="small"
-          startIcon={viewMode === 'available' ? <ArrowRightIcon /> : <ArrowLeftIcon />}
-          style={{
-            minWidth: 'auto',
-            padding: '6px 12px',
-            fontSize: '0.75rem',
-            backgroundColor: 'transparent',
-            border: 'none',
-            boxShadow: 'none',
-          }}
-        >
-          {viewMode === 'available' ? 'Selected' : 'Available'}
-        </AccentButton>
+        <ViewToggle
+          activeView={viewMode}
+          onViewChange={setViewMode}
+          size="medium"
+        />
       </Box>
 
       <GenericCard
         variant="default"
-        title={viewMode === 'available' ? `Available Foods (${Object.keys(foodDatabase).length})` : `Selected Foods (${totalSelectedFoods})`}
+        title={viewMode === 'available' ? `Browse & Add Foods` : `Manage Selected Foods (${totalSelectedFoods})`}
         content={
-          <Box sx={{ position: 'relative' }}>
+          <Box ref={scrollContainerRef} sx={{ position: 'relative' }}>
             {/* Main Content */}
             {viewMode === 'available' ? (
-              <>
+              <Box
+                ref={listContainerRef}
+                sx={{
+                  overscrollBehavior: 'contain',
+                  WebkitOverflowScrolling: 'touch',
+                }}
+              >
+                {/* Favorites Category - Always show at the top */}
+                {(() => {
+                  const favoriteFoods = Object.keys(foodDatabase).filter(
+                    name => foodDatabase[name]?.metadata?.favorite === true
+                  );
+                  
+                  return (
+                    <CollapsiblePanel
+                      key="favorites"
+                      title="Favorite Foods"
+                      variant="primary"
+                      size="compact"
+                      expanded={expandedCategory === 'favorites'}
+                      onToggle={() => handleCategoryToggle('favorites')}
+                      headerRef={(el) => { if (el) categoryRefs.current['favorites'] = el; }}
+                      sx={{
+                        mb: 2,
+                        borderColor: 'var(--accent-green)',
+                        '& .CollapsiblePanel-header': {
+                          backgroundColor: 'var(--meal-bg-primary)',
+                        }
+                      }}
+                    >
+                      <Box sx={{ mt: 1 }}>
+                        {favoriteFoods.length > 0 ? (
+                          <Stack direction="row" flexWrap="wrap" gap={1.5}>
+                            {favoriteFoods.map((foodName) => {
+                              const isSel = selectedFoods.some((f) => f.name === foodName);
+                              
+                              return (
+                                <Box key={foodName} sx={{ position: 'relative' }}>
+                                  <Chip
+                                    label={foodName}
+                                    onClick={() => handleFoodSelect(foodName, 'favorites')}
+                                    variant={
+                                      selectedFoodName === foodName || isSel ? 'filled' : 'outlined'
+                                    }
+                                    sx={{
+                                      backgroundColor: selectedFoodName === foodName 
+                                        ? 'var(--accent-green)' 
+                                        : isSel 
+                                          ? 'var(--meal-chip-bg)' 
+                                          : 'var(--surface-bg)',
+                                      color: selectedFoodName === foodName 
+                                        ? 'white' 
+                                        : isSel 
+                                          ? 'var(--accent-green)' 
+                                          : 'var(--text-primary)',
+                                      border: `1px solid ${selectedFoodName === foodName ? 'var(--accent-green)' : 'var(--border-color)'}`,
+                                      fontWeight: selectedFoodName === foodName || isSel ? 600 : 500,
+                                      fontSize: '0.85rem',
+                                      padding: '8px 12px',
+                                      transition: 'all 0.3s ease',
+                                      cursor: 'pointer',
+                                      '&:hover': {
+                                        transform: 'translateY(-2px)',
+                                        boxShadow: 'var(--elevation-1)',
+                                        backgroundColor: selectedFoodName === foodName 
+                                          ? 'var(--accent-green)' 
+                                          : 'var(--meal-chip-bg)',
+                                        borderColor: 'var(--accent-green)'
+                                      }
+                                    }}
+                                  />
+                                </Box>
+                              );
+                            })}
+                          </Stack>
+                        ) : (
+                          <Box sx={{ 
+                            textAlign: 'center', 
+                            py: 3,
+                            color: 'var(--text-secondary)',
+                            backgroundColor: 'var(--meal-row-bg)',
+                            borderRadius: '8px',
+                            border: '1px solid var(--border-color)'
+                          }}>
+                            <Typography variant="body2" sx={{ mb: 1 }}>
+                              No favorite foods yet
+                            </Typography>
+                            <Typography variant="caption" sx={{ fontSize: '0.75rem' }}>
+                              Mark foods as favorites in the food management section
+                            </Typography>
+                          </Box>
+                        )}
+                        
+                        {/* Inline Amount Controls for Favorites */}
+                        {selectedFoodName && favoriteFoods.includes(selectedFoodName) && (
+                          <Box 
+                            key={`controls-${selectedFoodName}`}
+                            data-food-controls={selectedFoodName}
+                            sx={{ 
+                              mt: 2, 
+                              p: 2, 
+                              backgroundColor: 'var(--meal-row-bg)', 
+                              borderRadius: '8px', 
+                              border: '1px solid var(--border-color)',
+                              animation: 'slideIn 0.3s ease-out',
+                              opacity: 1,
+                              transform: 'translateY(0)',
+                              transition: 'all 0.3s ease-out'
+                            }}
+                          >
+                            <style>
+                              {`
+                                @keyframes slideIn {
+                                  from {
+                                    opacity: 0;
+                                    transform: translateY(-10px);
+                                  }
+                                  to {
+                                    opacity: 1;
+                                    transform: translateY(0);
+                                  }
+                                }
+                                @keyframes slideOut {
+                                  from {
+                                    opacity: 1;
+                                    transform: translateY(0);
+                                  }
+                                  to {
+                                    opacity: 0;
+                                    transform: translateY(-10px);
+                                  }
+                                }
+                              `}
+                            </style>
+                            <Typography variant="subtitle2" sx={{ mb: 1, color: 'var(--text-primary)', fontWeight: 600 }}>
+                              Configure {selectedFoodName}
+                            </Typography>
+                            
+                            <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
+                              <Typography variant="body2" sx={{ color: 'var(--text-secondary)' }}>
+                                Amount:
+                              </Typography>
+                              <NumberStepper
+                                value={amount}
+                                onChange={handleAmountChange}
+                                min={0}
+                                max={10000}
+                                step={getFoodUnit(selectedFoodName) === 'units' ? 1 : 5}
+                                unit={getFoodUnit(selectedFoodName)}
+                                size="small"
+                              />
+                            </Stack>
+                            
+                            {/* Preview Macros */}
+                            {(() => {
+                              const macros = calculateMacros(selectedFoodName, amount, foodDatabase);
+                              const cost = calculatePortionCost(selectedFoodName, amount, foodDatabase);
+                              
+                              return (
+                                <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
+                                  <Typography 
+                                    variant="body2" 
+                                    sx={{ 
+                                      background: 'var(--meal-chip-bg)',
+                                      padding: '6px 12px',
+                                      borderRadius: 'var(--radius-sm)',
+                                      color: 'var(--text-primary)',
+                                      fontWeight: 600,
+                                      fontSize: '0.8rem',
+                                      border: '1px solid var(--meal-chip-outline)'
+                                    }}
+                                  >
+                                    {formatMacroValue(macros.protein)}g P · {formatMacroValue(macros.fats)}g F · {formatMacroValue(macros.carbs)}g C · {formatMacroValue(macros.calories)} kcal
+                                  </Typography>
+                                  
+                                  {cost !== null && (
+                                    <Typography 
+                                      variant="body2" 
+                                      sx={{ 
+                                        background: 'var(--meal-chip-bg)',
+                                        padding: '6px 10px',
+                                        borderRadius: 'var(--radius-sm)',
+                                        color: 'var(--text-primary)',
+                                        fontWeight: 600,
+                                        fontSize: '0.85rem',
+                                        border: '1px solid var(--meal-chip-outline)'
+                                      }}
+                                    >
+                                      {formatCost(cost)}
+                                    </Typography>
+                                  )}
+                                </Stack>
+                              );
+                            })()}
+                            
+                            <Stack direction="row" spacing={1}>
+                              <AccentButton 
+                                onClick={handleAdd}
+                                size="small"
+                                style={{ minWidth: '80px' }}
+                              >
+                                Add
+                              </AccentButton>
+                              <AccentButton 
+                                onClick={handleClearSelection}
+                                variant="secondary"
+                                size="small"
+                                style={{ minWidth: '80px' }}
+                              >
+                                Cancel
+                              </AccentButton>
+                            </Stack>
+                          </Box>
+                        )}
+                      </Box>
+                    </CollapsiblePanel>
+                  );
+                })()}
+
                 {/* ---------- grouped chip picker ---------- */}
                 {Object.entries(groupedAvailable).map(([cat, foods]) => {
                   const isTargetCategory = isSwapping && targetCategory === cat;
                   
                   return (
                     <CollapsiblePanel
-                      ref={(el) => { categoryRefs.current[cat] = el; }}
                       key={cat} // Static key based only on category
                       title={`${cat} Foods`}
                       variant="primary"
                       size="compact"
                       expanded={expandedCategory === cat || (isTargetCategory && !expandedCategory)}
                       onToggle={() => handleCategoryToggle(cat)}
+                      headerRef={(el) => { if (el) categoryRefs.current[cat] = el; }}
                       className={`${isTargetCategory ? 'swap-highlight' : ''} ${selectedFoodName && foods.some(f => f.name === selectedFoodName) ? '' : 'only-chips'}`}
                       sx={isTargetCategory ? {
                         borderColor: 'var(--accent-orange)',
@@ -375,7 +750,7 @@ const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = ({
                               <Box key={name} sx={{ position: 'relative' }}>
                                 <Chip
                                   label={name}
-                                  onClick={() => handleFoodSelect(name)}
+                                  onClick={() => handleFoodSelect(name, 'category')}
                                   variant={
                                     selectedFoodName === name || isSel ? 'filled' : 'outlined'
                                   }
@@ -446,6 +821,7 @@ const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = ({
                         {selectedFoodName && foods.some(f => f.name === selectedFoodName) && (
                           <Box 
                             key={`controls-${selectedFoodName}`}
+                            data-food-controls={selectedFoodName}
                             sx={{ 
                               mt: 2, 
                               p: 2, 
@@ -566,44 +942,49 @@ const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = ({
                     </CollapsiblePanel>
                   );
                 })}
-              </>
+
+                {/* External Nutrition Input - REMOVED: This is now handled separately in the main layout */}
+              </Box>
             ) : (
               <>
                 {/* ---------- selected foods list ---------- */}
                 {totalSelectedFoods > 0 ? (
-                  <Box sx={{
-                    position: 'relative',
-                    background: 'var(--card-bg)',
-                    border: '1px solid var(--border-color)',
-                    borderRadius: '12px',
-                    boxShadow: 'var(--elevation-1)',
-                    overflow: 'hidden',
-                    // hover overlay that does NOT affect children
-                    '&::before': {
-                      content: '""',
-                      position: 'absolute',
-                      inset: 0,
-                      pointerEvents: 'none',
-                      background: 'linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02))',
-                      opacity: 0,
-                      transition: 'opacity 160ms ease',
-                    },
-                    '&:hover::before': { opacity: 1 },
-                    '&:hover': { boxShadow: 'var(--elevation-2)' }, // subtle lift only
-                  }}>
+                  <Box 
+                    data-selected-foods-container
+                    sx={{
+                      position: 'relative',
+                      background: 'var(--card-bg)',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '12px',
+                      boxShadow: 'var(--elevation-1)',
+                      overflow: 'hidden',
+                      // hover overlay that does NOT affect children
+                      '&::before': {
+                        content: '""',
+                        position: 'absolute',
+                        inset: 0,
+                        pointerEvents: 'none',
+                        background: 'linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02))',
+                        opacity: 0,
+                        transition: 'opacity 160ms ease',
+                      },
+                      '&:hover::before': { opacity: 1 },
+                      // Removed hover boxShadow to prevent flash
+                    }}
+                  >
                     {Object.entries(groupedSelectedFoods).map(([timeslotId, foods]) => {
                       if (foods.length === 0) return null;
                       
                       return (
-                        <Box key={timeslotId} sx={{ mb: 2, p: 2 }}>
+                        <Box key={timeslotId} sx={{ mb: 1, p: 1.5 }}>
                           {/* Timeslot header */}
                           <Typography
                             variant="subtitle1"
                             sx={{
-                              mb: 1,
+                              mb: 0.5,
                               color: 'var(--text-secondary)',
                               fontWeight: 600,
-                              fontSize: '0.9rem',
+                              fontSize: '0.85rem',
                               textAlign: 'center',
                               position: 'relative',
                               '&::before': {
@@ -611,13 +992,13 @@ const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = ({
                                 position: 'absolute',
                                 left: '50%',
                                 transform: 'translateX(-50%)',
-                                bottom: -2,
-                                width: '30px',
+                                bottom: -1,
+                                width: '25px',
                                 height: '1px',
                                 backgroundColor: timeslotId === '6pm' ? 'var(--timeslot-afternoon)' : 'var(--timeslot-evening)',
                                 borderRadius: '0.5px'
                               },
-                              paddingBottom: '4px'
+                              paddingBottom: '2px'
                             }}
                           >
                             {timeslotId === '6pm' ? '6:00 PM' : '9:30 PM'} 
@@ -625,16 +1006,16 @@ const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = ({
                               component="span"
                               sx={{
                                 display: 'inline-block',
-                                ml: 1,
-                                px: 0.75,
-                                py: 0.2,
+                                ml: 0.5,
+                                px: 0.5,
+                                py: 0.1,
                                 backgroundColor: timeslotId === '6pm' ? 'var(--timeslot-afternoon)' : 'var(--timeslot-evening)',
                                 color: 'white',
-                                borderRadius: '3px',
-                                fontSize: '0.6rem',
+                                borderRadius: '2px',
+                                fontSize: '0.55rem',
                                 fontWeight: 600,
                                 textTransform: 'uppercase',
-                                letterSpacing: '0.3px'
+                                letterSpacing: '0.2px'
                               }}
                             >
                               {getTimeslotTag(timeslotId)}
@@ -658,35 +1039,33 @@ const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = ({
                                 key={`${food.name}_${idx}`}
                                 sx={{
                                   position: 'relative',
-                                  isolation: 'isolate',                // prevents parent overlay blending
-                                  background: 'var(--meal-row-bg)',    // token, not transparent white
+                                  isolation: 'isolate',
+                                  background: 'var(--meal-row-bg)',
                                   border: '1px solid var(--border-color)',
-                                  borderRadius: '12px',
+                                  borderRadius: '8px',
                                   boxShadow: 'var(--elevation-1)',
-                                  transition: 'transform 120ms ease, box-shadow 120ms ease',
-                                  p: 2,
-                                  mb: 1,
+                                  p: 1.5,
+                                  mb: 0.5,
                                   zIndex: 2,
-                                  '&:hover': {
-                                    transform: 'translateY(-1px)',
-                                    boxShadow: 'var(--elevation-2)',
-                                    // do NOT lighten background here
-                                    borderColor: 'var(--border-color)',
-                                  }
+                                  // Removed hover effects to prevent flash
                                 }}
                               >
                                 <Stack
                                   direction="row"
                                   alignItems="center"
                                   justifyContent="space-between"
-                                  spacing={2}
+                                  spacing={1.5}
                                 >
                                   <Typography 
                                     sx={{ 
                                       flex: 1,
                                       fontWeight: 600,
                                       color: 'var(--text-primary)',
-                                      fontSize: '1rem'
+                                      fontSize: '0.9rem',
+                                      overflow: 'hidden',
+                                      textOverflow: 'ellipsis',
+                                      whiteSpace: 'nowrap',
+                                      minWidth: 0, // Allows flex shrinking
                                     }}
                                   >
                                     {food.name}
@@ -711,14 +1090,14 @@ const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = ({
                                   <Typography 
                                     variant="body2" 
                                     sx={{ 
-                                      width: 120, 
+                                      width: 110, 
                                       textAlign: 'center',
                                       background: 'var(--meal-chip-bg)',
-                                      padding: '6px 12px',
+                                      padding: '4px 8px',
                                       borderRadius: 'var(--radius-sm)',
                                       color: 'var(--text-primary)',
                                       fontWeight: 600,
-                                      fontSize: '0.8rem',
+                                      fontSize: '0.75rem',
                                       border: '1px solid var(--meal-chip-outline)',
                                       position: 'relative',
                                       zIndex: 1
@@ -733,14 +1112,14 @@ const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = ({
                                     <Typography 
                                       variant="body2" 
                                       sx={{ 
-                                        width: 70, 
+                                        width: 60, 
                                         textAlign: 'center',
                                         background: 'var(--meal-chip-bg)',
-                                        padding: '6px 10px',
+                                        padding: '4px 6px',
                                         borderRadius: 'var(--radius-sm)',
                                         color: 'var(--text-primary)',
                                         fontWeight: 600,
-                                        fontSize: '0.85rem',
+                                        fontSize: '0.8rem',
                                         border: '1px solid var(--meal-chip-outline)',
                                         position: 'relative',
                                         zIndex: 1
@@ -761,7 +1140,7 @@ const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = ({
                                       }}
                                       size="small"
                                       variant="secondary"
-                                      style={{ minWidth: '60px', fontSize: '0.75rem' }}
+                                      style={{ minWidth: '50px', fontSize: '0.7rem', padding: '4px 8px' }}
                                     >
                                       Swap
                                     </AccentButton>
@@ -777,7 +1156,7 @@ const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = ({
                                     }}
                                     size="small"
                                     variant="danger"
-                                    style={{ minWidth: '60px', fontSize: '0.75rem' }}
+                                    style={{ minWidth: '50px', fontSize: '0.7rem', padding: '4px 8px' }}
                                   >
                                     Remove
                                   </AccentButton>
@@ -792,14 +1171,14 @@ const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = ({
                 ) : (
                   <Box sx={{ 
                     textAlign: 'center', 
-                    py: 4,
+                    py: 2,
                     color: 'var(--text-secondary)'
                   }}>
-                    <Typography variant="body1" sx={{ mb: 1 }}>
+                    <Typography variant="body1" sx={{ mb: 0.5, fontSize: '0.9rem' }}>
                       No foods selected yet
                     </Typography>
-                    <Typography variant="body2">
-                      Switch to "Available Foods" view to add foods to your meal plan
+                    <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
+                      Switch to "Available" to browse and add foods to your meal plan
                     </Typography>
                   </Box>
                 )}

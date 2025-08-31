@@ -63,6 +63,7 @@ import foodHistoryService, {
   FoodHistoryStats, 
   MonthlyFoodSummary 
 } from '../../services/firebase/nutrition/foodConsumptionService';
+import { scrollIntoViewSafe } from '../../utils/scrollIntoViewSafe';
 
 interface FoodHistoryAnalyticsProps {
   userId?: string;
@@ -114,8 +115,38 @@ const FoodHistoryAnalytics: React.FC<FoodHistoryAnalyticsProps> = ({ userId }) =
     loadFoodStats();
   }, [selectedMonth, userId]);
 
-  const toggleFoodExpansion = (foodName: string) => {
-    setExpandedFood(expandedFood === foodName ? null : foodName);
+  const toggleFoodExpansion = (foodName: string, event?: React.MouseEvent) => {
+    const isExpanding = expandedFood !== foodName;
+    const mouseY = event?.clientY || 0;
+    
+    console.log('[FHA] toggleFoodExpansion', { foodName, isExpanding, mouseY });
+    
+    setExpandedFood(isExpanding ? foodName : null);
+    
+    if (isExpanding && event?.target) {
+      // Use double rAF + 250ms nudge for reliable scroll behavior
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          const headerEl = (event.target as HTMLElement).closest('tr') as HTMLElement;
+          if (headerEl) {
+            console.log('[FHA] triggering scrollIntoViewSafe', { foodName, mouseY });
+            scrollIntoViewSafe(headerEl, { 
+              forceWindow: true,
+              topOffset: 72 
+            });
+            
+            // Additional nudge after animation
+            setTimeout(() => {
+              scrollIntoViewSafe(headerEl, { 
+                forceWindow: true,
+                topOffset: 72,
+                behavior: 'auto'
+              });
+            }, 250);
+          }
+        });
+      });
+    }
   };
 
   const formatDate = (date: Date) => {
@@ -379,7 +410,7 @@ const FoodHistoryAnalytics: React.FC<FoodHistoryAnalyticsProps> = ({ userId }) =
                         <TableCell align="center">
                           <IconButton
                             size="small"
-                            onClick={() => toggleFoodExpansion(food.foodName)}
+                            onClick={(event) => toggleFoodExpansion(food.foodName, event)}
                           >
                             {expandedFood === food.foodName ? <ExpandLessIcon /> : <ExpandMoreIcon />}
                           </IconButton>

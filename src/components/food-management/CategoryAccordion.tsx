@@ -30,7 +30,7 @@
  *   in `kcalTotal`.
  */
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useRef, useEffect } from 'react';
 import {
   Accordion,
   AccordionSummary,
@@ -48,6 +48,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import { SelectedFood } from '../../types/nutrition';
 import { calculateTotalMacros } from '../../utils/nutritionCalculations';
 import { useFoodDatabase } from '../../contexts/FoodContext';
+import { scrollIntoViewSafe } from '../../utils/scrollIntoViewSafe';
 
 /* ---------- local types ---------- */
 interface Category {
@@ -74,6 +75,38 @@ const { foodDatabase } = useFoodDatabase();
 
   /* default-expand if it contains foods */
   const [open, setOpen] = useState<boolean>(foods.length > 0);
+  const headerRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll when accordion expands
+  useEffect(() => {
+    if (open && headerRef.current) {
+      console.log('[CA] expanding category accordion, triggering scroll');
+
+      // Use improved timing with double requestAnimationFrame
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          console.log('[CA] invoking scrollIntoViewSafe for category accordion');
+          scrollIntoViewSafe(headerRef.current!, {
+            behavior: 'smooth',
+            topOffset: 72, // Account for sticky header
+            forceWindow: true // Always use window scrolling on this page
+          });
+
+          // Additional nudge after CSS transition completes
+          setTimeout(() => {
+            if (headerRef.current) {
+              console.log('[CA] 250ms nudge scroll for category accordion');
+              scrollIntoViewSafe(headerRef.current, {
+                behavior: 'smooth',
+                topOffset: 72,
+                forceWindow: true
+              });
+            }
+          }, 250);
+        });
+      });
+    }
+  }, [open]);
 
   /* kcal badge */
   const kcalTotal = useMemo(() => {
@@ -90,7 +123,7 @@ const { foodDatabase } = useFoodDatabase();
   /* ---------- render ---------- */
   return (
     <Accordion expanded={open} onChange={() => setOpen(!open)}>
-      <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+      <AccordionSummary ref={headerRef} expandIcon={<ExpandMoreIcon />}>
         <Typography variant="subtitle1">{category.name}</Typography>
         <Chip
           label={`${Math.round(kcalTotal)} kcal`}

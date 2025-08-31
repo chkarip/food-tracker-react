@@ -10,4 +10,5 @@ export interface CollapsiblePanelProps {
   className?: string;
   disabled?: boolean;
   sx?: any; // Add sx prop for additional styling
+  headerRef?: (el: HTMLDivElement | null) => void; // ADD THIS
 }

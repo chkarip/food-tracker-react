@@ -142,11 +142,11 @@
 }
 
 .collapsible-panel--large .collapsible-panel__header {
-  padding: 20px 24px;
+  padding: 16px 20px;
 }
 
 .collapsible-panel--large .collapsible-panel__inner {
-  padding: 24px;
+  padding: 20px;
 }
 
 /* Compact size variant - optimized for density */

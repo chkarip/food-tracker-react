@@ -1,0 +1,151 @@
+/* ================================
+   GLOBAL TRANSITIONS SYSTEM
+   ================================ */
+
+:root {
+  /* Transition Durations */
+  --transition-fast: 150ms;
+  --transition-normal: 250ms;
+  --transition-slow: 400ms;
+  --transition-slower: 600ms;
+
+  /* Transition Easing Functions */
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+  /* Common Transitions */
+  --transition-all-fast: all var(--transition-fast) var(--ease-out);
+  --transition-all-normal: all var(--transition-normal) var(--ease-out);
+  --transition-all-slow: all var(--transition-slow) var(--ease-out);
+
+  --transition-color-fast: color var(--transition-fast) var(--ease-out);
+  --transition-color-normal: color var(--transition-normal) var(--ease-out);
+
+  --transition-bg-fast: background-color var(--transition-fast) var(--ease-out);
+  --transition-bg-normal: background-color var(--transition-normal) var(--ease-out);
+
+  --transition-transform-fast: transform var(--transition-fast) var(--ease-out);
+  --transition-transform-normal: transform var(--transition-normal) var(--ease-out);
+
+  --transition-opacity-fast: opacity var(--transition-fast) var(--ease-out);
+  --transition-opacity-normal: opacity var(--transition-normal) var(--ease-out);
+
+  /* Scroll Behavior */
+  --scroll-behavior: smooth;
+  --scroll-behavior-auto: auto;
+}
+
+/* ================================
+   ACCORDION TRANSITIONS
+   ================================ */
+
+.accordion-smooth {
+  transition: var(--transition-all-normal);
+}
+
+.accordion-smooth .MuiAccordionSummary-root {
+  transition: var(--transition-all-normal);
+}
+
+.accordion-smooth .MuiAccordionDetails-root {
+  transition: var(--transition-all-normal);
+}
+
+.accordion-smooth .MuiAccordionSummary-expandIconWrapper {
+  transition: var(--transition-transform-normal);
+}
+
+/* ================================
+   CARD TRANSITIONS
+   ================================ */
+
+.card-smooth {
+  transition: var(--transition-all-normal);
+}
+
+.card-smooth:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* ================================
+   BUTTON TRANSITIONS
+   ================================ */
+
+.btn-smooth {
+  transition: var(--transition-all-fast);
+}
+
+.btn-smooth:hover {
+  transform: translateY(-1px);
+}
+
+.btn-smooth:active {
+  transform: translateY(0);
+  transition-duration: var(--transition-fast);
+}
+
+/* ================================
+   INPUT TRANSITIONS
+   ================================ */
+
+.input-smooth {
+  transition: var(--transition-all-fast);
+}
+
+.input-smooth:focus {
+  transform: scale(1.02);
+}
+
+/* ================================
+   GENERAL SMOOTH TRANSITIONS
+   ================================ */
+
+* {
+  scroll-behavior: var(--scroll-behavior);
+}
+
+/* Override for instant scrolls when needed */
+.scroll-instant {
+  scroll-behavior: var(--scroll-behavior-auto) !important;
+}
+
+/* ================================
+   CUSTOM SCROLLBAR
+   ================================ */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+  transition: var(--transition-bg-fast);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+/* ================================
+   FOCUS TRANSITIONS
+   ================================ */
+
+.focus-smooth {
+  transition: var(--transition-all-fast);
+}
+
+.focus-smooth:focus-visible {
+  outline: 2px solid var(--color-primary-base);
+  outline-offset: 2px;
+  transform: scale(1.02);
+}

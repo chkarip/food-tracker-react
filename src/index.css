@@ -1,4 +1,8 @@
 /* Light defaults */
+@import './styles/colors.css';
+@import './styles/spacing.css';
+@import './styles/typography.css';
+@import './styles/transitions.css';
 :root {
   /* Text */
   --text-primary: #1a1a1a;
@@ -190,4 +194,11 @@ code {
     opacity: 1;
     transform: scale(1.2);
   }
+}
+
+/* ===== MATERIAL-UI OVERRIDES ===== */
+/* Remove unwanted padding from Material-UI CardContent */
+.css-x4lmbv-MuiCardContent-root:last-child,
+.MuiCardContent-root:last-child {
+  padding-bottom: 0 !important;
 }

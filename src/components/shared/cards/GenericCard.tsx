@@ -63,35 +63,37 @@ export function GenericCard(props: GenericCardProps) {
       }}
     >
       {headerSlot ?? (
-        <CardHeader
-          avatar={icon}
-          title={
-            title ? (
-              <Box
-                sx={{
-                  color: 'var(--text-primary)',
-                  fontWeight: 600,
-                  opacity: 0.94,
-                  position: 'relative',
-                  '&::before': {
-                    content: '""',
-                    position: 'absolute',
-                    left: -16,
-                    top: 0,
-                    bottom: 0,
-                    width: '3px',
-                    backgroundColor: 'var(--accent-green)',
-                    borderRadius: '2px',
-                  },
-                  paddingLeft: '12px',
-                }}
-              >
-                {title}
-              </Box>
-            ) : undefined
-          }
-          subheader={subtitle}
-        />
+        (title || subtitle || icon) && (
+          <CardHeader
+            avatar={icon}
+            title={
+              title ? (
+                <Box
+                  sx={{
+                    color: 'var(--text-primary)',
+                    fontWeight: 600,
+                    opacity: 0.94,
+                    position: 'relative',
+                    '&::before': {
+                      content: '""',
+                      position: 'absolute',
+                      left: -16,
+                      top: 0,
+                      bottom: 0,
+                      width: '3px',
+                      backgroundColor: 'var(--accent-green)',
+                      borderRadius: '2px',
+                    },
+                    paddingLeft: '12px',
+                  }}
+                >
+                  {title}
+                </Box>
+              ) : undefined
+            }
+            subheader={subtitle}
+          />
+        )
       )}
 
       {mediaSlot ??

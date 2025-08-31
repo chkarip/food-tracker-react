@@ -2,8 +2,183 @@ import React from 'react';
 import { Box, Typography, useTheme } from '@mui/material';
 import { GenericCard } from '../shared/cards/GenericCard';
 import { NutritionData, ExternalNutrition } from '../../types/nutrition';
-import SaveLoadPlan from './SaveLoadPlan';
 import { SelectedFood } from '../../types/nutrition';
+
+// Circular Progress Ring Component
+const CircularProgressRing: React.FC<{
+  label: string;
+  value: number;
+  preview?: number;
+  goal: number;
+  color: string;
+  size?: number;
+}> = ({ label, value, preview, goal, color, size = 95 }) => {
+  const safeGoal = Math.max(1, goal);
+  const pct = Math.max(0, Math.min(100, (value / safeGoal) * 100));
+  const hasPreview = typeof preview === 'number' && preview > value;
+  const previewPct = hasPreview ? Math.max(0, Math.min(100, (preview! / safeGoal) * 100)) : pct;
+  const circumference = 2 * Math.PI * (size / 2 - 4);
+  const strokeDasharray = circumference;
+  const strokeDashoffset = circumference - (pct / 100) * circumference;
+  const previewStrokeDashoffset = circumference - (previewPct / 100) * circumference;
+
+  const tooltipText = hasPreview
+    ? `Adds +${Math.round(preview! - value)}g - Will be ${Math.round(preview!)}g of ${Math.round(goal)}g`
+    : `${Math.round(value)}g of ${Math.round(goal)}g`;
+
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
+      <Box sx={{ position: 'relative', width: size, height: size }}>
+        {/* Background circle */}
+        <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={size / 2 - 4}
+            fill="none"
+            stroke="var(--bar-rail, rgba(255,255,255,0.08))"
+            strokeWidth="4"
+          />
+          {/* Current progress circle */}
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={size / 2 - 4}
+            fill="none"
+            stroke={color}
+            strokeWidth="4"
+            strokeDasharray={strokeDasharray}
+            strokeDashoffset={strokeDashoffset}
+            strokeLinecap="round"
+            style={{
+              transition: 'stroke-dashoffset 0.5s ease',
+            }}
+          />
+          {/* Preview delta overlay */}
+          {hasPreview && (
+            <circle
+              cx={size / 2}
+              cy={size / 2}
+              r={size / 2 - 4}
+              fill="none"
+              stroke={color}
+              strokeWidth="4"
+              strokeDasharray={strokeDasharray}
+              strokeDashoffset={previewStrokeDashoffset}
+              strokeLinecap="round"
+              opacity="0.45"
+              style={{
+                transition: 'stroke-dashoffset 0.5s ease',
+              }}
+            />
+          )}
+        </svg>
+        {/* Center text */}
+        <Box
+          sx={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            textAlign: 'center',
+            cursor: 'pointer',
+          }}
+          title={tooltipText}
+        >
+          {hasPreview ? (
+            // Preview state: show x → x+y
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <Typography
+                variant="h6"
+                sx={{
+                  fontSize: '0.8rem',
+                  fontWeight: 700,
+                  color: 'var(--text-primary)',
+                  lineHeight: 1,
+                }}
+              >
+                <span style={{ color: 'var(--text-primary)' }}>{Math.round(value)}</span>
+                <span style={{ color: 'var(--accent-green)', fontSize: '0.7rem', marginLeft: '2px', opacity: 0.75 }}>
+                  →{Math.round(preview!)}
+                </span>
+              </Typography>
+              <Typography
+                variant="caption"
+                sx={{
+                  fontSize: '0.5rem',
+                  color: 'var(--text-secondary)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  mt: 0.2,
+                }}
+              >
+                / {Math.round(goal)}
+              </Typography>
+            </Box>
+          ) : (
+            // Non-preview state: show x / max
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <Typography
+                variant="h6"
+                sx={{
+                  fontSize: '0.9rem',
+                  fontWeight: 700,
+                  color: 'var(--text-primary)',
+                  lineHeight: 1,
+                }}
+              >
+                {Math.round(value)}
+              </Typography>
+              <Typography
+                variant="caption"
+                sx={{
+                  fontSize: '0.6rem',
+                  color: 'var(--text-secondary)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                }}
+              >
+                / {Math.round(goal)}
+              </Typography>
+            </Box>
+          )}
+        </Box>
+      </Box>
+      {/* Label */}
+      <Typography
+        variant="caption"
+        sx={{
+          color: 'var(--text-secondary)',
+          fontWeight: 600,
+          textAlign: 'center',
+          fontSize: '0.7rem',
+        }}
+      >
+        {label}
+      </Typography>
+      {/* Now → After percentage */}
+      <Typography
+        variant="caption"
+        sx={{
+          color: 'var(--text-secondary)',
+          textAlign: 'center',
+          fontSize: '0.65rem',
+        }}
+      >
+        {hasPreview ? (
+          <>
+            <span style={{ color: 'var(--text-primary)' }}>{pct.toFixed(0)}%</span>
+            <span style={{ color: 'var(--accent-green)', fontSize: '0.6rem', opacity: 0.75, marginLeft: '2px' }}>
+              →{previewPct.toFixed(0)}%
+            </span>
+          </>
+        ) : (
+          `${pct.toFixed(0)}%`
+        )}
+      </Typography>
+    </Box>
+  );
+};
 
 interface MacroProgressProps {
   current: NutritionData;
@@ -17,17 +192,6 @@ interface MacroProgressProps {
     carbs: number;
     calories: number;
   };
-  // Required props for SaveLoadPlan
-  timeslotData: {
-    [key: string]: { selectedFoods: SelectedFood[]; externalNutrition: ExternalNutrition };
-  };
-  onLoad: (data: { 
-    [key: string]: { selectedFoods: SelectedFood[]; externalNutrition: ExternalNutrition };
-  }) => void;
-  favoriteFoods?: string[]; // Optional prop for favorite foods
-  onSelectFavorite?: (foodName: string) => void; // Optional callback for favorite selection
-  onClear?: () => void; // Optional callback to clear selected foods
-  size?: 'default' | 'compact'; // Size prop for SaveLoadPlan buttons
 }
 
 const MacroProgress: React.FC<MacroProgressProps> = ({
@@ -37,13 +201,6 @@ const MacroProgress: React.FC<MacroProgressProps> = ({
   foodMacros,
   externalMacros,
   goals,
-  // Required props for SaveLoadPlan
-  timeslotData,
-  onLoad,
-  favoriteFoods = [], // Optional prop for favorite foods
-  onSelectFavorite,
-  onClear,
-  size = 'default', // Default size
 }) => {
   const theme = useTheme();
 
@@ -155,7 +312,18 @@ const MacroProgress: React.FC<MacroProgressProps> = ({
                   fontSize: '0.6rem',
                   fontWeight: 600,
                   textTransform: 'uppercase',
-                  letterSpacing: '0.3px'
+                  letterSpacing: '0.3px',
+                  animation: 'previewPulse 2s ease-in-out infinite',
+                  '@keyframes previewPulse': {
+                    '0%, 100%': {
+                      opacity: 1,
+                      transform: 'scale(1)',
+                    },
+                    '50%': {
+                      opacity: 0.8,
+                      transform: 'scale(1.05)',
+                    },
+                  },
                 }}
               >
                 Preview
@@ -166,20 +334,42 @@ const MacroProgress: React.FC<MacroProgressProps> = ({
       }
       content={
         <Box>
-          <Bar label="Protein (g)" value={current.protein} preview={showPreview ? preview?.protein : undefined} goal={goals.protein} colorVar={'var(--macro-protein)'} />
-          <Bar label="Fats (g)"    value={current.fats}    preview={showPreview ? preview?.fats : undefined}    goal={goals.fats}    colorVar={'var(--macro-fats)'} />
-          <Bar label="Carbs (g)"   value={current.carbs}   preview={showPreview ? preview?.carbs : undefined}   goal={goals.carbs}   colorVar={'var(--macro-carbs)'} />
-          <Bar label="Calories"    value={current.calories}preview={showPreview ? preview?.calories : undefined}goal={goals.calories} colorVar={'var(--macro-calories)'} />
-
-          {/* Always show SaveLoadPlan */}
-          <Box sx={{ mt: 3 }}>
-            <SaveLoadPlan
-              timeslotData={timeslotData}
-              onLoad={onLoad}
-              favoriteFoods={favoriteFoods}
-              onSelectFavorite={onSelectFavorite}
-              onClear={onClear}
-              size={size}
+          {/* Circular Progress Rings */}
+          <Box sx={{ 
+            display: 'flex', 
+            justifyContent: 'space-around', 
+            alignItems: 'center',
+            mb: 3,
+            flexWrap: 'wrap',
+            gap: 2
+          }}>
+            <CircularProgressRing 
+              label="Protein" 
+              value={current.protein} 
+              preview={preview?.protein}
+              goal={goals.protein} 
+              color={'var(--macro-protein)'} 
+            />
+            <CircularProgressRing 
+              label="Fats" 
+              value={current.fats} 
+              preview={preview?.fats}
+              goal={goals.fats} 
+              color={'var(--macro-fats)'} 
+            />
+            <CircularProgressRing 
+              label="Carbs" 
+              value={current.carbs} 
+              preview={preview?.carbs}
+              goal={goals.carbs} 
+              color={'var(--macro-carbs)'} 
+            />
+            <CircularProgressRing 
+              label="Calories" 
+              value={current.calories} 
+              preview={preview?.calories}
+              goal={goals.calories} 
+              color={'var(--macro-calories)'} 
             />
           </Box>
         </Box>

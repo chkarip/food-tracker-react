@@ -228,9 +228,8 @@ const SaveLoadPlan: React.FC<SaveLoadPlanProps> = ({ timeslotData, onLoad, favor
     <>
       <GenericCard
         variant="default"
-        title="Save/Load Meal Plan"
         content={
-          <Box>
+          <Box sx={{ p: 1 }}>
             {message && (
               <Alert 
                 severity={message.type} 
@@ -248,16 +247,15 @@ const SaveLoadPlan: React.FC<SaveLoadPlanProps> = ({ timeslotData, onLoad, favor
 
             <Box sx={{ 
               display: 'flex', 
-              gap: size === 'compact' ? 'var(--btn-compact-gap)' : 1, 
+              gap: 0.75, 
               flexWrap: 'wrap',
-              ...(size === 'compact' && { className: 'btn-group--compact' })
+              alignItems: 'center'
             }}>
               <AccentButton
-                onClick={() => setShowMultiDayDialog(true)
-                }
+                onClick={() => setShowMultiDayDialog(true)}
                 disabled={loading || !hasAnySelectedFoods || !isAuthenticated}
                 variant="primary"
-                size={size === 'compact' ? 'compact' : 'small'}
+                size="compact"
               >
                 Save Plan
               </AccentButton>
@@ -265,7 +263,7 @@ const SaveLoadPlan: React.FC<SaveLoadPlanProps> = ({ timeslotData, onLoad, favor
               <AccentButton
                 onClick={handleLoadPlan}
                 disabled={loading || !isAuthenticated}
-                size={size === 'compact' ? 'compact' : 'small'}
+                size="compact"
                 variant="secondary"
               >
                 Load Today
@@ -279,9 +277,8 @@ const SaveLoadPlan: React.FC<SaveLoadPlanProps> = ({ timeslotData, onLoad, favor
                   }
                 }}
                 disabled={loading || !hasAnySelectedFoods}
-                size={size === 'compact' ? 'compact' : 'small'}
+                size="compact"
                 variant="danger"
-                startIcon={<ClearIcon />}
               >
                 Clear Plan
               </AccentButton>
@@ -307,19 +304,19 @@ const SaveLoadPlan: React.FC<SaveLoadPlanProps> = ({ timeslotData, onLoad, favor
 
             {/* Favorite Foods Section */}
             {favoriteFoods.length > 0 ? (
-              <Box sx={{ mt: 2 }}>
+              <Box sx={{ mt: 1.5 }}>
                 <Typography 
                   variant="body2" 
                   sx={{ 
                     color: 'var(--text-secondary)', 
                     fontWeight: 600,
-                    mb: 1,
+                    mb: 0.75,
                     fontSize: '0.8rem'
                   }}
                 >
                   Favorite Foods
                 </Typography>
-                <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap' }}>
+                <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
                   {favoriteFoods.map((foodName) => (
                     <Chip
                       key={foodName}
@@ -340,8 +337,8 @@ const SaveLoadPlan: React.FC<SaveLoadPlanProps> = ({ timeslotData, onLoad, favor
                         borderColor: selectedFavoriteFood === foodName ? 'var(--accent-green)' : 'var(--accent-green)',
                         color: selectedFavoriteFood === foodName ? 'white' : 'var(--accent-green)',
                         backgroundColor: selectedFavoriteFood === foodName ? 'var(--accent-green)' : 'var(--meal-bg-primary)',
-                        fontSize: '0.75rem',
-                        height: '28px',
+                        fontSize: '0.7rem',
+                        height: '24px',
                         cursor: onSelectFavorite ? 'pointer' : 'default',
                         '&:hover': {
                           backgroundColor: selectedFavoriteFood === foodName ? 'var(--accent-green)' : 'var(--meal-bg-hover)',
@@ -353,13 +350,13 @@ const SaveLoadPlan: React.FC<SaveLoadPlanProps> = ({ timeslotData, onLoad, favor
                 </Box>
               </Box>
             ) : (
-              <Box sx={{ mt: 2 }}>
+              <Box sx={{ mt: 1.5 }}>
                 <Typography 
                   variant="body2" 
                   sx={{ 
                     color: 'var(--text-secondary)', 
                     fontWeight: 600,
-                    mb: 1,
+                    mb: 0.75,
                     fontSize: '0.8rem'
                   }}
                 >
@@ -373,9 +370,9 @@ const SaveLoadPlan: React.FC<SaveLoadPlanProps> = ({ timeslotData, onLoad, favor
                   variant="secondary"
                   size="small"
                   style={{
-                    fontSize: '0.75rem',
-                    padding: '4px 12px',
-                    minHeight: '28px'
+                    fontSize: '0.7rem',
+                    padding: '4px 10px',
+                    minHeight: '24px'
                   }}
                 >
                   Add More Favorites
@@ -385,13 +382,13 @@ const SaveLoadPlan: React.FC<SaveLoadPlanProps> = ({ timeslotData, onLoad, favor
 
             {/* Favorite Food Controls */}
             {selectedFavoriteFood && (
-              <Box sx={{ mt: 2, p: 2, backgroundColor: 'var(--meal-row-bg)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-                <Typography variant="subtitle2" sx={{ mb: 1, color: 'var(--text-primary)', fontWeight: 600 }}>
+              <Box sx={{ mt: 1.5, p: 1.5, backgroundColor: 'var(--meal-row-bg)', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+                <Typography variant="subtitle2" sx={{ mb: 0.75, color: 'var(--text-primary)', fontWeight: 600, fontSize: '0.85rem' }}>
                   Configure {selectedFavoriteFood}
                 </Typography>
                 
-                <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
-                  <Typography variant="body2" sx={{ color: 'var(--text-secondary)' }}>
+                <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 1.5 }}>
+                  <Typography variant="body2" sx={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
                     Amount:
                   </Typography>
                   <NumberStepper
@@ -411,16 +408,16 @@ const SaveLoadPlan: React.FC<SaveLoadPlanProps> = ({ timeslotData, onLoad, favor
                   const cost = calculatePortionCost(selectedFavoriteFood, favoriteAmount, foodDatabase);
                   
                   return (
-                    <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
+                    <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1.5 }}>
                       <Typography 
                         variant="body2" 
                         sx={{ 
                           background: 'var(--meal-chip-bg)',
-                          padding: '6px 12px',
+                          padding: '4px 8px',
                           borderRadius: 'var(--radius-sm)',
                           color: 'var(--text-primary)',
                           fontWeight: 600,
-                          fontSize: '0.8rem',
+                          fontSize: '0.75rem',
                           border: '1px solid var(--meal-chip-outline)'
                         }}
                       >
@@ -432,11 +429,11 @@ const SaveLoadPlan: React.FC<SaveLoadPlanProps> = ({ timeslotData, onLoad, favor
                           variant="body2" 
                           sx={{ 
                             background: 'var(--meal-chip-bg)',
-                            padding: '6px 10px',
+                            padding: '4px 8px',
                             borderRadius: 'var(--radius-sm)',
                             color: 'var(--text-primary)',
                             fontWeight: 600,
-                            fontSize: '0.85rem',
+                            fontSize: '0.8rem',
                             border: '1px solid var(--meal-chip-outline)'
                           }}
                         >
@@ -447,7 +444,7 @@ const SaveLoadPlan: React.FC<SaveLoadPlanProps> = ({ timeslotData, onLoad, favor
                   );
                 })()}
                 
-                <Stack direction="row" spacing={1}>
+                <Stack direction="row" spacing={0.75}>
                   <AccentButton 
                     onClick={() => {
                       // Add the favorite food to the current timeslot
@@ -461,7 +458,7 @@ const SaveLoadPlan: React.FC<SaveLoadPlanProps> = ({ timeslotData, onLoad, favor
                       setFavoriteAmount(100);
                     }}
                     size="small"
-                    style={{ minWidth: '80px' }}
+                    style={{ minWidth: '70px', fontSize: '0.8rem' }}
                   >
                     Add
                   </AccentButton>
@@ -472,7 +469,7 @@ const SaveLoadPlan: React.FC<SaveLoadPlanProps> = ({ timeslotData, onLoad, favor
                     }}
                     variant="secondary"
                     size="small"
-                    style={{ minWidth: '80px' }}
+                    style={{ minWidth: '70px', fontSize: '0.8rem' }}
                   >
                     Cancel
                   </AccentButton>
@@ -481,7 +478,7 @@ const SaveLoadPlan: React.FC<SaveLoadPlanProps> = ({ timeslotData, onLoad, favor
             )}
 
             {!isAuthenticated && (
-              <Typography variant="caption" sx={{ mt: 1, display: 'block', color: 'var(--text-secondary)' }}>
+              <Typography variant="caption" sx={{ mt: 1, display: 'block', color: 'var(--text-secondary)', fontSize: '0.75rem' }}>
                 Please log in to save/load meal plans
               </Typography>
             )}
@@ -556,7 +553,7 @@ const SaveLoadPlan: React.FC<SaveLoadPlanProps> = ({ timeslotData, onLoad, favor
         <DialogActions sx={{ 
           backgroundColor: 'var(--surface-bg)', 
           borderTop: '1px solid var(--border-color)',
-          padding: '16px 24px'
+          padding: '12px 16px'
         }}>
           <AccentButton 
             onClick={() => setShowMultiDayDialog(false)}
