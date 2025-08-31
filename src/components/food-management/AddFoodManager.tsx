@@ -9,10 +9,6 @@ import {
   Card,
   CardContent,
   Typography,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   FormControlLabel,
   Switch,
   Alert,
@@ -27,10 +23,14 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Stack
+  Stack,
+  TextField,
+  InputAdornment
 } from '@mui/material';
+import SearchIcon from '@mui/icons-material/Search';
 import SmartTextInput from '../shared/inputs/SmartTextInput';
 import { NumberStepper } from '../shared/inputs';
+import { CustomSelect, SelectOption } from '../shared/inputs';
 
 import  AccentButton  from '../shared/AccentButton';
 import {
@@ -41,22 +41,17 @@ import {
 import { useFoodDatabase } from '../../contexts/FoodContext';
 import { addFood, updateFood, deleteFood } from '../../services/firebase/nutrition/foodService';
 import { FirestoreFood, FoodFormData } from '../../types/food';
+import { GenericCard } from '../shared/cards/GenericCard';
 
 /* ------------------------------------------------------------------ */
 /* CONSTANTS */
 /* ------------------------------------------------------------------ */
 
-const FOOD_CATEGORIES = [
-  'Dairy',
-  'Protein',
-  'Grains',
-  'Legumes',
-  'Nuts & Seeds',
-  'Supplements',
-  'Treats',
-  'Vegetables',
-  'Fruits',
-  'Other'
+const FOOD_CATEGORIES: SelectOption[] = [
+  { value: 'Protein', label: 'Protein' },
+  { value: 'Fats', label: 'Fats' },
+  { value: 'Carbs', label: 'Carbs' },
+  { value: 'Fruits & Treats', label: 'Fruits & Treats' }
 ];
 
 /* ------------------------------------------------------------------ */
@@ -84,7 +79,7 @@ const AddFoodManager: React.FC = () => {
           ...food,
           // always ensure metadata exists and has the 3 known keys
           metadata: {
-            category: 'Other',
+            category: 'Fruits & Treats',
             isUnitFood: false,
             useFixedAmount: false,
             fixedAmount: 0,
@@ -102,7 +97,7 @@ const AddFoodManager: React.FC = () => {
   name: '',
   nutrition: { protein: 0, fats: 0, carbs: 0, calories: 0 },
   cost: { costPerKg: 0, unit: 'kg' },
-  category: 'Other',
+  category: 'Fruits & Treats',
   isUnitFood: false,
   useFixedAmount: false,
   fixedAmount: 100,
@@ -116,6 +111,18 @@ const AddFoodManager: React.FC = () => {
   const [success, setSuccess] = useState<string | null>(null);
   const [editingFood, setEditingFood] = useState<FirestoreFood | null>(null);
   const [deleteDialog, setDeleteDialog] = useState<FirestoreFood | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  /* ---------- filtered foods ---------- */
+  const filteredFoods = useMemo(() => {
+    if (!searchTerm.trim()) return foods;
+    
+    const term = searchTerm.toLowerCase();
+    return foods.filter(food => 
+      food.name.toLowerCase().includes(term) ||
+      (food.metadata?.category && food.metadata.category.toLowerCase().includes(term))
+    );
+  }, [foods, searchTerm]);
 
   /* ------------------------------------------------------------------ */
   /* HELPERS */
@@ -126,7 +133,7 @@ const AddFoodManager: React.FC = () => {
       name: '',
       nutrition: { protein: 0, fats: 0, carbs: 0, calories: 0 },
       cost: { costPerKg: 0, unit: 'kg' },
-      category: 'Other',
+  category: 'Fruits & Treats',
       isUnitFood: false,
       useFixedAmount: false,
       fixedAmount: 100,
@@ -251,276 +258,610 @@ const AddFoodManager: React.FC = () => {
   /* ------------------------------------------------------------------ */
 
   return (
-    <Box sx={{ p: 3, maxWidth: '1200px', margin: '0 auto' }}>
-      {/* -------------------------------------------------- */}
-      {/* Add / Edit Form */}
-      {/* -------------------------------------------------- */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
-          <Typography variant="h5" gutterBottom>
-            <FoodIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
-            {editingFood ? 'Edit Food' : 'Add New Food'}
-          </Typography>
-          
-          {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-          {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
-
-          <Box component="form" onSubmit={handleSubmit}>
-            {/* Basic information */}
-            <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
-              <Box sx={{ flex: 1 }}>
-                <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
-                  Food Name
-                </Typography>
-                <SmartTextInput
-                  value={formData.name}
-                  placeholder="Food Name"
-                  onChange={(value) => handleInputChange('name', value)}
-                  disabled={loading}
-                />
-              </Box>
-              
-              <FormControl sx={{ flex: 1 }}>
-                <InputLabel>Category</InputLabel>
-                <Select
-                  value={formData.category}
-                  onChange={(e) => handleInputChange('category', e.target.value)}
-                  label="Category"
+    <Box 
+      sx={{ 
+        display: 'flex', 
+        gap: 3, 
+        height: '100%', 
+        p: 1.5,
+        flexDirection: { xs: 'column', md: 'row' },
+        background: 'linear-gradient(135deg, var(--meal-bg-card) 0%, rgba(255,255,255,0.5) 100%)',
+        borderRadius: 3,
+        minHeight: 'calc(100vh - 200px)'
+      }}
+    >
+      {/* ========== LEFT COLUMN: Add/Edit Form ========== */}
+      <Box 
+        sx={{ 
+          flexBasis: { xs: '100%', md: '50%' },
+          minWidth: 0
+        }}
+      >
+        {/* Add/Edit Form */}
+        <GenericCard
+          variant="default"
+          title={editingFood ? 'Edit Food' : 'Add New Food'}
+          content={
+            <Box component="form" onSubmit={handleSubmit}>
+              {/* Success/Error Messages */}
+              {error && (
+                <Alert 
+                  severity="error" 
+                  sx={{ 
+                    mb: 3,
+                    borderRadius: 2,
+                    backgroundColor: 'var(--surface-bg)',
+                    border: '1px solid var(--error-color)',
+                    color: 'var(--text-primary)'
+                  }}
+                  onClose={() => setError(null)}
                 >
-                  {FOOD_CATEGORIES.map(cat => (
-                    <MenuItem key={cat} value={cat}>{cat}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Stack>
+                  {error}
+                </Alert>
+              )}
+              {success && (
+                <Alert 
+                  severity="success" 
+                  sx={{ 
+                    mb: 3,
+                    borderRadius: 2,
+                    backgroundColor: 'var(--surface-bg)',
+                    border: '1px solid var(--accent-green)',
+                    color: 'var(--text-primary)'
+                  }}
+                  onClose={() => setSuccess(null)}
+                >
+                  {success}
+                </Alert>
+              )}
 
-            <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={formData.isUnitFood}
-                    onChange={(e) => handleInputChange('isUnitFood', e.target.checked)}
-                  />
-                }
-                label="Unit food"
-              />
-              
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={formData.useFixedAmount}
-                    onChange={(e) => handleInputChange('useFixedAmount', e.target.checked)}
-                  />
-                }
-                label="Use fixed amount"
-                sx={{ ml: 2 }}
-              />
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={formData.hidden}
-                    onChange={(e) => handleInputChange('hidden', e.target.checked)}
-                  />
-                }
-                label="Hidden (exclude from meal plans)"
-                sx={{ ml: 2 }}
-              />
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={formData.favorite}
-                    onChange={(e) => handleInputChange('favorite', e.target.checked)}
-                  />
-                }
-                label="Favorite"
-                sx={{ ml: 2 }}
-              />
-            </Stack>
-
-            {formData.useFixedAmount && (
-              <Box sx={{ mt: 2 }}>
-                <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
-                  Fixed Amount
+              {/* Basic Information */}
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="subtitle2" sx={{ 
+                  mb: 2, 
+                  color: 'var(--text-primary)', 
+                  fontWeight: 600,
+                  position: 'relative',
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    left: 0,
+                    top: 0,
+                    bottom: 0,
+                    width: '2px',
+                    backgroundColor: 'var(--accent-blue)',
+                    borderRadius: '1px'
+                  },
+                  paddingLeft: '10px'
+                }}>
+                  Basic Information
                 </Typography>
-                <NumberStepper
-                  value={formData.fixedAmount}
-                  onChange={(value) => handleInputChange('fixedAmount', value)}
-                  min={0}
-                  max={formData.isUnitFood ? 100 : 5000}
-                  step={formData.isUnitFood ? 1 : 10}
-                  unit={formData.isUnitFood ? 'units' : 'g'}
-                  size="small"
-                />
-                <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-                  Default amount when selected in Meal Planner ({formData.isUnitFood ? 'units' : 'g'})
-                </Typography>
-              </Box>
-            )}
 
-            <Divider sx={{ my: 2 }} />
-
-            {/* Nutrition */}
-            <Typography variant="h6" gutterBottom>
-              Nutrition (per {formData.isUnitFood ? 'unit' : '100g'})
-            </Typography>
-            <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
-              {(['protein', 'fats', 'carbs', 'calories'] as const).map(field => (
-                <Box key={field} sx={{ flex: 1, minWidth: 120 }}>
-                  <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
-                    {field.charAt(0).toUpperCase() + field.slice(1)} ({field === 'calories' ? 'kcal' : 'g'})
-                  </Typography>
-                  <NumberStepper
-                    value={formData.nutrition[field]}
-                    onChange={(value) => handleInputChange(`nutrition.${field}`, value)}
-                    min={0}
-                    max={field === 'calories' ? 1000 : 100}
-                    step={field === 'calories' ? 1 : 0.1}
-                    unit={field === 'calories' ? 'kcal' : 'g'}
+                <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, color: 'var(--text-primary)' }}>
+                      Food Name
+                    </Typography>
+                    <SmartTextInput
+                      value={formData.name}
+                      placeholder="Food Name"
+                      onChange={(value) => handleInputChange('name', value)}
+                      disabled={loading}
+                    />
+                  </Box>
+                  
+                  <CustomSelect
+                    value={formData.category}
+                    options={FOOD_CATEGORIES}
+                    onChange={(value) => handleInputChange('category', value)}
+                    placeholder="Select category"
+                    label="Category"
                     size="small"
                   />
-                </Box>
-              ))}
-            </Stack>
-
-            <Divider sx={{ my: 2 }} />
-
-            {/* Cost */}
-            <Typography variant="h6" gutterBottom>Cost</Typography>
-            <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
-              <Box sx={{ flex: 1 }}>
-                <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
-                  Cost per {formData.cost.unit}
-                </Typography>
-                <NumberStepper
-                  value={formData.cost.costPerKg}
-                  onChange={(value) => handleInputChange('cost.costPerKg', value)}
-                  min={0}
-                  max={100}
-                  step={0.01}
-                  unit="€"
-                  size="small"
-                />
+                </Stack>
               </Box>
-              
-              <FormControl sx={{ minWidth: 120 }}>
-                <InputLabel>Unit</InputLabel>
-                <Select
-                  value={formData.cost.unit}
-                  onChange={(e) => handleInputChange('cost.unit', e.target.value)}
-                  label="Unit"
-                >
-                  <MenuItem value="kg">€/kg</MenuItem>
-                  <MenuItem value="unit">€/unit</MenuItem>
-                </Select>
-              </FormControl>
-            </Stack>
 
-            {/* Buttons */}
-            <Stack direction="row" spacing={2}>
-              <AccentButton
-                onClick={handleSubmit}
-                disabled={loading}
-                loading={loading}
-                variant="primary"
-                size="medium"
-              >
-                {editingFood ? 'Update' : 'Add'}
-              </AccentButton>
-              {editingFood && (
+              {/* Food Settings */}
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="subtitle2" sx={{ 
+                  mb: 2, 
+                  color: 'var(--text-primary)', 
+                  fontWeight: 600,
+                  position: 'relative',
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    left: 0,
+                    top: 0,
+                    bottom: 0,
+                    width: '2px',
+                    backgroundColor: 'var(--accent-purple)',
+                    borderRadius: '1px'
+                  },
+                  paddingLeft: '10px'
+                }}>
+                  Food Settings
+                </Typography>
+
+                <Box sx={{ 
+                  backgroundColor: 'var(--meal-row-bg)',
+                  borderRadius: 2,
+                  border: '1px solid var(--border-color)',
+                  p: 2
+                }}>
+                  <Stack direction="row" spacing={2} sx={{ mb: 2, flexWrap: 'wrap' }}>
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={formData.isUnitFood}
+                          onChange={(e) => handleInputChange('isUnitFood', e.target.checked)}
+                          sx={{
+                            '& .MuiSwitch-switchBase.Mui-checked': {
+                              color: 'var(--accent-green)',
+                              '& + .MuiSwitch-track': {
+                                backgroundColor: 'var(--accent-green)'
+                              }
+                            }
+                          }}
+                        />
+                      }
+                      label="Unit food (eggs, tortillas)"
+                    />
+                    
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={formData.useFixedAmount}
+                          onChange={(e) => handleInputChange('useFixedAmount', e.target.checked)}
+                          sx={{
+                            '& .MuiSwitch-switchBase.Mui-checked': {
+                              color: 'var(--accent-blue)',
+                              '& + .MuiSwitch-track': {
+                                backgroundColor: 'var(--accent-blue)'
+                              }
+                            }
+                          }}
+                        />
+                      }
+                      label="Use fixed amount"
+                    />
+                  </Stack>
+
+                  <Stack direction="row" spacing={2} sx={{ mb: 2, flexWrap: 'wrap' }}>
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={formData.hidden}
+                          onChange={(e) => handleInputChange('hidden', e.target.checked)}
+                          sx={{
+                            '& .MuiSwitch-switchBase.Mui-checked': {
+                              color: 'var(--warning-color)',
+                              '& + .MuiSwitch-track': {
+                                backgroundColor: 'var(--warning-color)'
+                              }
+                            }
+                          }}
+                        />
+                      }
+                      label="Hidden (exclude from meal plans)"
+                    />
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={formData.favorite}
+                          onChange={(e) => handleInputChange('favorite', e.target.checked)}
+                          sx={{
+                            '& .MuiSwitch-switchBase.Mui-checked': {
+                              color: 'var(--accent-green)',
+                              '& + .MuiSwitch-track': {
+                                backgroundColor: 'var(--accent-green)'
+                              }
+                            }
+                          }}
+                        />
+                      }
+                      label="Favorite"
+                    />
+                  </Stack>
+
+                  {formData.useFixedAmount && (
+                    <Box sx={{ mt: 2 }}>
+                      <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, color: 'var(--text-primary)' }}>
+                        Fixed Amount
+                      </Typography>
+                      <NumberStepper
+                        value={formData.fixedAmount}
+                        onChange={(value) => handleInputChange('fixedAmount', value)}
+                        min={0}
+                        max={formData.isUnitFood ? 100 : 5000}
+                        step={formData.isUnitFood ? 1 : 10}
+                        unit={formData.isUnitFood ? 'units' : 'g'}
+                        size="small"
+                      />
+                      <Typography variant="caption" sx={{ 
+                        mt: 1, 
+                        display: 'block',
+                        color: 'var(--text-secondary)'
+                      }}>
+                        Default amount when selected in Meal Planner ({formData.isUnitFood ? 'units' : 'g'})
+                      </Typography>
+                    </Box>
+                  )}
+                </Box>
+              </Box>
+
+              {/* Nutrition Information */}
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="subtitle2" sx={{ 
+                  mb: 2, 
+                  color: 'var(--text-primary)', 
+                  fontWeight: 600,
+                  position: 'relative',
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    left: 0,
+                    top: 0,
+                    bottom: 0,
+                    width: '2px',
+                    backgroundColor: 'var(--accent-green)',
+                    borderRadius: '1px'
+                  },
+                  paddingLeft: '10px'
+                }}>
+                  Nutrition (per {formData.isUnitFood ? 'unit' : '100g'})
+                </Typography>
+
+                <Box sx={{ 
+                  backgroundColor: 'var(--meal-row-bg)',
+                  borderRadius: 2,
+                  border: '1px solid var(--border-color)',
+                  p: 2
+                }}>
+                  <Stack direction="row" spacing={2} sx={{ flexWrap: 'wrap' }}>
+                    {(['protein', 'fats', 'carbs', 'calories'] as const).map(field => (
+                      <Box key={field} sx={{ flex: 1, minWidth: 120 }}>
+                        <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, color: 'var(--text-primary)' }}>
+                          {field.charAt(0).toUpperCase() + field.slice(1)} ({field === 'calories' ? 'kcal' : 'g'})
+                        </Typography>
+                        <NumberStepper
+                          value={formData.nutrition[field]}
+                          onChange={(value) => handleInputChange(`nutrition.${field}`, value)}
+                          min={0}
+                          max={field === 'calories' ? 1000 : 100}
+                          step={field === 'calories' ? 1 : 0.1}
+                          unit={field === 'calories' ? 'kcal' : 'g'}
+                          size="small"
+                        />
+                      </Box>
+                    ))}
+                  </Stack>
+                </Box>
+              </Box>
+
+              {/* Cost Information */}
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="subtitle2" sx={{ 
+                  mb: 2, 
+                  color: 'var(--text-primary)', 
+                  fontWeight: 600,
+                  position: 'relative',
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    left: 0,
+                    top: 0,
+                    bottom: 0,
+                    width: '2px',
+                    backgroundColor: 'var(--accent-blue)',
+                    borderRadius: '1px'
+                  },
+                  paddingLeft: '10px'
+                }}>
+                  Cost Information
+                </Typography>
+
+                <Box sx={{ 
+                  backgroundColor: 'var(--meal-row-bg)',
+                  borderRadius: 2,
+                  border: '1px solid var(--border-color)',
+                  p: 2
+                }}>
+                  <Stack direction="row" spacing={2}>
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, color: 'var(--text-primary)' }}>
+                        Cost per {formData.cost.unit}
+                      </Typography>
+                      <NumberStepper
+                        value={formData.cost.costPerKg}
+                        onChange={(value) => handleInputChange('cost.costPerKg', value)}
+                        min={0}
+                        max={100}
+                        step={0.01}
+                        unit="€"
+                        size="small"
+                      />
+                    </Box>
+                    
+                    <CustomSelect
+                      value={formData.cost.unit}
+                      options={[
+                        { value: 'kg', label: '€/kg' },
+                        { value: 'unit', label: '€/unit' }
+                      ]}
+                      onChange={(value) => handleInputChange('cost.unit', value)}
+                      placeholder="Select unit"
+                      size="small"
+                    />
+                  </Stack>
+                </Box>
+              </Box>
+
+              {/* Action Buttons */}
+              <Stack direction="row" spacing={2}>
                 <AccentButton
-                  onClick={resetForm}
+                  onClick={handleSubmit}
                   disabled={loading}
-                  variant="secondary"
-                  size="medium"
+                  loading={loading}
+                  variant="primary"
+                  style={{
+                    backgroundColor: 'var(--accent-green)',
+                    borderRadius: '8px',
+                    fontWeight: 600
+                  }}
                 >
-                  Cancel
+                  {editingFood ? 'Update Food' : 'Add Food'}
                 </AccentButton>
-              )}
-            </Stack>
-          </Box>
-        </CardContent>
-      </Card>
+                {editingFood && (
+                  <AccentButton
+                    onClick={resetForm}
+                    disabled={loading}
+                    variant="secondary"
+                    style={{
+                      borderRadius: '8px',
+                      fontWeight: 600
+                    }}
+                  >
+                    Cancel
+                  </AccentButton>
+                )}
+              </Stack>
+            </Box>
+          }
+        />
+      </Box>
 
-      {/* -------------------------------------------------- */}
-      {/* Saved Foods list */}
-      {/* -------------------------------------------------- */}
-      <Card>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
-            Saved Foods ({foods.length})
+      {/* ========== RIGHT COLUMN: Food List & Tips ========== */}
+      <Box 
+        sx={{ 
+          flexBasis: { xs: '100%', md: '50%' },
+          position: { md: 'sticky' },
+          top: { md: 16 },
+          alignSelf: { md: 'flex-start' },
+          height: { md: 'fit-content' }
+        }}
+      >
+        {/* Saved Foods List */}
+        <GenericCard
+          variant="default"
+          title={`Saved Foods (${filteredFoods.length}${searchTerm ? ` of ${foods.length}` : ''})`}
+          content={
+            <Box>
+              {foods.length === 0 ? (
+                <Box sx={{ 
+                  textAlign: 'center', 
+                  py: 6,
+                  backgroundColor: 'var(--surface-bg)',
+                  borderRadius: 3,
+                  border: '2px dashed var(--border-color)'
+                }}>
+                  <FoodIcon sx={{ 
+                    fontSize: 64, 
+                    color: 'var(--text-secondary)', 
+                    mb: 2,
+                    opacity: 0.6
+                  }} />
+                  <Typography variant="h6" sx={{ color: 'var(--text-secondary)', mb: 1 }}>
+                    No Foods Yet
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: 'var(--text-secondary)', mb: 3 }}>
+                    Start by adding your first food to the database
+                  </Typography>
+                </Box>
+              ) : (
+                <Box>
+                  {/* Search Input */}
+                  <Box sx={{ mb: 2 }}>
+                    <TextField
+                      fullWidth
+                      placeholder="Search foods by name or category..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <SearchIcon sx={{ color: 'var(--text-secondary)' }} />
+                          </InputAdornment>
+                        ),
+                      }}
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          backgroundColor: 'var(--surface-bg)',
+                          borderRadius: 2,
+                          '& fieldset': {
+                            borderColor: 'var(--border-color)',
+                          },
+                          '&:hover fieldset': {
+                            borderColor: 'var(--accent-green)',
+                          },
+                          '&.Mui-focused fieldset': {
+                            borderColor: 'var(--accent-green)',
+                          },
+                        },
+                        '& .MuiInputBase-input': {
+                          color: 'var(--text-primary)',
+                          '&::placeholder': {
+                            color: 'var(--text-secondary)',
+                            opacity: 0.7,
+                          },
+                        },
+                      }}
+                    />
+                  </Box>
+
+                  <Box sx={{ 
+                    backgroundColor: 'var(--surface-bg)',
+                    borderRadius: 2,
+                    border: '1px solid var(--border-color)',
+                    overflow: 'hidden'
+                  }}>
+                    <List sx={{ maxHeight: '400px', overflow: 'auto' }}>
+                      {filteredFoods.map(food => (
+                        <ListItem 
+                          key={food.firestoreId} 
+                          divider
+                          sx={{
+                            '&:hover': {
+                              backgroundColor: 'var(--meal-row-bg)'
+                            }
+                          }}
+                        >
+                          <ListItemText
+                            primary={
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                                <Typography variant="body1" sx={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                                  {food.name}
+                                </Typography>
+                                {food.metadata?.isUnitFood && (
+                                  <Chip label="unit" size="small" sx={{ backgroundColor: 'var(--accent-blue)', color: 'white' }} />
+                                )}
+                                {food.metadata?.useFixedAmount && (
+                                  <Chip label="fixed" size="small" sx={{ backgroundColor: 'var(--accent-purple)', color: 'white' }} />
+                                )}
+                                {food.metadata?.favorite && (
+                                  <Chip label="⭐" size="small" sx={{ backgroundColor: '#ffd700', color: '#000' }} />
+                                )}
+                                {food.metadata?.hidden && (
+                                  <Chip label="hidden" size="small" sx={{ backgroundColor: 'var(--text-secondary)', color: 'white' }} />
+                                )}
+                              </Box>
+                            }
+                            secondary={
+                              <Typography variant="body2" sx={{ color: 'var(--text-secondary)', mt: 0.5 }}>
+                                Protein: {formatNumber(food.nutrition.protein)}g • Fats: {formatNumber(food.nutrition.fats)}g • 
+                                Carbs: {formatNumber(food.nutrition.carbs)}g • Calories: {formatNumber(food.nutrition.calories)}kcal • 
+                                Cost: €{food.cost.costPerKg.toFixed(2)}/{food.cost.unit}
+                                {food.metadata?.useFixedAmount && (
+                                  <> • Default: {food.metadata.fixedAmount} {food.metadata.isUnitFood ? 'units' : 'g'}</>
+                                )}
+                              </Typography>
+                            }
+                          />
+                          <ListItemSecondaryAction>
+                            <IconButton
+                              onClick={() => handleEdit(food)}
+                              sx={{
+                                color: 'var(--accent-blue)',
+                                '&:hover': {
+                                  backgroundColor: 'var(--accent-blue-light)',
+                                  transform: 'scale(1.1)'
+                                },
+                                transition: 'all 200ms ease'
+                              }}
+                            >
+                              <EditIcon />
+                            </IconButton>
+                            <IconButton 
+                              color="error"
+                              onClick={() => setDeleteDialog(food)}
+                              sx={{
+                                color: 'var(--error-color)',
+                                '&:hover': {
+                                  backgroundColor: 'var(--error-color-light)',
+                                  transform: 'scale(1.1)'
+                                },
+                                transition: 'all 200ms ease'
+                              }}
+                            >
+                              <DeleteIcon />
+                            </IconButton>
+                          </ListItemSecondaryAction>
+                        </ListItem>
+                      ))}
+                    </List>
+                  </Box>
+                </Box>
+              )}
+            </Box>
+          }
+        />
+
+        {/* Food Management Tips */}
+        <Box sx={{ mt: 3 }}>
+          <Typography variant="subtitle1" sx={{ 
+            mb: 2, 
+            color: 'var(--text-primary)', 
+            fontWeight: 600,
+            position: 'relative',
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              left: 0,
+              top: 0,
+              bottom: 0,
+              width: '2px',
+              backgroundColor: 'var(--accent-purple)',
+              borderRadius: '1px'
+            },
+            paddingLeft: '10px'
+          }}>
+            Food Management Tips
           </Typography>
           
-          {foods.length === 0 ? (
-            <Typography color="text.secondary">
-              No foods in database yet.
-            </Typography>
-          ) : (
-            <List>
-              {foods.map(food => (
-                <ListItem key={food.firestoreId} divider>
-                  <ListItemText
-                    primary={
-                      <>
-                        {(food as FirestoreFood).name}{' '}
-                        {(food as FirestoreFood).metadata?.isUnitFood && (
-                          <Chip label="unit" size="small" />
-                        )}
-                        {(food as FirestoreFood).metadata?.useFixedAmount && (
-                          <Chip label="fixed" size="small" color="secondary" />
-                        )}
-                        {(food as FirestoreFood).metadata?.favorite && (
-                          <Chip label="Favorite" size="small" sx={{ backgroundColor: '#ffd700', color: '#000' }} />
-                        )}
-                      </>
-                    }
-                    secondary={
-                      <>
-                        Protein: {formatNumber((food as FirestoreFood).nutrition.protein)}g | Fats:{' '}
-                        {formatNumber((food as FirestoreFood).nutrition.fats)}g | Carbs:{' '}
-                        {formatNumber((food as FirestoreFood).nutrition.carbs)}g | Calories:{' '}
-                        {formatNumber((food as FirestoreFood).nutrition.calories)}kcal | Cost:{' '}
-                        €{(food as FirestoreFood).cost.costPerKg.toFixed(2)}/{(food as FirestoreFood).cost.unit}
-                        {(food as FirestoreFood).metadata?.useFixedAmount && (
-                          <>
-                            {' '}
-                            | Default:{' '}
-                            {(food as FirestoreFood).metadata?.fixedAmount}{' '}
-                            {(food as FirestoreFood).metadata?.isUnitFood ? 'units' : 'g'}
-                          </>
-                        )}
-                      </>
-                    }
-                  />
-                  <ListItemSecondaryAction>
-                    <IconButton
-                      onClick={() => handleEdit(food as FirestoreFood)}
-                      sx={{ mr: 1 }}
-                    >
-                      <EditIcon />
-                    </IconButton>
-                    <IconButton 
-                      color="error"
-                      onClick={() => setDeleteDialog(food as FirestoreFood)}
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  </ListItemSecondaryAction>
-                </ListItem>
-              ))}
-            </List>
-          )}
-        </CardContent>
-      </Card>
+          <Box sx={{ 
+            backgroundColor: 'var(--surface-bg)',
+            borderRadius: 2,
+            border: '1px solid var(--border-color)',
+            p: 2
+          }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+                <Typography variant="body2" sx={{ color: 'var(--accent-green)', fontWeight: 600, minWidth: '20px' }}>
+                  💡
+                </Typography>
+                <Typography variant="body2" sx={{ color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                  Use favorites for quick access to commonly used foods
+                </Typography>
+              </Box>
+              
+              <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+                <Typography variant="body2" sx={{ color: 'var(--accent-blue)', fontWeight: 600, minWidth: '20px' }}>
+                  📊
+                </Typography>
+                <Typography variant="body2" sx={{ color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                  Unit foods (eggs, tortillas) are measured per individual item
+                </Typography>
+              </Box>
+              
+              <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+                <Typography variant="body2" sx={{ color: 'var(--warning-color)', fontWeight: 600, minWidth: '20px' }}>
+                  ⚠️
+                </Typography>
+                <Typography variant="body2" sx={{ color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                  Hidden foods won't appear in meal planning but can still be used in recipes
+                </Typography>
+              </Box>
+            </Box>
+          </Box>
+        </Box>
+      </Box>
 
-      {/* -------------------------------------------------- */}
-      {/* Delete dialog */}
-      {/* -------------------------------------------------- */}
+      {/* Delete Confirmation Dialog */}
       <Dialog open={!!deleteDialog} onClose={() => setDeleteDialog(null)}>
         <DialogTitle>Delete Food</DialogTitle>
         <DialogContent>
           <Typography>
-            Are you sure you want to delete "{deleteDialog?.name}"? This
-            cannot be undone.
+            Are you sure you want to delete "{deleteDialog?.name}"? This cannot be undone.
           </Typography>
         </DialogContent>
         <DialogActions>

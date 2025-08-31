@@ -291,7 +291,7 @@ const TimeslotMealPlanner: React.FC = () => {
 
       // Set swap state for highlighting
       setIsSwapping(true);
-      setTargetCategory(foodDatabase[food.name]?.metadata?.category || 'Other');
+      setTargetCategory(foodDatabase[food.name]?.metadata?.category || 'Fruits & Treats');
       
       // Clear swap state after animation
       setTimeout(() => {
@@ -346,7 +346,7 @@ const TimeslotMealPlanner: React.FC = () => {
 
       // Set swap state for highlighting
       setIsSwapping(true);
-      setTargetCategory(foodDatabase[food.name]?.metadata?.category || 'Other');
+      setTargetCategory(foodDatabase[food.name]?.metadata?.category || 'Fruits & Treats');
       
       // Clear swap state after animation
       setTimeout(() => {
@@ -655,41 +655,20 @@ const TimeslotMealPlanner: React.FC = () => {
 
         {/* Save/Load/Clear Actions */}
         <Box sx={{ mb: 1 }}>
-          <GenericCard
-            variant="default"
-            content={
-              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                <AccentButton
-                  onClick={() => {
-                    // TODO: Implement save functionality
-                    console.log('Save plan clicked');
-                  }}
-                  variant="primary"
-                  size="compact"
-                >
-                  Save Plan
-                </AccentButton>
-
-                <AccentButton
-                  onClick={() => {
-                    // TODO: Implement load functionality
-                    console.log('Load today clicked');
-                  }}
-                  size="compact"
-                  variant="secondary"
-                >
-                  Load Today
-                </AccentButton>
-
-                <AccentButton
-                  onClick={handleClearPlan}
-                  size="compact"
-                  variant="danger"
-                >
-                  Clear Plan
-                </AccentButton>
-              </Box>
-            }
+          <SaveLoadPlan
+            timeslotData={timeslotData}
+            onLoad={(loaded) => setTimeslotData(loaded)}
+            favoriteFoods={getAvailableFavoriteFoods}
+            onSelectFavorite={(payload) => {
+              // e.g., "FoodName|150"
+              const [name, amtStr] = payload.split('|');
+              const amount = Number(amtStr) || 100;
+              setSelectedFoodName(name);
+              setAmount(amount);
+              setPreviewFood({ name, amount });
+            }}
+            onClear={handleClearPlan}
+            size="compact"
           />
         </Box>
       </Box>

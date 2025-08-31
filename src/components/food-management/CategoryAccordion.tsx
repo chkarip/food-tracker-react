@@ -39,6 +39,7 @@ import {
   Stack,
   Chip,
   IconButton,
+  Box,
 } from '@mui/material';
 import {NumberStepper}  from '../shared/inputs';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -122,94 +123,221 @@ const { foodDatabase } = useFoodDatabase();
 
   /* ---------- render ---------- */
   return (
-    <Accordion expanded={open} onChange={() => setOpen(!open)}>
-      <AccordionSummary ref={headerRef} expandIcon={<ExpandMoreIcon />}>
-        <Typography variant="subtitle1">{category.name}</Typography>
-        <Chip
-          label={`${Math.round(kcalTotal)} kcal`}
-          size="small"
-          color="primary"
-          sx={{ ml: 2 }}
-        />
-      </AccordionSummary>
-
-      <AccordionDetails>
-        {foods.length === 0 ? (
-          <Typography color="text.secondary" sx={{ ml: 1 }}>
-            No foods yet.
+    <Box sx={{ 
+      backgroundColor: 'var(--surface-bg)',
+      borderRadius: 2,
+      border: '1px solid var(--border-color)',
+      overflow: 'hidden',
+      mb: 2
+    }}>
+      <Box 
+        ref={headerRef}
+        onClick={() => setOpen(!open)}
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          p: 2,
+          cursor: 'pointer',
+          backgroundColor: 'var(--meal-bg-primary)',
+          borderBottom: open ? '1px solid var(--border-color)' : 'none',
+          transition: 'all 200ms ease',
+          '&:hover': {
+            backgroundColor: 'var(--meal-row-bg)'
+          }
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Typography 
+            variant="subtitle1" 
+            sx={{ 
+              color: 'var(--text-primary)', 
+              fontWeight: 600,
+              position: 'relative',
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                left: 0,
+                top: 0,
+                bottom: 0,
+                width: '3px',
+                backgroundColor: 'var(--accent-blue)',
+                borderRadius: '2px'
+              },
+              paddingLeft: '12px'
+            }}
+          >
+            {category.name}
           </Typography>
-        ) : (
-          <Stack spacing={1}>
-            {foods.map((food, idx) => {
-              const macros = calculateTotalMacros([food], foodDatabase);
+          <Chip
+            label={`${Math.round(kcalTotal)} kcal`}
+            size="small"
+            sx={{ 
+              backgroundColor: 'var(--accent-green)',
+              color: 'white',
+              fontWeight: 600,
+              fontSize: '0.75rem'
+            }}
+          />
+        </Box>
+        
+        <Box sx={{
+          transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
+          transition: 'transform 200ms ease',
+          color: 'var(--text-secondary)'
+        }}>
+          <ExpandMoreIcon />
+        </Box>
+      </Box>
 
-              return (
-                <Stack
-                  key={idx}
-                  direction="row"
-                  spacing={1}
-                  alignItems="center"
-                  sx={(theme) => ({
-                    p: 1,
-                    bgcolor:
-                      theme.palette.mode === 'dark' ? 'grey.900' : 'grey.50',
-                    borderRadius: 1,
-                  })}
-                >
-                  {/* food name + amount */}
-                  <Typography sx={{ flex: 1 }}>
-                    {food.name}{' '}
-                    <Typography component="span" color="text.secondary">
-                      ({food.amount}
-                      {getFoodUnit(food.name)})
-                    </Typography>
-                  </Typography>
+      {open && (
+        <Box sx={{ p: 2 }}>
+          {foods.length === 0 ? (
+            <Box sx={{ 
+              textAlign: 'center', 
+              py: 4,
+              backgroundColor: 'var(--meal-row-bg)',
+              borderRadius: 2,
+              border: '2px dashed var(--border-color)'
+            }}>
+              <Typography variant="body2" sx={{ color: 'var(--text-secondary)' }}>
+                No foods in this category yet
+              </Typography>
+            </Box>
+          ) : (
+            <Stack spacing={1.5}>
+              {foods.map((food, idx) => {
+                const macros = calculateTotalMacros([food], foodDatabase);
 
-                  {/* amount editor */}
-                  <NumberStepper
-                    value={food.amount}
-                    onChange={(value) => onUpdateAmount(idx, value)}
-                    min={0}
-                    max={10000}
-                    step={getFoodUnit(food.name) === 'units' ? 1 : 5}
-                    unit={getFoodUnit(food.name) === 'units' ? 'units' : 'g'}
-                    size="small"
-                  />
-
-                  {/* kcal mini-display */}
-                  <Typography
-                    variant="caption"
-                    sx={{ width: 70, textAlign: 'right' }}
+                return (
+                  <Box
+                    key={idx}
+                    sx={{
+                      backgroundColor: 'var(--meal-row-bg)',
+                      borderRadius: 2,
+                      border: '1px solid var(--border-color)',
+                      p: 2,
+                      transition: 'all 200ms ease',
+                      '&:hover': {
+                        backgroundColor: 'var(--surface-bg)',
+                        transform: 'translateY(-1px)',
+                        boxShadow: 'var(--elevation-1)'
+                      }
+                    }}
                   >
-                    {macros.calories.toFixed(0)} kcal
-                  </Typography>
-
-                  {/* optional swap button */}
-                  {onSwap && (
-                    <IconButton
-                      size="small"
-                      onClick={() => onSwap(idx)}
-                      title="Swap timeslot"
+                    <Stack
+                      direction="row"
+                      spacing={2}
+                      alignItems="center"
+                      sx={{ flexWrap: 'wrap', gap: 1 }}
                     >
-                      <SwapIcon fontSize="inherit" />
-                    </IconButton>
-                  )}
+                      {/* Food name and amount */}
+                      <Box sx={{ flex: 1, minWidth: 150 }}>
+                        <Typography 
+                          variant="body1" 
+                          sx={{ 
+                            fontWeight: 600, 
+                            color: 'var(--text-primary)',
+                            mb: 0.5
+                          }}
+                        >
+                          {food.name}
+                        </Typography>
+                        <Typography 
+                          variant="body2" 
+                          sx={{ 
+                            color: 'var(--text-secondary)',
+                            fontSize: '0.8rem'
+                          }}
+                        >
+                          {food.amount} {getFoodUnit(food.name)}
+                        </Typography>
+                      </Box>
 
-                  {/* remove button */}
-                  <IconButton
-                    size="small"
-                    onClick={() => onRemove(idx)}
-                    title="Remove"
-                  >
-                    <DeleteIcon fontSize="inherit" />
-                  </IconButton>
-                </Stack>
-              );
-            })}
-          </Stack>
-        )}
-      </AccordionDetails>
-    </Accordion>
+                      {/* Amount editor */}
+                      <Box sx={{ minWidth: 120 }}>
+                        <NumberStepper
+                          value={food.amount}
+                          onChange={(value) => onUpdateAmount(idx, value)}
+                          min={0}
+                          max={10000}
+                          step={getFoodUnit(food.name) === 'units' ? 1 : 5}
+                          unit={getFoodUnit(food.name)}
+                          size="small"
+                        />
+                      </Box>
+
+                      {/* Macros display */}
+                      <Box sx={{ 
+                        backgroundColor: 'var(--meal-chip-bg)',
+                        borderRadius: 2,
+                        border: '1px solid var(--meal-chip-outline)',
+                        px: 2,
+                        py: 1,
+                        minWidth: 120
+                      }}>
+                        <Typography
+                          variant="body2"
+                          sx={{ 
+                            color: 'var(--text-primary)',
+                            fontWeight: 600,
+                            fontSize: '0.8rem',
+                            textAlign: 'center'
+                          }}
+                        >
+                          {Math.round(macros.calories)} kcal
+                        </Typography>
+                      </Box>
+
+                      {/* Action buttons */}
+                      <Stack direction="row" spacing={1}>
+                        {onSwap && (
+                          <IconButton
+                            size="small"
+                            onClick={() => onSwap(idx)}
+                            title="Swap timeslot"
+                            sx={{
+                              color: 'var(--accent-blue)',
+                              backgroundColor: 'var(--surface-bg)',
+                              border: '1px solid var(--border-color)',
+                              '&:hover': {
+                                backgroundColor: 'var(--accent-blue-light)',
+                                transform: 'scale(1.1)'
+                              },
+                              transition: 'all 200ms ease'
+                            }}
+                          >
+                            <SwapIcon fontSize="small" />
+                          </IconButton>
+                        )}
+
+                        <IconButton
+                          size="small"
+                          onClick={() => onRemove(idx)}
+                          title="Remove"
+                          sx={{
+                            color: 'var(--error-color)',
+                            backgroundColor: 'var(--surface-bg)',
+                            border: '1px solid var(--border-color)',
+                            '&:hover': {
+                              backgroundColor: 'var(--error-color-light)',
+                              transform: 'scale(1.1)'
+                            },
+                            transition: 'all 200ms ease'
+                          }}
+                        >
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </Stack>
+                    </Stack>
+                  </Box>
+                );
+              })}
+            </Stack>
+          )}
+        </Box>
+      )}
+    </Box>
   );
 };
 

@@ -4,10 +4,6 @@ import {
   Card,
   CardContent,
   Typography,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   TextField,
   Button,
   Alert,
@@ -20,6 +16,9 @@ import { Calculate as CalculateIcon } from '@mui/icons-material';
 import { UserProfileFormData, CalculatedMacros, GoalType } from '../../types/food';
 import { saveUserProfile, getUserProfile } from '../../services/firebase/nutrition/userProfileService';
 import { useAuth } from '../../contexts/AuthContext';
+import { CustomSelect, SelectOption } from '../shared/inputs';
+import { GenericCard } from '../shared/cards/GenericCard';
+import AccentButton from '../shared/AccentButton';
 
 interface MacroCalculatorProps {
   onCalculatedMacros: (macros: CalculatedMacros) => void;
@@ -27,20 +26,9 @@ interface MacroCalculatorProps {
 
 const MacroCalculator: React.FC<MacroCalculatorProps> = ({ onCalculatedMacros }) => {
   const { user } = useAuth();
-  
-  const [profile, setProfile] = useState<UserProfileFormData>({
-    gender: 'male',
-    age: 30,
-    height: 175,
-    weight: 70,
-    activityLevel: 'moderate',
-    goal: 'maintain',
-    bodyFatPercentage: undefined
-  });
-  const [includeBodyFat, setIncludeBodyFat] = useState(false); // Toggle for showing body fat input
-  
+
+  const [profile, setProfile] = useState<UserProfileFormData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [saved, setSaved] = useState(false);
 
   // ✅ Goal options for the dropdown
   const goalOptions = [
@@ -103,10 +91,9 @@ const MacroCalculator: React.FC<MacroCalculatorProps> = ({ onCalculatedMacros })
         const userProfile = await getUserProfile(user.uid);
         if (userProfile) {
           setProfile(userProfile);
-          setIncludeBodyFat(!!userProfile.bodyFatPercentage); // Set toggle based on saved value
         }
       } catch (error) {
-        console.error('Failed to load user profile:', error);
+        // Failed to load user profile
       } finally {
         setLoading(false);
       }
@@ -122,7 +109,7 @@ const MacroCalculator: React.FC<MacroCalculatorProps> = ({ onCalculatedMacros })
     // BMR calculation
     let bmr: number;
 
-    if (includeBodyFat && bodyFatPercentage && bodyFatPercentage > 0) {
+    if (bodyFatPercentage && bodyFatPercentage > 0) {
       // Katch-McArdle formula for known body fat
       const leanBodyMass = weight * (1 - bodyFatPercentage / 100);
       bmr = 370 + 21.6 * leanBodyMass;
@@ -187,7 +174,7 @@ const MacroCalculator: React.FC<MacroCalculatorProps> = ({ onCalculatedMacros })
 
   // Calculate macros whenever profile changes
   const calculatedMacros = useMemo(() => {
-    if (profile.age > 0 && profile.height > 0 && profile.weight > 0) {
+    if (profile && profile.age > 0 && profile.height > 0 && profile.weight > 0) {
       return calculateMacros(profile);
     }
     return null;
@@ -201,26 +188,24 @@ const MacroCalculator: React.FC<MacroCalculatorProps> = ({ onCalculatedMacros })
   }, [calculatedMacros, onCalculatedMacros]);
 
   const handleInputChange = (field: keyof UserProfileFormData, value: string | number | undefined) => {
+    if (!profile) return;
     setProfile(prev => ({
-      ...prev,
+      ...prev!,
       [field]: value === undefined ? undefined : (typeof value === 'string' ? value : Number(value))
     }));
   };
 
   const handleSaveProfile = async () => {
-    if (!user?.uid) return;
+    if (!user?.uid || !profile) return;
 
     try {
-      // If toggle is off, clear body fat value
       const profileToSave = {
         ...profile,
-        bodyFatPercentage: includeBodyFat ? profile.bodyFatPercentage : undefined
+        bodyFatPercentage: profile.bodyFatPercentage
       };
       await saveUserProfile(user.uid, profileToSave);
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
     } catch (error) {
-      console.error('Failed to save user profile:', error);
+      // Failed to save user profile
     }
   };
 
@@ -244,172 +229,342 @@ const MacroCalculator: React.FC<MacroCalculatorProps> = ({ onCalculatedMacros })
     return <Typography>Loading calculator...</Typography>;
   }
 
+  if (!profile) {
+    return (
+      <Box sx={{ p: 3, textAlign: 'center' }}>
+        <Typography variant="h6" sx={{ color: 'var(--text-secondary)', mb: 2 }}>
+          No Profile Data Available
+        </Typography>
+        <Typography variant="body2" sx={{ color: 'var(--text-secondary)' }}>
+          Please set up your profile information first to calculate personalized macro targets.
+        </Typography>
+      </Box>
+    );
+  }
+
   return (
-    <Card>
-      <CardContent>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-          <CalculateIcon sx={{ mr: 1 }} />
-          <Typography variant="h6">Macro Calculator</Typography>
+    <Box 
+      sx={{ 
+        display: 'flex', 
+        gap: 3, 
+        height: '100%', 
+        p: 1.5,
+        background: 'linear-gradient(135deg, var(--meal-bg-card) 0%, rgba(255,255,255,0.5) 100%)',
+        borderRadius: 3,
+        minHeight: 'calc(100vh - 200px)'
+      }}
+    >
+      {/* ========== LEFT COLUMN: Calculator Info ========== */}
+      <Box 
+        sx={{ 
+          flexBasis: { xs: '100%', md: '60%' },
+          minWidth: 0
+        }}
+      >
+        {/* Header */}
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="h6" sx={{ 
+            mb: 1.5, 
+            color: 'var(--text-primary)', 
+            fontWeight: 600,
+            opacity: 0.94,
+            position: 'relative',
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              left: 0,
+              top: 0,
+              bottom: 0,
+              width: '3px',
+              backgroundColor: 'var(--accent-blue)',
+              borderRadius: '2px'
+            },
+            paddingLeft: '12px'
+          }}>
+            Macro Calculator
+          </Typography>
+          <Typography variant="body2" sx={{ 
+            color: 'var(--text-secondary)',
+            pl: '12px'
+          }}>
+            Your personalized macro targets based on your profile information
+          </Typography>
         </Box>
 
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {/* Gender Selection */}
-          <FormControl size="small">
-            <InputLabel>Gender</InputLabel>
-            <Select
-              value={profile.gender}
-              label="Gender"
-              onChange={(e) => handleInputChange('gender', e.target.value)}
-            >
-              <MenuItem value="male">Male</MenuItem>
-              <MenuItem value="female">Female</MenuItem>
-            </Select>
-          </FormControl>
+        {/* Profile Summary */}
+        <GenericCard
+          variant="default"
+          title="Profile Summary"
+          content={
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)' }, gap: 2 }}>
+                <Box sx={{ 
+                  backgroundColor: 'var(--meal-row-bg)',
+                  borderRadius: 2,
+                  p: 2,
+                  border: '1px solid var(--border-color)'
+                }}>
+                  <Typography variant="body2" sx={{ color: 'var(--text-secondary)' }}>Gender</Typography>
+                  <Typography variant="body1" sx={{ color: 'var(--text-primary)', fontWeight: 600 }}>
+                    {profile.gender.charAt(0).toUpperCase() + profile.gender.slice(1)}
+                  </Typography>
+                </Box>
+                
+                <Box sx={{ 
+                  backgroundColor: 'var(--meal-row-bg)',
+                  borderRadius: 2,
+                  p: 2,
+                  border: '1px solid var(--border-color)'
+                }}>
+                  <Typography variant="body2" sx={{ color: 'var(--text-secondary)' }}>Age</Typography>
+                  <Typography variant="body1" sx={{ color: 'var(--text-primary)', fontWeight: 600 }}>
+                    {profile.age} years
+                  </Typography>
+                </Box>
+              </Box>
 
-          {/* Age Input */}
-          <TextField
-            label="Age (years)"
-            type="number"
-            size="small"
-            value={profile.age}
-            onChange={(e) => handleInputChange('age', e.target.value)}
-            inputProps={{ min: 10, max: 100 }}
-          />
+              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)' }, gap: 2 }}>
+                <Box sx={{ 
+                  backgroundColor: 'var(--meal-row-bg)',
+                  borderRadius: 2,
+                  p: 2,
+                  border: '1px solid var(--border-color)'
+                }}>
+                  <Typography variant="body2" sx={{ color: 'var(--text-secondary)' }}>Height</Typography>
+                  <Typography variant="body1" sx={{ color: 'var(--text-primary)', fontWeight: 600 }}>
+                    {profile.height} cm
+                  </Typography>
+                </Box>
+                
+                <Box sx={{ 
+                  backgroundColor: 'var(--meal-row-bg)',
+                  borderRadius: 2,
+                  p: 2,
+                  border: '1px solid var(--border-color)'
+                }}>
+                  <Typography variant="body2" sx={{ color: 'var(--text-secondary)' }}>Weight</Typography>
+                  <Typography variant="body1" sx={{ color: 'var(--text-primary)', fontWeight: 600 }}>
+                    {profile.weight} kg
+                  </Typography>
+                </Box>
+              </Box>
 
-          {/* Height Input */}
-          <TextField
-            label="Height (cm)"
-            type="number"
-            size="small"
-            value={profile.height}
-            onChange={(e) => handleInputChange('height', e.target.value)}
-            inputProps={{ min: 100, max: 250 }}
-          />
-
-          {/* Weight Input */}
-          <TextField
-            label="Weight (kg)"
-            type="number"
-            size="small"
-            value={profile.weight}
-            onChange={(e) => handleInputChange('weight', e.target.value)}
-            inputProps={{ min: 30, max: 200 }}
-          />
-
-          {/* Toggle to add body fat percentage */}
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={includeBodyFat}
-                onChange={(e) => {
-                  const checked = e.target.checked;
-                  setIncludeBodyFat(checked);
-                  // Clear body fat value when unchecked
-                  if (!checked) {
-                    setProfile(prev => ({ ...prev, bodyFatPercentage: undefined }));
-                  }
-                }}
-              />
-            }
-            label="Add Body Fat Percentage for Accurate Calculation"
-          />
-
-          {/* Conditional body fat input */}
-          {includeBodyFat && (
-            <TextField
-              label="Body Fat %"
-              type="number"
-              size="small"
-              value={profile.bodyFatPercentage ?? ''}
-              onChange={(e) => {
-                const value = e.target.value;
-                handleInputChange('bodyFatPercentage', value === '' ? undefined : Number(value));
-              }}
-              inputProps={{ min: 0, max: 100, step: 0.1 }}
-              InputProps={{
-                endAdornment: <InputAdornment position="end">%</InputAdornment>
-              }}
-              helperText="Enter if known (0-100)"
-            />
-          )}
-
-          {/* Activity Level Selection */}
-          <FormControl size="small">
-            <InputLabel>Activity Level</InputLabel>
-            <Select
-              value={profile.activityLevel}
-              label="Activity Level"
-              onChange={(e) => handleInputChange('activityLevel', e.target.value)}
-            >
-              <MenuItem value="sedentary">Sedentary (Little/no exercise)</MenuItem>
-              <MenuItem value="light">Light (1-3 days/week)</MenuItem>
-              <MenuItem value="moderate">Moderate (3-5 days/week)</MenuItem>
-              <MenuItem value="active">Active (6-7 days/week)</MenuItem>
-              <MenuItem value="very_active">Very Active (2x/day, intense)</MenuItem>
-            </Select>
-          </FormControl>
-
-          {/* Goal Selection */}
-          <FormControl size="small">
-            <InputLabel>Goal</InputLabel>
-            <Select
-              value={profile.goal}
-              label="Goal"
-              onChange={(e) => handleInputChange('goal', e.target.value)}
-            >
-              {goalOptions.map((option) => (
-                <MenuItem key={option.value} value={option.value}>
-                  {option.label}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          <Divider />
-
-          {/* Calculated Results Display */}
-          {calculatedMacros && (
-            <Box>
-              <Typography variant="subtitle2" gutterBottom>
-                📊 Calculated Targets
-              </Typography>
-              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, fontSize: '0.875rem' }}>
-                <Typography>BMR: {calculatedMacros.bmr} kcal</Typography>
-                <Typography>TDEE: {calculatedMacros.tdee} kcal</Typography>
-                <Typography sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-                  Target: {calculatedMacros.calories} kcal
+              <Box sx={{ 
+                backgroundColor: 'var(--meal-row-bg)',
+                borderRadius: 2,
+                p: 2,
+                border: '1px solid var(--border-color)'
+              }}>
+                <Typography variant="body2" sx={{ color: 'var(--text-secondary)' }}>Activity Level</Typography>
+                <Typography variant="body1" sx={{ color: 'var(--text-primary)', fontWeight: 600 }}>
+                  {profile.activityLevel.charAt(0).toUpperCase() + profile.activityLevel.slice(1).replace('_', ' ')}
                 </Typography>
-                <Typography>Protein: {calculatedMacros.protein}g</Typography>
-                <Typography>Carbs: {calculatedMacros.carbs}g</Typography>
-                <Typography>Fats: {calculatedMacros.fats}g</Typography>
+              </Box>
+
+              <Box sx={{ 
+                backgroundColor: 'var(--meal-row-bg)',
+                borderRadius: 2,
+                p: 2,
+                border: '1px solid var(--border-color)'
+              }}>
+                <Typography variant="body2" sx={{ color: 'var(--text-secondary)' }}>Goal</Typography>
+                <Typography variant="body1" sx={{ color: 'var(--text-primary)', fontWeight: 600 }}>
+                  {goalOptions.find(option => option.value === profile.goal)?.label || profile.goal}
+                </Typography>
+              </Box>
+
+              {profile.bodyFatPercentage && (
+                <Box sx={{ 
+                  backgroundColor: 'var(--meal-row-bg)',
+                  borderRadius: 2,
+                  p: 2,
+                  border: '1px solid var(--border-color)'
+                }}>
+                  <Typography variant="body2" sx={{ color: 'var(--text-secondary)' }}>Body Fat</Typography>
+                  <Typography variant="body1" sx={{ color: 'var(--text-primary)', fontWeight: 600 }}>
+                    {profile.bodyFatPercentage}%
+                  </Typography>
+                </Box>
+              )}
+            </Box>
+          }
+        />
+      </Box>
+
+      {/* ========== RIGHT COLUMN: Results & Tips ========== */}
+      <Box 
+        sx={{ 
+          flexBasis: { xs: '100%', md: '40%' },
+          position: { md: 'sticky' },
+          top: { md: 16 },
+          alignSelf: { md: 'flex-start' },
+          height: { md: 'fit-content' }
+        }}
+      >
+        {/* Calculated Results */}
+        {calculatedMacros && (
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="subtitle1" sx={{ 
+              mb: 2, 
+              color: 'var(--text-primary)', 
+              fontWeight: 600,
+              position: 'relative',
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                left: 0,
+                top: 0,
+                bottom: 0,
+                width: '2px',
+                backgroundColor: 'var(--accent-green)',
+                borderRadius: '1px'
+              },
+              paddingLeft: '10px'
+            }}>
+              Your Macro Targets
+            </Typography>
+            
+            <Box sx={{ 
+              backgroundColor: 'var(--surface-bg)',
+              borderRadius: 2,
+              border: '1px solid var(--border-color)',
+              p: 2
+            }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {/* Main Targets */}
+                <Box sx={{ 
+                  backgroundColor: 'var(--meal-row-bg)',
+                  borderRadius: 2,
+                  p: 2,
+                  border: '1px solid var(--border-color)'
+                }}>
+                  <Typography variant="h6" sx={{ color: 'var(--accent-green)', fontWeight: 700, mb: 1 }}>
+                    Daily Calories: {calculatedMacros.calories} kcal
+                  </Typography>
+                  
+                  <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1 }}>
+                    <Typography variant="body2" sx={{ color: 'var(--text-secondary)' }}>
+                      Protein: <strong style={{ color: 'var(--text-primary)' }}>{calculatedMacros.protein}g</strong>
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: 'var(--text-secondary)' }}>
+                      Carbs: <strong style={{ color: 'var(--text-primary)' }}>{calculatedMacros.carbs}g</strong>
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: 'var(--text-secondary)' }}>
+                      Fats: <strong style={{ color: 'var(--text-primary)' }}>{calculatedMacros.fats}g</strong>
+                    </Typography>
+                  </Box>
+                </Box>
+
+                {/* BMR & TDEE */}
+                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1 }}>
+                  <Box sx={{ 
+                    backgroundColor: 'var(--meal-row-bg)',
+                    borderRadius: 2,
+                    p: 2,
+                    border: '1px solid var(--border-color)',
+                    textAlign: 'center'
+                  }}>
+                    <Typography variant="h6" sx={{ color: 'var(--text-primary)', fontWeight: 700 }}>
+                      {calculatedMacros.bmr}
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: 'var(--text-secondary)' }}>
+                      BMR (kcal)
+                    </Typography>
+                  </Box>
+                  
+                  <Box sx={{ 
+                    backgroundColor: 'var(--meal-row-bg)',
+                    borderRadius: 2,
+                    p: 2,
+                    border: '1px solid var(--border-color)',
+                    textAlign: 'center'
+                  }}>
+                    <Typography variant="h6" sx={{ color: 'var(--text-primary)', fontWeight: 700 }}>
+                      {calculatedMacros.tdee}
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: 'var(--text-secondary)' }}>
+                      TDEE (kcal)
+                    </Typography>
+                  </Box>
+                </Box>
+
+                {/* Goal Description */}
+                <Typography variant="body2" sx={{ 
+                  color: 'var(--text-secondary)', 
+                  fontStyle: 'italic',
+                  textAlign: 'center',
+                  backgroundColor: 'var(--meal-row-bg)',
+                  borderRadius: 2,
+                  p: 1.5,
+                  border: '1px solid var(--border-color)'
+                }}>
+                  {getGoalRangeDescription(profile.goal)}
+                </Typography>
+              </Box>
+            </Box>
+          </Box>
+        )}
+
+        {/* Calculator Tips */}
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="subtitle1" sx={{ 
+            mb: 2, 
+            color: 'var(--text-primary)', 
+            fontWeight: 600,
+            position: 'relative',
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              left: 0,
+              top: 0,
+              bottom: 0,
+              width: '2px',
+              backgroundColor: 'var(--accent-purple)',
+              borderRadius: '1px'
+            },
+            paddingLeft: '10px'
+          }}>
+            Calculator Tips
+          </Typography>
+          
+          <Box sx={{ 
+            backgroundColor: 'var(--surface-bg)',
+            borderRadius: 2,
+            border: '1px solid var(--border-color)',
+            p: 2
+          }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+                <Typography variant="body2" sx={{ color: 'var(--accent-green)', fontWeight: 600, minWidth: '20px' }}>
+                  💡
+                </Typography>
+                <Typography variant="body2" sx={{ color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                  For best accuracy, include your body fat percentage if known
+                </Typography>
               </Box>
               
-              {/* Range explanation */}
-              <Typography variant="caption" sx={{ mt: 1, display: 'block', fontStyle: 'italic' }}>
-                {getGoalRangeDescription(profile.goal)}
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+                <Typography variant="body2" sx={{ color: 'var(--accent-blue)', fontWeight: 600, minWidth: '20px' }}>
+                  📊
+                </Typography>
+                <Typography variant="body2" sx={{ color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                  Activity level affects your Total Daily Energy Expenditure (TDEE)
+                </Typography>
+              </Box>
+              
+              <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+                <Typography variant="body2" sx={{ color: 'var(--warning-color)', fontWeight: 600, minWidth: '20px' }}>
+                  ⚖️
+                </Typography>
+                <Typography variant="body2" sx={{ color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                  Weight loss goals use calorie deficits, gain goals use surpluses
+                </Typography>
+              </Box>
             </Box>
-          )}
-
-          {/* Save Profile Button */}
-          <Button 
-            variant="contained" 
-            onClick={handleSaveProfile}
-            disabled={!user?.uid}
-            size="small"
-          >
-            Save Profile
-          </Button>
-
-          {/* Success Message */}
-          {saved && (
-            <Alert severity="success" sx={{ mt: 1 }}>
-              Profile saved successfully!
-            </Alert>
-          )}
+          </Box>
         </Box>
-      </CardContent>
-    </Card>
+      </Box>
+    </Box>
   );
 };
 

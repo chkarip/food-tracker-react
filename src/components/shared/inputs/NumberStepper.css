@@ -20,10 +20,10 @@
   text-align: center;
   font-weight: 600;
   font-family: inherit;
-  border: 2px solid var(--color-gray-300);
+  border: 2px solid var(--border-color);
   border-radius: 8px;
-  background-color: var(--color-white);
-  color: var(--color-gray-800);
+  background-color: var(--surface-bg);
+  color: var(--text-primary);
   transition: all 0.2s ease-in-out;
   outline: none;
   box-sizing: border-box;
@@ -31,6 +31,7 @@
   /* Remove default number input styles */
   -webkit-appearance: none;
   -moz-appearance: textfield;
+  appearance: none;
 }
 
 .number-stepper__input::-webkit-outer-spin-button,
@@ -40,13 +41,13 @@
 }
 
 .number-stepper__input:focus {
-  border-color: var(--color-primary-base);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
 }
 
 .number-stepper__input:disabled {
-  background-color: var(--color-gray-100);
-  color: var(--color-gray-500);
+  background-color: var(--color-gray-200);
+  color: var(--color-gray-600);
   cursor: not-allowed;
 }
 
@@ -56,7 +57,7 @@
   right: 8px;
   font-size: 0.875rem;
   font-weight: 500;
-  color: var(--color-gray-600);
+  color: var(--text-secondary);
   pointer-events: none;
   user-select: none;
 }
@@ -104,9 +105,9 @@
 }
 
 .number-stepper--disabled .number-stepper__input {
-  background-color: var(--color-gray-100);
-  border-color: var(--color-gray-200);
-  color: var(--color-gray-500);
+  background-color: var(--color-gray-200);
+  border-color: var(--border-color);
+  color: var(--color-gray-600);
 }
 
 /* Button Spacing Adjustments */
@@ -123,10 +124,10 @@
 
 /* Focus States for Accessibility */
 .number-stepper:focus-within .number-stepper__input {
-  border-color: var(--color-primary-base);
+  border-color: var(--accent-blue);
 }
 
 /* Hover Effects */
 .number-stepper:hover:not(.number-stepper--disabled) .number-stepper__input {
-  border-color: var(--color-gray-400);
+  border-color: var(--border-color);
 }

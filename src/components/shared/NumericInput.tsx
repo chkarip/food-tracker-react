@@ -73,19 +73,21 @@ const NumericInput: React.FC<NumericInputProps> = ({
             fontSize: '0.9rem', 
             fontWeight: 600, 
             textAlign: 'right',
-            paddingRight: '32px' // Space for spinner buttons
+            paddingRight: '32px', // Space for spinner buttons
+            color: 'var(--text-primary)',
+            backgroundColor: 'transparent'
           }
         }}
         sx={{ 
           width: '100%',
           '& .MuiOutlinedInput-root': { 
-            backgroundColor: '#2A2A2A',
-            outline: '2px solid #2563EB',
-            border: 'none',
+            backgroundColor: 'var(--surface-bg)',
+            border: '1px solid var(--border-color)',
             '& fieldset': { 
               border: 'none'
             },
             '& input::placeholder': {
+              color: 'var(--text-secondary)',
               opacity: 0.5,
               transition: 'opacity 0.2s ease-in-out'
             },
@@ -99,7 +101,17 @@ const NumericInput: React.FC<NumericInputProps> = ({
                 '-webkit-appearance': 'none',
                 margin: 0
               },
-              '-moz-appearance': 'textfield'
+              '-moz-appearance': 'textfield',
+              appearance: 'none'
+            },
+            '&:hover': {
+              borderColor: 'var(--accent-blue)',
+              backgroundColor: 'var(--meal-row-bg-hover)'
+            },
+            '&.Mui-focused': {
+              borderColor: 'var(--accent-blue)',
+              backgroundColor: 'var(--surface-bg)',
+              boxShadow: '0 0 0 3px rgba(33, 150, 243, 0.1)'
             }
           }
         }}
@@ -125,10 +137,10 @@ const NumericInput: React.FC<NumericInputProps> = ({
             minHeight: '14px',
             minWidth: '20px',
             p: 0,
-            color: '#2563EB',
+            color: 'var(--accent-blue)',
             '&:hover': { 
-              backgroundColor: 'rgba(37, 99, 235, 0.1)',
-              color: '#1D4ED8'
+              backgroundColor: 'rgba(33, 150, 243, 0.1)',
+              color: 'var(--accent-blue)'
             },
             '& svg': { fontSize: '14px' }
           }}
@@ -144,10 +156,10 @@ const NumericInput: React.FC<NumericInputProps> = ({
             minHeight: '14px',
             minWidth: '20px',
             p: 0,
-            color: '#2563EB',
+            color: 'var(--accent-blue)',
             '&:hover': { 
-              backgroundColor: 'rgba(37, 99, 235, 0.1)',
-              color: '#1D4ED8'
+              backgroundColor: 'rgba(33, 150, 243, 0.1)',
+              color: 'var(--accent-blue)'
             },
             '& svg': { fontSize: '14px' }
           }}

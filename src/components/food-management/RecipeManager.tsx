@@ -34,6 +34,7 @@
  */
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Card,
@@ -67,10 +68,12 @@ import {
   LocalDining as DifficultyIcon,
   AttachMoney as CostIcon,
   Fastfood as NutritionIcon,
-  RestaurantMenu as RecipeIcon
+  RestaurantMenu as RecipeIcon,
+  Person as PersonIcon
 } from '@mui/icons-material';
-import  AccentButton  from '../shared/AccentButton';
-import { NumberStepper } from '../shared/inputs';
+import { CustomSelect, SelectOption } from '../shared/inputs';
+import AccentButton from '../shared/AccentButton';
+import NumberStepper from '../shared/inputs/NumberStepper';
 import {
   collection,
   addDoc,
@@ -138,6 +141,7 @@ const ensureNutritionComplete = (nutrition: any) => ({
 });
 
 const RecipeManager: React.FC = () => {
+  const navigate = useNavigate();
   // Firestore collections
   const recipesCollection = collection(db, 'recipes');
   const foodsCollection = collection(db, 'foods');
@@ -239,7 +243,6 @@ const RecipeManager: React.FC = () => {
       });
       setRecipes(loadedRecipes);
     } catch (err) {
-      console.error('Error loading recipes:', err);
       setError('Failed to load recipes');
     } finally {
       setLoading(false);
@@ -309,7 +312,6 @@ const RecipeManager: React.FC = () => {
 
       return cleanRecipeData.id;
     } catch (err) {
-      console.error('Error saving recipe and food:', err);
       throw new Error(`Failed to save recipe: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
       setLoading(false);
@@ -580,7 +582,7 @@ const RecipeManager: React.FC = () => {
       // Clear success message after 3 seconds
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
-      console.error('Error deleting recipe:', err);
+      // Error deleting recipe
       setError(`Failed to delete recipe: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
       setLoading(false);
@@ -598,90 +600,185 @@ const RecipeManager: React.FC = () => {
   };
 
   return (
-    <Box sx={{ p: 3, maxWidth: '1200px', margin: '0 auto' }}>
-      {/* Header */}
-      <Box sx={{ mb: 3, textAlign: 'center' }}>
-        <Typography variant="h4" component="h1" gutterBottom>
-          <RecipeIcon sx={{ mr: 2, verticalAlign: 'middle' }} />
-          Recipe Manager
-        </Typography>
-        <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-          Create and manage your custom recipes with automatic nutrition and cost calculations
-        </Typography>
-        
+    <Box 
+      sx={{ 
+        display: 'flex', 
+        gap: 3, 
+        height: '100%', 
+        p: 1.5,
+        background: 'linear-gradient(135deg, var(--meal-bg-card) 0%, rgba(255,255,255,0.5) 100%)',
+        borderRadius: 3,
+        minHeight: 'calc(100vh - 200px)'
+      }}
+    >
+      {/* ========== LEFT COLUMN: Recipe Management ========== */}
+      <Box 
+        sx={{ 
+          flexBasis: { xs: '100%', md: '70%' },
+          minWidth: 0
+        }}
+      >
+        {/* Header */}
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="h6" sx={{ 
+            mb: 1.5, 
+            color: 'var(--text-primary)', 
+            fontWeight: 600,
+            opacity: 0.94,
+            position: 'relative',
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              left: 0,
+              top: 0,
+              bottom: 0,
+              width: '3px',
+              backgroundColor: 'var(--accent-green)',
+              borderRadius: '2px'
+            },
+            paddingLeft: '12px'
+          }}>
+            Recipe Manager
+          </Typography>
+          <Typography variant="body2" sx={{ 
+            color: 'var(--text-secondary)',
+            pl: '12px'
+          }}>
+            Create and manage your custom recipes with automatic nutrition and cost calculations
+          </Typography>
+        </Box>
+
+        {/* Action Buttons */}
+        <Box sx={{ mb: 3, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+          <AccentButton
+            onClick={() => navigate('/profile')}
+            size="large"
+            variant="secondary"
+            style={{
+              backgroundColor: 'var(--accent-blue)',
+              borderRadius: '8px',
+              fontWeight: 600
+            }}
+          >
+            <PersonIcon sx={{ mr: 1 }} />
+            Profile
+          </AccentButton>
+
           <AccentButton
             onClick={handleNewRecipe}
             size="large"
             disabled={loading}
             variant="primary"
+            style={{
+              backgroundColor: 'var(--accent-green)',
+              borderRadius: '8px',
+              fontWeight: 600
+            }}
           >
             New Recipe
           </AccentButton>
         </Box>
 
-      {/* Success/Error Messages */}
-      {success && (
-        <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccess(null)}>
-          {success}
-        </Alert>
-      )}
-
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
-          {error}
-        </Alert>
-      )}
-
-      {/* Recipe Cards */}
-      <SavedRecipesList
-        recipes={recipes.map(recipe => ({
-          id: recipe.id,
-          name: recipe.name,
-          calories: recipe.nutritionPerServing?.calories,
-          protein: recipe.nutritionPerServing?.protein,
-          carbs: recipe.nutritionPerServing?.carbs,
-          fats: recipe.nutritionPerServing?.fats,
-          prepTime: recipe.cookingTime,
-          servings: recipe.servings,
-          tags: recipe.tags,
-          ingredients: [] // Could be populated if available in recipe data
-        }))}
-        onViewRecipe={(id) => {
-          const recipe = recipes.find(r => r.id === id);
-          if (recipe) handleEditRecipe(recipe);
-        }}
-        onAddToMeal={(id) => {
-          // Could implement add to meal functionality here
-          console.log('Add to meal:', id);
-        }}
-        onDeleteRecipe={(id) => {
-          const recipe = recipes.find(r => r.id === id);
-          if (recipe) setDeleteDialogOpen(recipe);
-        }}
-        onToggleFavorite={(id) => {
-          // Could implement favorite functionality here
-          console.log('Toggle favorite:', id);
-        }}
-        favorites={new Set()} // Could be populated from user preferences
-      />
-
-      {recipes.length === 0 && !loading && (
-        <Paper sx={{ p: 4, textAlign: 'center', mt: 4 }}>
-          <RecipeIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
-          <Typography variant="h6" gutterBottom>
-            No Recipes Yet
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            Create your first recipe to get started with automatic nutrition and cost calculations.
-          </Typography>
-          <AccentButton
-            variant="primary"
-            onClick={handleNewRecipe}
+        {/* Success/Error Messages */}
+        {success && (
+          <Alert 
+            severity="success" 
+            sx={{ 
+              mb: 3,
+              borderRadius: 2,
+              backgroundColor: 'var(--surface-bg)',
+              border: '1px solid var(--accent-green)',
+              color: 'var(--text-primary)'
+            }}
+            onClose={() => setSuccess(null)}
           >
-            Create Your First Recipe
-          </AccentButton>
-        </Paper>
-      )}
+            {success}
+          </Alert>
+        )}
+
+        {error && (
+          <Alert 
+            severity="error" 
+            sx={{ 
+              mb: 3,
+              borderRadius: 2,
+              backgroundColor: 'var(--surface-bg)',
+              border: '1px solid var(--error-color)',
+              color: 'var(--text-primary)'
+            }}
+            onClose={() => setError(null)}
+          >
+            {error}
+          </Alert>
+        )}
+
+        {/* Recipe Cards */}
+        <SavedRecipesList
+          recipes={recipes.map(recipe => ({
+            id: recipe.id,
+            name: recipe.name,
+            calories: recipe.nutritionPerServing?.calories,
+            protein: recipe.nutritionPerServing?.protein,
+            carbs: recipe.nutritionPerServing?.carbs,
+            fats: recipe.nutritionPerServing?.fats,
+            prepTime: recipe.cookingTime,
+            servings: recipe.servings,
+            tags: recipe.tags,
+            ingredients: [] // Could be populated if available in recipe data
+          }))}
+          onViewRecipe={(id) => {
+            const recipe = recipes.find(r => r.id === id);
+            if (recipe) handleEditRecipe(recipe);
+          }}
+          onAddToMeal={(id) => {
+            // Could implement add to meal functionality here
+          }}
+          onDeleteRecipe={(id) => {
+            const recipe = recipes.find(r => r.id === id);
+            if (recipe) setDeleteDialogOpen(recipe);
+          }}
+          onToggleFavorite={(id) => {
+            // Could implement favorite functionality here
+          }}
+          favorites={new Set()} // Could be populated from user preferences
+        />
+
+        {recipes.length === 0 && !loading && (
+          <Paper 
+            sx={{ 
+              p: 6, 
+              textAlign: 'center', 
+              mt: 4,
+              backgroundColor: 'var(--surface-bg)',
+              border: '2px dashed var(--border-color)',
+              borderRadius: 3
+            }}
+          >
+            <RecipeIcon sx={{ 
+              fontSize: 64, 
+              color: 'var(--text-secondary)', 
+              mb: 2,
+              opacity: 0.6
+            }} />
+            <Typography variant="h6" sx={{ color: 'var(--text-secondary)', mb: 1 }}>
+              No Recipes Yet
+            </Typography>
+            <Typography variant="body2" sx={{ color: 'var(--text-secondary)', mb: 3 }}>
+              Create your first recipe to get started with automatic nutrition and cost calculations.
+            </Typography>
+            <AccentButton
+              variant="primary"
+              onClick={handleNewRecipe}
+              style={{
+                backgroundColor: 'var(--accent-green)',
+                borderRadius: '8px'
+              }}
+            >
+              Create Your First Recipe
+            </AccentButton>
+          </Paper>
+        )}
+      </Box>
 
       {/* Recipe Dialog */}
       <Dialog
@@ -725,7 +822,7 @@ const RecipeManager: React.FC = () => {
                     </Typography>
                     <NumberStepper
                       value={formData.servings}
-                      onChange={(value) => setFormData(prev => ({ ...prev, servings: Math.max(1, value) }))}
+                      onChange={(value: number) => setFormData(prev => ({ ...prev, servings: Math.max(1, value) }))}
                       min={1}
                       max={20}
                       step={1}
@@ -739,7 +836,7 @@ const RecipeManager: React.FC = () => {
                     </Typography>
                     <NumberStepper
                       value={formData.cookingTime}
-                      onChange={(value) => setFormData(prev => ({ ...prev, cookingTime: Math.max(1, value) }))}
+                      onChange={(value: number) => setFormData(prev => ({ ...prev, cookingTime: Math.max(1, value) }))}
                       min={1}
                       max={300}
                       step={5}
@@ -748,34 +845,25 @@ const RecipeManager: React.FC = () => {
                     />
                   </Box>
                 </Box>
-                </Box>
 
                 <Box sx={{ display: 'flex', gap: 2 }}>
-                  <FormControl fullWidth>
-                    <InputLabel>Category</InputLabel>
-                    <Select
-                      value={formData.category}
-                      onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
-                      label="Category"
-                    >
-                      {RECIPE_CATEGORIES.map((cat) => (
-                        <MenuItem key={cat} value={cat}>{cat}</MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
+                  <CustomSelect
+                    value={formData.category}
+                    options={RECIPE_CATEGORIES.map(cat => ({ value: cat, label: cat }))}
+                    onChange={(value) => setFormData(prev => ({ ...prev, category: value as string }))}
+                    placeholder="Select category"
+                    label="Category"
+                    size="small"
+                  />
 
-                  <FormControl fullWidth>
-                    <InputLabel>Difficulty</InputLabel>
-                    <Select
-                      value={formData.difficulty}
-                      onChange={(e) => setFormData(prev => ({ ...prev, difficulty: e.target.value as any }))}
-                      label="Difficulty"
-                    >
-                      {DIFFICULTY_LEVELS.map((diff) => (
-                        <MenuItem key={diff} value={diff}>{diff}</MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
+                  <CustomSelect
+                    value={formData.difficulty}
+                    options={DIFFICULTY_LEVELS.map(diff => ({ value: diff, label: diff }))}
+                    onChange={(value) => setFormData(prev => ({ ...prev, difficulty: value as any }))}
+                    placeholder="Select difficulty"
+                    label="Difficulty"
+                    size="small"
+                  />
                 </Box>
 
                 <FormControlLabel
@@ -838,7 +926,7 @@ const RecipeManager: React.FC = () => {
                     
                     <NumberStepper
                       value={ingredient.amount}
-                      onChange={(value) => updateIngredient(index, 'amount', value)}
+                      onChange={(value: number) => updateIngredient(index, 'amount', value)}
                       min={0}
                       max={ingredient.unit === 'g' ? 2000 : 20}
                       step={ingredient.unit === 'g' ? 10 : 0.1}
@@ -878,9 +966,6 @@ const RecipeManager: React.FC = () => {
 
               {formData.instructions.map((instruction, index) => (
                 <Box key={index} sx={{ display: 'flex', gap: 2, alignItems: 'flex-start', mb: 2 }}>
-                  <Typography variant="body1" sx={{ mt: 2, minWidth: 'fit-content' }}>
-                    {index + 1}.
-                  </Typography>
                   <TextField
                     value={instruction}
                     onChange={(e) => updateInstruction(index, e.target.value)}
@@ -949,6 +1034,7 @@ const RecipeManager: React.FC = () => {
                 </Box>
               </>
             )}
+          </Box>
         </DialogContent>
 
         <DialogActions sx={{ p: 3 }}>

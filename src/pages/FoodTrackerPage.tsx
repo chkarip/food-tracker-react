@@ -16,6 +16,7 @@ import NutritionGoalsManager from '../components/food-management/NutritionGoalsM
 import FoodInventory from '../components/food-management/FoodInventory';
 import RecipeManager from '../components/food-management/RecipeManager';
 import CostManager from '../modules/food/components/CostManager';
+import ShoppingList from '../components/food-management/ShoppingList';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -181,8 +182,13 @@ const FoodTrackerPage: React.FC = () => {
               sx={{ minWidth: 120 }}
             />
             <Tab 
-              label="Manage Foods" 
+              label="Shopping List" 
               {...a11yProps(6)} 
+              sx={{ minWidth: 120 }}
+            />
+            <Tab 
+              label="Manage Foods" 
+              {...a11yProps(7)} 
               sx={{ minWidth: 120 }}
             />
           </Tabs>
@@ -225,6 +231,11 @@ const FoodTrackerPage: React.FC = () => {
           </TabPanel>
 
           <TabPanel value={currentTab} index={6}>
+            {/* Shopping List - Plan purchases and track nutrition costs */}
+            <ShoppingList />
+          </TabPanel>
+
+          <TabPanel value={currentTab} index={7}>
             {/* Manage Foods - Add/edit/delete foods in database */}
             <AddFoodManager />
           </TabPanel>

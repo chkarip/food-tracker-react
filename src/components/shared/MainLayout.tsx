@@ -60,7 +60,7 @@ const Layout: React.FC<LayoutProps> = ({
       await signOutUser();
       setUserMenuAnchor(null);
     } catch (error) {
-      console.error('Sign out error:', error);
+      // Sign out error
     }
   };
 
@@ -76,6 +76,11 @@ const Layout: React.FC<LayoutProps> = ({
       description: 'Nutrition & Meal Planning'
     },
     {
+      text: 'Shopping List',
+      path: '/shopping',
+      description: 'Grocery Planning & Costs'
+    },
+    {
       text: 'Gym',
       path: '/gym',
       description: 'Workouts & Training'
@@ -84,6 +89,11 @@ const Layout: React.FC<LayoutProps> = ({
       text: 'Finance',
       path: '/finance',
       description: 'Budget & Expenses'
+    },
+    {
+      text: 'Profile',
+      path: '/profile',
+      description: 'Personal Information & Settings'
     }
   ];
 
@@ -226,6 +236,14 @@ const Layout: React.FC<LayoutProps> = ({
           open={Boolean(userMenuAnchor)}
           onClose={() => setUserMenuAnchor(null)}
         >
+          <MenuItem onClick={() => {
+            navigate('/profile');
+            setUserMenuAnchor(null);
+          }}>
+            <Avatar sx={{ mr: 1, width: 20, height: 20 }}>{user?.email?.charAt(0).toUpperCase()}</Avatar>
+            Profile Settings
+          </MenuItem>
+          <Divider />
           <MenuItem onClick={handleSignOut}>
             <LogoutIcon sx={{ mr: 1 }} />
             Sign Out

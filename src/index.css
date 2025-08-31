@@ -23,6 +23,11 @@
   /* Accents */
   --accent-green: #3BBA75;
   --accent-orange: #FF9800;
+  --accent-blue: #2196F3;
+  --accent-purple: #9C27B0;
+
+  /* Progress bar background */
+  --track-bg: rgba(0, 0, 0, 0.1);
 
   /* Status/accents */
   --status-error: #ef5350;
@@ -156,15 +161,101 @@
   --macro-progress-bg: rgba(255, 255, 255, 0.1);
   --macro-progress-border: rgba(255, 255, 255, 0.2);
 
-  /* Bar component variables for dark theme */
-  --bar-rail: rgba(255,255,255,0.12);
+  /* Accents for dark theme */
+  --accent-green: #3BBA75;
+  --accent-orange: #FF9800;
+  --accent-blue: #2196F3;
+  --accent-purple: #9C27B0;
+
+  /* Progress bar background for dark theme */
+  --track-bg: rgba(255, 255, 255, 0.12);
 
   /* Typography for dark theme */
   --meal-heading-color: #3BBA75;
   --meal-subheading-color: #E2E8F0;
   --meal-body-color: #F7FAFC;
   --meal-caption-color: #A0AEC0;
+
+  /* Input / form overrides for dark theme */
+  --color-text: var(--text-primary);
+  --color-input-background: #0f1418; /* darker input bg */
+  --color-input-border: rgba(255,255,255,0.06);
+  --color-input-border-focus: var(--color-primary-base);
+
+  /* Adjust neutral grays used by inputs/disabled states */
+  --color-gray-200: #1f262a;
+  --color-gray-600: #94a3b8;
 }
+
+/* Dark theme - input element styling
+   Ensures native inputs, textareas, selects, search fields and common MUI
+   input/autocomplete/select variants use the dark input background and
+   readable text/colors. Also forces icon and placeholder colors to match. */
+[data-theme="dark"] input,
+[data-theme="dark"] textarea,
+[data-theme="dark"] select,
+[data-theme="dark"] input[type="search"],
+[data-theme="dark"] .search-input,
+[data-theme="dark"] .MuiInputBase-root,
+[data-theme="dark"] .MuiOutlinedInput-root,
+[data-theme="dark"] .MuiFilledInput-root,
+[data-theme="dark"] .MuiInputBase-input,
+[data-theme="dark"] .MuiOutlinedInput-input,
+[data-theme="dark"] .MuiInputBase-root input,
+[data-theme="dark"] .MuiOutlinedInput-root input,
+[data-theme="dark"] .MuiFilledInput-root input,
+[data-theme="dark"] .MuiAutocomplete-inputRoot,
+[data-theme="dark"] .MuiAutocomplete-inputRoot input,
+[data-theme="dark"] .MuiSelect-select,
+[data-theme="dark"] .MuiSelect-outlined {
+  background: var(--color-input-background) !important;
+  color: var(--color-text) !important;
+  -webkit-text-fill-color: var(--color-text) !important;
+  border: 1px solid var(--color-input-border);
+  caret-color: var(--color-text);
+  appearance: none;
+  box-shadow: none;
+}
+
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder,
+[data-theme="dark"] .MuiInputBase-input::placeholder,
+[data-theme="dark"] .MuiOutlinedInput-input::placeholder,
+[data-theme="dark"] .MuiAutocomplete-inputRoot input::placeholder {
+  color: var(--color-gray-600);
+  opacity: 1;
+}
+
+[data-theme="dark"] input:focus,
+[data-theme="dark"] textarea:focus,
+[data-theme="dark"] select:focus,
+[data-theme="dark"] input[type="search"]:focus,
+[data-theme="dark"] .MuiInputBase-root.Mui-focused,
+[data-theme="dark"] .MuiOutlinedInput-root.Mui-focused,
+[data-theme="dark"] .MuiFilledInput-root.Mui-focused,
+[data-theme="dark"] .MuiAutocomplete-inputRoot.Mui-focused {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(var(--meal-primary-rgb), 0.06);
+  border-color: var(--color-input-border-focus);
+}
+
+[data-theme="dark"] .MuiOutlinedInput-notchedOutline {
+  border-color: var(--color-input-border) !important;
+}
+
+/* Ensure icons inside inputs (clear/search) are visible on dark backgrounds */
+[data-theme="dark"] .MuiInputAdornment-root,
+[data-theme="dark"] .MuiSvgIcon-root,
+[data-theme="dark"] .icon,
+[data-theme="dark"] .search .icon {
+  color: var(--color-text) !important;
+}
+
+/* Select native dropdown arrow contrast */
+[data-theme="dark"] select {
+  color: var(--color-text);
+}
+
 
 body {
   margin: 0;

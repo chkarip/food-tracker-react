@@ -19,8 +19,10 @@ import {
 import Layout from './components/shared/MainLayout';
 import DashboardPage from './pages/DashboardPage';
 import FoodTrackerPage from './pages/FoodTrackerPage';
+import ShoppingList from './components/food-management/ShoppingList';
 import GymPage from './components/workout/GymPage';
 import FinancePage from './modules/finance/pages/FinancePage';
+import ProfilePage from './pages/ProfilePage';
 import AuthGuard from './components/auth/AuthGuard';
 import { AuthProvider } from './contexts/AuthContext';
 import { FoodProvider } from './contexts/FoodContext';
@@ -117,8 +119,10 @@ function FoodTrackerApp() {
               <Routes>
                 <Route path="/" element={<DashboardPage />} />
                 <Route path="/food" element={<FoodTrackerPage />} />
+                <Route path="/shopping" element={<ShoppingList />} />
                 <Route path="/gym" element={<GymPage />} />
                 <Route path="/finance" element={<FinancePage />} />
+                <Route path="/profile" element={<ProfilePage />} />
               </Routes>
             </Layout>
           </AuthGuard>

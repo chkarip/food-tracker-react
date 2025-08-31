@@ -15,21 +15,31 @@ const NumberStepper: React.FC<NumberStepperProps> = ({
   className = '',
 }) => {
   const handleDecrement = () => {
-    if (!disabled && value - step >= min) {
+    if (!disabled && (max === undefined || value - step >= min)) {
       onChange(Math.max(min, value - step));
     }
   };
 
   const handleIncrement = () => {
-    if (!disabled && value + step <= max) {
-      onChange(Math.min(max, value + step));
+    if (!disabled && (max === undefined || value + step <= max)) {
+      onChange(max === undefined ? value + step : Math.min(max, value + step));
     }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = parseFloat(e.target.value);
-    if (!isNaN(newValue) && newValue >= min && newValue <= max) {
-      onChange(newValue);
+    const inputValue = e.target.value;
+
+    // Allow empty input, partial decimal inputs, or valid numbers
+    if (inputValue === '' || inputValue === '.' || inputValue === '0.' ||
+        inputValue.match(/^\d*\.?\d*$/) ||
+        (!isNaN(parseFloat(inputValue)) && parseFloat(inputValue) >= min && (max === undefined || parseFloat(inputValue) <= max))) {
+      const numericValue = parseFloat(inputValue);
+      if (!isNaN(numericValue)) {
+        onChange(numericValue);
+      } else if (inputValue === '' || inputValue === '.' || inputValue === '0.') {
+        // For partial inputs, don't update the value yet
+        return;
+      }
     }
   };
 
@@ -59,13 +69,13 @@ const NumberStepper: React.FC<NumberStepperProps> = ({
           value={value}
           min={min}
           max={max}
-          step={step}
+          step={step.toString()}
           disabled={disabled}
           onChange={handleInputChange}
           onBlur={() => {
             // Ensure value stays within bounds on blur
             if (value < min) onChange(min);
-            if (value > max) onChange(max);
+            if (max !== undefined && value > max) onChange(max);
           }}
         />
         {unit && <span className="number-stepper__unit">{unit}</span>}
@@ -73,7 +83,7 @@ const NumberStepper: React.FC<NumberStepperProps> = ({
       
       <AccentButton
         onClick={handleIncrement}
-        disabled={disabled || value >= max}
+        disabled={disabled || (max !== undefined && value >= max)}
         size={size}
         variant="secondary"
         className="number-stepper__button number-stepper__button--increment"

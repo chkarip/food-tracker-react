@@ -53,6 +53,72 @@ import { SelectedFood, ExternalNutrition } from '../../../types/nutrition';
 import { calculateTotalMacros } from '../../../utils/nutritionCalculations';
 import { formatDate, COLLECTIONS, createTimestamp } from '../shared/utils';
 import { saveActivityHistory } from '../scheduling/activityHistoryService';
+import foodInventoryService from '../nutrition/foodInventoryService';
+
+// Helper function to subtract used foods from inventory
+const subtractFoodsFromInventory = async (
+  userId: string,
+  selectedFoods: SelectedFood[]
+): Promise<{ success: boolean; warnings: string[] }> => {
+  const warnings: string[] = [];
+  
+  try {
+    // Get current inventory
+    const inventory = await foodInventoryService.getUserInventory(userId);
+    
+    // Group inventory by food name for easier lookup
+    const inventoryMap = new Map<string, typeof inventory[0]>();
+    inventory.forEach(item => {
+      inventoryMap.set(item.foodName.toLowerCase(), item);
+    });
+    
+    // Process each selected food
+    for (const selectedFood of selectedFoods) {
+      const foodName = selectedFood.name.toLowerCase();
+      const inventoryItem = inventoryMap.get(foodName);
+      
+      if (inventoryItem) {
+        const currentQuantity = inventoryItem.quantity;
+        const usedAmount = selectedFood.amount;
+        
+        if (currentQuantity >= usedAmount) {
+          // Enough inventory, subtract the amount
+          const newQuantity = currentQuantity - usedAmount;
+          const newStatus = newQuantity <= 0 ? 'empty' : newQuantity <= 100 ? 'low' : 'fresh';
+          
+          await foodInventoryService.updateInventoryItem(inventoryItem.id, {
+            quantity: newQuantity,
+            status: newStatus,
+            lastUpdated: new Date()
+          });
+          
+          console.log(`✅ Subtracted ${usedAmount} from ${inventoryItem.foodName} inventory. Remaining: ${newQuantity}`);
+        } else {
+          // Not enough inventory
+          warnings.push(`Not enough ${inventoryItem.foodName} in inventory. Have: ${currentQuantity}, Need: ${usedAmount}`);
+          
+          // Still subtract what we can (set to 0)
+          await foodInventoryService.updateInventoryItem(inventoryItem.id, {
+            quantity: 0,
+            status: 'empty',
+            lastUpdated: new Date()
+          });
+          
+          console.log(`⚠️ Used remaining ${currentQuantity} of ${inventoryItem.foodName} from inventory. Set to empty.`);
+        }
+      } else {
+        // Food not in inventory
+        warnings.push(`${selectedFood.name} not found in inventory`);
+        console.log(`ℹ️ ${selectedFood.name} not found in inventory, skipping subtraction`);
+      }
+    }
+    
+    return { success: true, warnings };
+  } catch (error: any) {
+    console.error('❌ Error subtracting foods from inventory:', error);
+    return { success: false, warnings: [`Failed to update inventory: ${error.message}`] };
+  }
+};
 
 // Save daily plan to Firestore (with timeslots)
 export const saveDailyPlan = async (
@@ -114,6 +180,32 @@ export const saveDailyPlan = async (
     
     await setDoc(doc(db, COLLECTIONS.MEAL_PLANS, docId), planData);
     console.log('  ✅ Successfully saved meal plan with docId:', docId);
+    
+    // Subtract used foods from inventory
+    console.log('  📦 Processing inventory subtraction...');
+    const allSelectedFoods: SelectedFood[] = [];
+    
+    // Collect all selected foods from both timeslots
+    Object.values(timeslotData).forEach(data => {
+      allSelectedFoods.push(...data.selectedFoods);
+    });
+    
+    if (allSelectedFoods.length > 0) {
+      const inventoryResult = await subtractFoodsFromInventory(userId, allSelectedFoods);
+      
+      if (!inventoryResult.success) {
+        console.error('  ❌ Inventory subtraction failed:', inventoryResult.warnings);
+        // Don't throw error here, meal plan was saved successfully
+      } else {
+        if (inventoryResult.warnings.length > 0) {
+          console.log('  ⚠️ Inventory warnings:', inventoryResult.warnings);
+        } else {
+          console.log('  ✅ All foods successfully subtracted from inventory');
+        }
+      }
+    } else {
+      console.log('  ℹ️ No foods selected, skipping inventory subtraction');
+    }
   } catch (error: any) {
     console.error('  ❌ Save error:', error);
     throw new Error(`Failed to save daily plan: ${error.message}`);
@@ -175,6 +267,32 @@ export const saveMealPlan = async (
     
     await setDoc(doc(db, COLLECTIONS.MEAL_PLANS, docId), mealPlanData);
     console.log('  ✅ Successfully saved meal plan to mealPlans collection with docId:', docId);
+    
+    // Subtract used foods from inventory
+    console.log('  📦 Processing inventory subtraction...');
+    const allSelectedFoods: SelectedFood[] = [];
+    
+    // Collect all selected foods from both timeslots
+    Object.values(timeslotData).forEach(data => {
+      allSelectedFoods.push(...data.selectedFoods);
+    });
+    
+    if (allSelectedFoods.length > 0) {
+      const inventoryResult = await subtractFoodsFromInventory(userId, allSelectedFoods);
+      
+      if (!inventoryResult.success) {
+        console.error('  ❌ Inventory subtraction failed:', inventoryResult.warnings);
+        // Don't throw error here, meal plan was saved successfully
+      } else {
+        if (inventoryResult.warnings.length > 0) {
+          console.log('  ⚠️ Inventory warnings:', inventoryResult.warnings);
+        } else {
+          console.log('  ✅ All foods successfully subtracted from inventory');
+        }
+      }
+    } else {
+      console.log('  ℹ️ No foods selected, skipping inventory subtraction');
+    }
   } catch (error: any) {
     console.error('  ❌ Save meal plan error:', error);
     throw new Error(`Failed to save meal plan: ${error.message}`);

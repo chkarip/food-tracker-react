@@ -86,14 +86,33 @@ const SaveLoadPlan: React.FC<SaveLoadPlanProps> = ({ timeslotData, onLoad, favor
   }, []);
 
   const getTotalSelectedFoods = () =>
-    Object.values(timeslotData).reduce((total, data) => total + data.selectedFoods.length, 0);
+    Object.values(timeslotData || {}).reduce((total, data) => total + (data?.selectedFoods?.length || 0), 0);
 
   const hasAnySelectedFoods = getTotalSelectedFoods() > 0;
 
+  const readyToSave = isAuthenticated && Object.keys(foodDatabase).length > 0 && hasAnySelectedFoods && !loading;
+
+  const onConfirmSingleDay = async () => {
+    console.log('[SAVE] single-day clicked');
+    await handleSingleDaySave();
+  };
+
+  const onConfirmMultiDay = async () => {
+    console.log('[SAVE] multi-day clicked', { startDate, numberOfDays });
+    await handleMultiDaySave();
+  };
+
   const handleSingleDaySave = async () => {
-    if (!user) return;
+    if (!user) {
+      setMessageState({ type: 'error', text: 'Please log in to save your plan.' });
+      return;
+    }
     if (Object.keys(foodDatabase).length === 0) {
-      setMessageState({ type: 'error', text: 'Food database not loaded yet. Please wait...' });
+      setMessageState({ type: 'error', text: 'Loading foods… try again in a moment.' });
+      return;
+    }
+    if (!hasAnySelectedFoods) {
+      setMessageState({ type: 'error', text: 'Add at least one food before saving.' });
       return;
     }
 
@@ -103,12 +122,14 @@ const SaveLoadPlan: React.FC<SaveLoadPlanProps> = ({ timeslotData, onLoad, favor
     try {
       const today = new Date();
       const localDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      console.log('[SAVE] saving to date', localDate.toDateString());
 
-      await saveDailyPlan(user.uid, timeslotData, foodDatabase, localDate);
+      const timeslots = timeslotData || {};
+      await saveDailyPlan(user.uid, timeslots, foodDatabase, localDate);
 
       const newTasks: string[] = [];
-      if (timeslotData['6pm']?.selectedFoods?.length > 0) newTasks.push('meal-6pm');
-      if (timeslotData['9:30pm']?.selectedFoods?.length > 0) newTasks.push('meal-9:30pm');
+      if (timeslots['6pm']?.selectedFoods?.length > 0) newTasks.push('meal-6pm');
+      if (timeslots['9:30pm']?.selectedFoods?.length > 0) newTasks.push('meal-9:30pm');
 
       const existing = await loadScheduledActivities(user.uid, localDate);
       const existingTasks = existing?.tasks || [];
@@ -117,7 +138,7 @@ const SaveLoadPlan: React.FC<SaveLoadPlanProps> = ({ timeslotData, onLoad, favor
       await saveScheduledActivities(user.uid, finalTasks, localDate);
       setCurrentScheduledActivities({ status: 'active', tasks: finalTasks });
 
-      setMessageState({ type: 'success', text: 'Daily meal plan saved successfully!' });
+      setMessageState({ type: 'success', text: 'Daily plan saved. Inventory updated automatically.' });
       setShowMultiDayDialog(false);
     } catch (error: any) {
       setMessageState({ type: 'error', text: error.message });
@@ -127,9 +148,16 @@ const SaveLoadPlan: React.FC<SaveLoadPlanProps> = ({ timeslotData, onLoad, favor
   };
 
   const handleMultiDaySave = async () => {
-    if (!user) return;
+    if (!user) {
+      setMessageState({ type: 'error', text: 'Please log in to save your plan.' });
+      return;
+    }
     if (Object.keys(foodDatabase).length === 0) {
-      setMessageState({ type: 'error', text: 'Food database not loaded yet. Please wait...' });
+      setMessageState({ type: 'error', text: 'Loading foods… try again in a moment.' });
+      return;
+    }
+    if (!hasAnySelectedFoods) {
+      setMessageState({ type: 'error', text: 'Add at least one food before saving.' });
       return;
     }
 
@@ -143,12 +171,14 @@ const SaveLoadPlan: React.FC<SaveLoadPlanProps> = ({ timeslotData, onLoad, favor
       for (let i = 0; i < numberOfDays; i++) {
         const currentDate = new Date(startObj);
         currentDate.setDate(startObj.getDate() + i);
+        console.log('[SAVE] saving to date', currentDate.toDateString());
 
-        await saveDailyPlan(user.uid, timeslotData, foodDatabase, currentDate);
+        const timeslots = timeslotData || {};
+        await saveDailyPlan(user.uid, timeslots, foodDatabase, currentDate);
 
         const newTasks: string[] = [];
-        if (timeslotData['6pm']?.selectedFoods?.length > 0) newTasks.push('meal-6pm');
-        if (timeslotData['9:30pm']?.selectedFoods?.length > 0) newTasks.push('meal-9:30pm');
+        if (timeslots['6pm']?.selectedFoods?.length > 0) newTasks.push('meal-6pm');
+        if (timeslots['9:30pm']?.selectedFoods?.length > 0) newTasks.push('meal-9:30pm');
 
         const existing = await loadScheduledActivities(user.uid, currentDate);
         const existingTasks = existing?.tasks || [];
@@ -158,7 +188,7 @@ const SaveLoadPlan: React.FC<SaveLoadPlanProps> = ({ timeslotData, onLoad, favor
         savedDates.push(currentDate.toLocaleDateString());
       }
 
-      setMessageState({ type: 'success', text: `Saved meal plan for: ${savedDates.join(', ')}` });
+      setMessageState({ type: 'success', text: `Saved meal plan for: ${savedDates.join(', ')}. Inventory updated automatically.` });
       setShowMultiDayDialog(false);
     } catch (error: any) {
       setMessageState({ type: 'error', text: error.message });
@@ -252,8 +282,11 @@ const SaveLoadPlan: React.FC<SaveLoadPlanProps> = ({ timeslotData, onLoad, favor
               alignItems: 'center'
             }}>
               <AccentButton
-                onClick={() => setShowMultiDayDialog(true)}
-                disabled={loading || !hasAnySelectedFoods || !isAuthenticated}
+                onClick={() => {
+                  console.log('[SAVE] opening dialog', { readyToSave });
+                  setShowMultiDayDialog(true);
+                }}
+                disabled={!readyToSave}
                 variant="primary"
                 size="compact"
               >
@@ -482,6 +515,18 @@ const SaveLoadPlan: React.FC<SaveLoadPlanProps> = ({ timeslotData, onLoad, favor
                 Please log in to save/load meal plans
               </Typography>
             )}
+
+            {isAuthenticated && !hasAnySelectedFoods && (
+              <Typography variant="caption" sx={{ mt: 1, display: 'block', color: 'var(--warning-color)', fontSize: '0.75rem' }}>
+                Add some foods to your meal plan before saving
+              </Typography>
+            )}
+
+            {isAuthenticated && hasAnySelectedFoods && (
+              <Typography variant="caption" sx={{ mt: 1, display: 'block', color: 'var(--accent-green)', fontSize: '0.75rem' }}>
+                Ready to save {getTotalSelectedFoods()} food item(s)
+              </Typography>
+            )}
           </Box>
         }
       />
@@ -489,7 +534,10 @@ const SaveLoadPlan: React.FC<SaveLoadPlanProps> = ({ timeslotData, onLoad, favor
       {/* Multi-day Save Dialog */}
       <Dialog 
         open={showMultiDayDialog} 
-        onClose={() => setShowMultiDayDialog(false)}
+        onClose={() => {
+          console.log('Dialog close clicked');
+          setShowMultiDayDialog(false);
+        }}
         sx={{
           '& .MuiDialog-paper': {
             backgroundColor: 'var(--card-bg)',
@@ -563,7 +611,7 @@ const SaveLoadPlan: React.FC<SaveLoadPlanProps> = ({ timeslotData, onLoad, favor
             Cancel
           </AccentButton>
           <AccentButton
-            onClick={numberOfDays === 1 ? handleSingleDaySave : handleMultiDaySave}
+            onClick={numberOfDays === 1 ? onConfirmSingleDay : onConfirmMultiDay}
             variant="primary"
             disabled={loading}
             loading={loading}
