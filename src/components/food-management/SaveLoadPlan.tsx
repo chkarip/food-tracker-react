@@ -47,9 +47,10 @@ interface SaveLoadPlanProps {
   favoriteFoods?: string[]; // New prop for favorite foods
   onSelectFavorite?: (foodName: string) => void; // New callback when a favorite chip is clicked
   onClear?: () => void; // New callback to clear selected foods
+  size?: 'default' | 'compact'; // New size prop for compact buttons
 }
 
-const SaveLoadPlan: React.FC<SaveLoadPlanProps> = ({ timeslotData, onLoad, favoriteFoods = [], onSelectFavorite, onClear }) => {  // ✅ CHANGED prop name
+const SaveLoadPlan: React.FC<SaveLoadPlanProps> = ({ timeslotData, onLoad, favoriteFoods = [], onSelectFavorite, onClear, size = 'default' }) => {  // ✅ CHANGED prop name
   const { user, isAuthenticated } = useAuth();
   const [loading, setLoading] = useState(false);
   const [message, setMessageState] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -245,13 +246,18 @@ const SaveLoadPlan: React.FC<SaveLoadPlanProps> = ({ timeslotData, onLoad, favor
               </Alert>
             )}
 
-            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+            <Box sx={{ 
+              display: 'flex', 
+              gap: size === 'compact' ? 'var(--btn-compact-gap)' : 1, 
+              flexWrap: 'wrap',
+              ...(size === 'compact' && { className: 'btn-group--compact' })
+            }}>
               <AccentButton
                 onClick={() => setShowMultiDayDialog(true)
                 }
                 disabled={loading || !hasAnySelectedFoods || !isAuthenticated}
                 variant="primary"
-                size="small"
+                size={size === 'compact' ? 'compact' : 'small'}
               >
                 Save Plan
               </AccentButton>
@@ -259,7 +265,7 @@ const SaveLoadPlan: React.FC<SaveLoadPlanProps> = ({ timeslotData, onLoad, favor
               <AccentButton
                 onClick={handleLoadPlan}
                 disabled={loading || !isAuthenticated}
-                size="small"
+                size={size === 'compact' ? 'compact' : 'small'}
                 variant="secondary"
               >
                 Load Today
@@ -273,7 +279,7 @@ const SaveLoadPlan: React.FC<SaveLoadPlanProps> = ({ timeslotData, onLoad, favor
                   }
                 }}
                 disabled={loading || !hasAnySelectedFoods}
-                size="small"
+                size={size === 'compact' ? 'compact' : 'small'}
                 variant="danger"
                 startIcon={<ClearIcon />}
               >

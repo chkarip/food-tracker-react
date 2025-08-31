@@ -27,6 +27,7 @@ interface MacroProgressProps {
   favoriteFoods?: string[]; // Optional prop for favorite foods
   onSelectFavorite?: (foodName: string) => void; // Optional callback for favorite selection
   onClear?: () => void; // Optional callback to clear selected foods
+  size?: 'default' | 'compact'; // Size prop for SaveLoadPlan buttons
 }
 
 const MacroProgress: React.FC<MacroProgressProps> = ({
@@ -42,6 +43,7 @@ const MacroProgress: React.FC<MacroProgressProps> = ({
   favoriteFoods = [], // Optional prop for favorite foods
   onSelectFavorite,
   onClear,
+  size = 'default', // Default size
 }) => {
   const theme = useTheme();
 
@@ -177,6 +179,7 @@ const MacroProgress: React.FC<MacroProgressProps> = ({
               favoriteFoods={favoriteFoods}
               onSelectFavorite={onSelectFavorite}
               onClear={onClear}
+              size={size}
             />
           </Box>
         </Box>

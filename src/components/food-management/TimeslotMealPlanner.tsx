@@ -665,6 +665,7 @@ const TimeslotMealPlanner: React.FC = () => {
                 }
               }}
               onClear={handleClearPlan}
+              size="compact"
             />
           ) : (
             <Typography>Loading nutrition goals...</Typography>

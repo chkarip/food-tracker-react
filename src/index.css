@@ -91,6 +91,11 @@
   --button-hover-scale: 1.02;
   --button-active-scale: 0.98;
 
+  /* Compact button tokens */
+  --btn-compact-height: 32px;
+  --btn-compact-pad-x: 8px;
+  --btn-compact-gap: 8px;
+
   /* Typography */
   --meal-heading-color: #2E8B57;
   --meal-subheading-color: #4A5568;

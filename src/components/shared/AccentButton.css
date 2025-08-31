@@ -138,6 +138,14 @@
   min-height: 32px !important;
 }
 
+.accent-button--compact {
+  height: var(--btn-compact-height);
+  padding: 0 var(--btn-compact-pad-x) !important;
+  font-size: 0.875rem !important; /* 14px */
+  min-height: var(--btn-compact-height) !important;
+  gap: 6px; /* Icon gap */
+}
+
 /* States */
 .accent-button--disabled {
   opacity: 0.6;
@@ -206,5 +214,33 @@
 /* Focus states for accessibility */
 .accent-button:focus {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 0 0 2px rgba(59, 186, 117, 0.4);
+}
+
+.accent-button--compact:focus {
+  box-shadow: 0 0 0 2px rgba(59, 186, 117, 0.5);
+}
+
+/* Compact button group */
+.btn-group--compact {
+  gap: var(--btn-compact-gap);
+}
+
+/* Ensure touch target for compact buttons */
+.accent-button--compact {
+  /* Add invisible padding for touch targets */
+  position: relative;
+  min-height: 44px; /* Ensure minimum touch target */
+  min-width: 44px; /* Ensure minimum touch target */
+}
+
+.accent-button--compact::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: -6px;
+  right: -6px;
+  bottom: -6px;
+  border-radius: 12px; /* Slightly larger than button border-radius */
+  pointer-events: none;
 }
