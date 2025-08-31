@@ -233,7 +233,7 @@ const WorkoutTable: React.FC<WorkoutTableProps> = ({
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
 
-      console.log('✅ Workout saved to both scheduledWorkouts and scheduledActivities collections');
+      console.log('Workout saved to both scheduledWorkouts and scheduledActivities collections');
     } catch (error) {
       console.error('Error saving scheduled workout:', error);
       throw error;
@@ -259,7 +259,7 @@ const WorkoutTable: React.FC<WorkoutTableProps> = ({
           disabled={exercises.length === 0}
           style={{ minWidth: '140px' }}
         >
-          {exercises.length === 0 ? 'No Exercises' : `📅 Schedule Workout (${exercises.length})`}
+          {exercises.length === 0 ? 'No Exercises' : `Schedule Workout (${exercises.length})`}
         </AccentButton>
       </Box>
 
@@ -303,7 +303,7 @@ const WorkoutTable: React.FC<WorkoutTableProps> = ({
                           onClick={() => handleAddExerciseAtIndex(index + 1)}
                           className="add-exercise-hover"
                         >
-                          ➕ Add Exercise Here
+                          Add Exercise Here
                         </AccentButton>
                       </Box>
                     </TableCell>
@@ -317,7 +317,7 @@ const WorkoutTable: React.FC<WorkoutTableProps> = ({
         {exercises.length === 0 && (
           <Box style={{ padding: 48, textAlign: 'center' }}>
             <Typography variant="h6" color="text.secondary" gutterBottom>
-              🏋️ Ready to build your workout?
+              Ready to build your workout?
             </Typography>
             <Typography variant="body2" color="text.secondary" style={{ marginBottom: 24 }}>
               Start by adding exercises to create your {workoutType} routine
@@ -331,7 +331,7 @@ const WorkoutTable: React.FC<WorkoutTableProps> = ({
               }}
               style={{ fontWeight: 600 }}
             >
-              🏋️ Add First Exercise
+              Add First Exercise
             </AccentButton>
           </Box>
         )}
@@ -375,7 +375,7 @@ const WorkoutTable: React.FC<WorkoutTableProps> = ({
           sx={{ minWidth: 300 }}
         >
           <Typography variant="subtitle2" gutterBottom>
-            Workout Scheduled Successfully! 🎉
+            Workout Scheduled Successfully!
           </Typography>
           Your {workoutType.toLowerCase()} workout has been added to your schedule.
         </Alert>
@@ -428,7 +428,7 @@ const WorkoutTable: React.FC<WorkoutTableProps> = ({
               disabled={!selectedExerciseId}
               size="large"
             >
-              ➕ Add Exercise
+              Add Exercise
             </AccentButton>
         </DialogActions>
       </Dialog>

@@ -12,6 +12,8 @@ const AccentButton: React.FC<AccentButtonProps> = ({
   loading = false,
   className = '',
   style,
+  startIcon,
+  endIcon,
 }) => {
   const buttonClass = [
     'accent-button',
@@ -32,9 +34,19 @@ const AccentButton: React.FC<AccentButtonProps> = ({
       style={style}
     >
       {loading && <span className="accent-button__spinner"></span>}
+      {startIcon && !loading && (
+        <span className="accent-button__icon accent-button__icon--start">
+          {startIcon}
+        </span>
+      )}
       <span className={loading ? 'accent-button__text--loading' : ''}>
         {children}
       </span>
+      {endIcon && !loading && (
+        <span className="accent-button__icon accent-button__icon--end">
+          {endIcon}
+        </span>
+      )}
     </button>
   );
 };

@@ -143,10 +143,10 @@ const WorkoutBuilder: React.FC = () => {
       await saveTemplate(templateData, selectedTemplate?.id);
       
       // Success notification
-      console.log(selectedTemplate ? '✅ Template updated!' : '✅ Template created!');
+      console.log(selectedTemplate ? 'Template updated!' : 'Template created!');
       
     } catch (error) {
-      console.error('❌ Error saving template:', error);
+      console.error('Error saving template:', error);
     }
   };
 
@@ -206,7 +206,7 @@ const WorkoutBuilder: React.FC = () => {
           onClick={fetchTemplates}
           variant="secondary"
         >
-          📁 Load Template
+          Load Template
         </AccentButton>
 
         {/* Template Dropdown */}
@@ -237,7 +237,7 @@ const WorkoutBuilder: React.FC = () => {
           variant="primary"
           disabled={currentWorkout.exercises.length === 0}
         >
-          {selectedTemplate ? `💾 Update "${selectedTemplate.name}"` : '💾 Save as New Template'}
+          {selectedTemplate ? `Update "${selectedTemplate.name}"` : 'Save as New Template'}
         </AccentButton>
 
         {/* Clear Selection Button */}
@@ -246,7 +246,7 @@ const WorkoutBuilder: React.FC = () => {
             onClick={clearSelectedTemplate}
             variant="secondary"
           >
-            🧹 Clear Selection
+            Clear Selection
           </AccentButton>
         )}
       </Box>

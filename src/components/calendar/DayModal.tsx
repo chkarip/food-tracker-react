@@ -173,7 +173,7 @@ const DayModal: React.FC<DayModalProps> = ({
                 variant="primary"
                 icon={<FoodIcon />}
                 defaultExpanded={true}
-                size="medium"
+                size="compact"
               >
                 {/* 6PM Meal */}
                 {scheduled['meal-6pm'] && mealPlan.timeslots['6pm'] && (
@@ -259,7 +259,7 @@ const DayModal: React.FC<DayModalProps> = ({
                 variant="secondary"
                 icon={<GymIcon />}
                 defaultExpanded={true}
-                size="medium"
+                size="compact"
               >
                 <Box mb={2}>
                   <Typography variant="h6" gutterBottom>

@@ -1,21 +1,23 @@
 /* Dark theme button overrides */
 [data-theme="dark"] .accent-button--primary {
-  background-color: var(--color-primary-base);
+  background: linear-gradient(135deg, var(--color-primary-base) 0%, var(--color-primary-hover) 100%);
   color: var(--color-button-text);
+  border: 1px solid rgba(255,255,255,0.3);
 }
 
 [data-theme="dark"] .accent-button--primary:hover:not(:disabled) {
-  background-color: var(--color-primary-hover);
+  background: linear-gradient(135deg, var(--color-primary-hover) 0%, var(--color-primary-base) 100%);
   box-shadow: 0 4px 12px var(--color-primary-shadow);
 }
 
 [data-theme="dark"] .accent-button--secondary {
-  background-color: var(--color-secondary-base);
+  background: linear-gradient(135deg, var(--color-secondary-base) 0%, var(--color-secondary-hover) 100%);
   color: var(--color-button-text);
+  border: 1px solid rgba(255,255,255,0.3);
 }
 
 [data-theme="dark"] .accent-button--secondary:hover:not(:disabled) {
-  background-color: var(--color-secondary-hover);
+  background: linear-gradient(135deg, var(--color-secondary-hover) 0%, var(--color-secondary-base) 100%);
 }
 /* Add Exercise Hover Effect */
 .add-exercise-hover {
@@ -67,46 +69,50 @@
 /* Variants */
 
 .accent-button--primary {
-  background-color: var(--color-primary-base);
+  background: linear-gradient(135deg, var(--color-primary-base) 0%, var(--color-primary-hover) 100%);
   color: var(--color-button-text);
   max-width: 100px;
   min-width: 10px !important;
   padding: 4px 8px !important; /* Smaller padding */
+  border: 1px solid rgba(255,255,255,0.2);
 }
 
 .accent-button--primary:hover:not(:disabled) {
-  background-color: var(--color-primary-hover);
+  background: linear-gradient(135deg, var(--color-primary-hover) 0%, var(--color-primary-base) 100%);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px var(--color-primary-shadow);
 }
 
 .accent-button--secondary {
-  background-color: var(--color-secondary-base);
+  background: linear-gradient(135deg, var(--color-secondary-base) 0%, var(--color-secondary-hover) 100%);
   color: var(--color-button-text);
+  border: 1px solid rgba(255,255,255,0.2);
 }
 
 .accent-button--secondary:hover:not(:disabled) {
-  background-color: var(--color-secondary-hover);
+  background: linear-gradient(135deg, var(--color-secondary-hover) 0%, var(--color-secondary-base) 100%);
   transform: translateY(-1px);
 }
 
 .accent-button--danger {
-  background-color: var(--color-danger-base);
+  background: linear-gradient(135deg, var(--color-danger-base) 0%, var(--color-danger-hover) 100%);
   color: var(--color-button-text);
+  border: 1px solid rgba(255,255,255,0.2);
 }
 
 .accent-button--danger:hover:not(:disabled) {
-  background-color: var(--color-danger-hover);
+  background: linear-gradient(135deg, var(--color-danger-hover) 0%, var(--color-danger-base) 100%);
   transform: translateY(-1px);
 }
 
 .accent-button--success {
-  background-color: var(--color-success-base);
+  background: linear-gradient(135deg, var(--color-success-base) 0%, var(--color-success-hover) 100%);
   color: var(--color-button-text);
+  border: 1px solid rgba(255,255,255,0.2);
 }
 
 .accent-button--success:hover:not(:disabled) {
-  background-color: var(--color-success-hover);
+  background: linear-gradient(135deg, var(--color-success-hover) 0%, var(--color-success-base) 100%);
   transform: translateY(-1px);
 }
 
@@ -160,6 +166,35 @@
 
 .accent-button__text--loading {
   opacity: 0.7;
+}
+
+/* Icon styles */
+.accent-button__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.accent-button__icon--start {
+  margin-right: 4px;
+}
+
+.accent-button__icon--end {
+  margin-left: 4px;
+}
+
+/* Adjust icon size for different button sizes */
+.accent-button--small .accent-button__icon svg {
+  font-size: 14px;
+}
+
+.accent-button--medium .accent-button__icon svg {
+  font-size: 16px;
+}
+
+.accent-button--large .accent-button__icon svg {
+  font-size: 18px;
 }
 
 @keyframes spin {

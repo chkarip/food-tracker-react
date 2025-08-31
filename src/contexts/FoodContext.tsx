@@ -15,7 +15,7 @@ export const FoodProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    console.log('🔄 Starting Firestore foods subscription...');
+    console.log('Starting Firestore foods subscription...');
     
     const unsubscribe = subscribeToFoods(
       (firestoreFoods) => {
@@ -28,12 +28,12 @@ export const FoodProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setFoodDatabase(legacyDB);
         setLoading(false);
         setError(null);
-        console.log('✅ Food cache updated:', Object.keys(legacyDB).length, 'foods');
+        console.log('Food cache updated:', Object.keys(legacyDB).length, 'foods');
       },
       (err) => {
         setError((err as Error).message || 'Failed to load foods');
         setLoading(false);
-        console.error('❌ Food subscription error:', err);
+        console.error('Food subscription error:', err);
       }
     );
 

@@ -137,7 +137,7 @@ const { foodDatabase } = useFoodDatabase();
                     value={food.amount}
                     onChange={(value) => onUpdateAmount(idx, value)}
                     min={0}
-                    max={1000}
+                    max={10000}
                     step={getFoodUnit(food.name) === 'units' ? 1 : 5}
                     unit={getFoodUnit(food.name) === 'units' ? 'units' : 'g'}
                     size="small"

@@ -1,17 +1,160 @@
-
-
+/* Light defaults */
 :root {
-  --color-primary-base: #2563eb;
-  --color-primary-base-rgb: 37, 99, 235;
-  --color-secondary-base: #10b981;
-  --color-secondary-base-rgb: 16, 185, 129;
+  /* Text */
+  --text-primary: #1a1a1a;
+  --text-secondary: #8a8f98;
+
+  /* Surfaces */
+  --surface-bg: #ffffff;
+  --card-bg: var(--surface-bg);
+  --border-color: rgba(0,0,0,0.08);
+
+  /* Meal/selector surfaces */
+  --meal-row-bg: rgba(255,255,255,0.6);
+  --meal-row-bg-hover: rgba(255,255,255,0.75);
+  --meal-row-outline: var(--border-color);
+  --meal-chip-bg: var(--card-bg);
+  --meal-chip-outline: var(--border-color);
+
+  /* Accents */
+  --accent-green: #3BBA75;
+  --accent-orange: #FF9800;
+
+  /* Status/accents */
+  --status-error: #ef5350;
+  --status-info: #4fc3f7;
+
+  /* Shadows/radius */
+  --ring: 0 0 0 1px var(--border-color) inset;
+  --elevation-1: 0 2px 8px rgba(0,0,0,0.08);
+  --elevation-2: 0 4px 16px rgba(0,0,0,0.12);
+  --radius-lg: 16px;
+  --radius-md: 12px;
+  --radius-sm: 10px;
+
+  /* ===== MEAL PLAN THEME VARIABLES ===== */
+  /* Primary meal plan colors */
+  --meal-primary: #3BBA75;
+  --meal-primary-rgb: 59, 186, 117;
+  --meal-secondary: #FF9800;
+  --meal-secondary-rgb: 255, 152, 0;
+  --meal-accent: #2196F3;
+  --meal-accent-rgb: 33, 150, 243;
+
+  /* Meal plan backgrounds */
+  --meal-bg-primary: rgba(59, 186, 117, 0.05);
+  --meal-bg-secondary: rgba(255, 152, 0, 0.05);
+  --meal-bg-accent: rgba(33, 150, 243, 0.05);
+  --meal-bg-hover: rgba(59, 186, 117, 0.08);
+  --meal-bg-card: rgba(59, 186, 117, 0.03);
+
+  /* Meal plan borders and shadows */
+  --meal-border-primary: rgba(59, 186, 117, 0.2);
+  --meal-border-secondary: rgba(255, 152, 0, 0.2);
+  --meal-border-accent: rgba(33, 150, 243, 0.2);
+  --meal-shadow-primary: 0 4px 12px rgba(59, 186, 117, 0.15);
+  --meal-shadow-secondary: 0 4px 12px rgba(255, 152, 0, 0.15);
+  --meal-shadow-accent: 0 4px 12px rgba(33, 150, 243, 0.15);
+
+  /* Timeslot specific colors */
+  --timeslot-afternoon: #FF6B35;
+  --timeslot-evening: #4A90E2;
+  --timeslot-afternoon-bg: rgba(255, 107, 53, 0.1);
+  --timeslot-evening-bg: rgba(74, 144, 226, 0.1);
+
+  /* Food category colors */
+  --category-protein: #E91E63;
+  --category-veggies: #4CAF50;
+  --category-grains: #FF9800;
+  --category-dairy: #2196F3;
+  --category-fruits: #9C27B0;
+  --category-fats: #795548;
+  --category-other: #607D8B;
+
+  /* Macro progress colors */
+  --macro-protein: #E91E63;
+  --macro-fats: #FF9800;
+  --macro-carbs: #2196F3;
+  --macro-calories: #4CAF50;
+  --macro-progress-bg: rgba(0, 0, 0, 0.1);
+  --macro-progress-border: rgba(0, 0, 0, 0.2);
+
+  /* Bar component variables */
+  --bar-height: 12px;
+  --bar-radius: 8px;
+  --bar-rail: rgba(255,255,255,0.08);
+
+  /* Interactive elements */
+  --button-primary: linear-gradient(135deg, #3BBA75 0%, #2E8B57 100%);
+  --button-secondary: linear-gradient(135deg, #FF9800 0%, #F57C00 100%);
+  --button-accent: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+  --button-hover-scale: 1.02;
+  --button-active-scale: 0.98;
+
+  /* Typography */
+  --meal-heading-color: #2E8B57;
+  --meal-subheading-color: #4A5568;
+  --meal-body-color: #2D3748;
+  --meal-caption-color: #718096;
 }
 
+/* Dark theme */
 [data-theme="dark"] {
-  --color-primary-base: #3BBA75;
-  --color-primary-base-rgb: 59, 186, 117;
-  --color-secondary-base: #FF9800;
-  --color-secondary-base-rgb: 255, 152, 0;
+  --text-primary: #eaeaea;
+  --text-secondary: #bfc6cf;
+
+  /* Darker, richer gradient background */
+  --app-gradient: radial-gradient(1200px 600px at 20% -10%, #1e2a32 0%, rgba(30,42,50,0) 55%),
+                  radial-gradient(1000px 500px at 120% 10%, #24323c 0%, rgba(36,50,60,0) 55%),
+                  linear-gradient(180deg, #0e1216 0%, #0b1014 100%);
+
+  /* Solid surfaces for cards/panels so content stays readable */
+  --surface-bg: #171c22;
+  --card-bg: #1b2128;
+  --border-color: rgba(255,255,255,0.08);
+
+  /* Meal/selector surfaces */
+  --meal-row-bg: rgba(255,255,255,0.06);
+  --meal-row-bg-hover: rgba(255,255,255,0.09);
+  --meal-row-outline: var(--border-color);
+  --meal-chip-bg: rgba(255,255,255,0.05);
+  --meal-chip-outline: var(--border-color);
+
+  --elevation-1: 0 2px 8px rgba(0,0,0,0.35);
+  --elevation-2: 0 4px 16px rgba(0,0,0,0.45);
+
+  /* ===== DARK THEME MEAL PLAN VARIABLES ===== */
+  /* Meal plan backgrounds for dark theme */
+  --meal-bg-primary: rgba(59, 186, 117, 0.08);
+  --meal-bg-secondary: rgba(255, 152, 0, 0.08);
+  --meal-bg-accent: rgba(33, 150, 243, 0.08);
+  --meal-bg-hover: rgba(59, 186, 117, 0.12);
+  --meal-bg-card: rgba(59, 186, 117, 0.05);
+
+  /* Meal plan borders and shadows for dark theme */
+  --meal-border-primary: rgba(59, 186, 117, 0.3);
+  --meal-border-secondary: rgba(255, 152, 0, 0.3);
+  --meal-border-accent: rgba(33, 150, 243, 0.3);
+  --meal-shadow-primary: 0 4px 12px rgba(59, 186, 117, 0.25);
+  --meal-shadow-secondary: 0 4px 12px rgba(255, 152, 0, 0.25);
+  --meal-shadow-accent: 0 4px 12px rgba(33, 150, 243, 0.25);
+
+  /* Timeslot colors for dark theme */
+  --timeslot-afternoon-bg: rgba(255, 107, 53, 0.15);
+  --timeslot-evening-bg: rgba(74, 144, 226, 0.15);
+
+  /* Macro progress for dark theme */
+  --macro-progress-bg: rgba(255, 255, 255, 0.1);
+  --macro-progress-border: rgba(255, 255, 255, 0.2);
+
+  /* Bar component variables for dark theme */
+  --bar-rail: rgba(255,255,255,0.12);
+
+  /* Typography for dark theme */
+  --meal-heading-color: #3BBA75;
+  --meal-subheading-color: #E2E8F0;
+  --meal-body-color: #F7FAFC;
+  --meal-caption-color: #A0AEC0;
 }
 
 body {
@@ -26,4 +169,20 @@ body {
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
+}
+
+@keyframes warning-flash {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
 }

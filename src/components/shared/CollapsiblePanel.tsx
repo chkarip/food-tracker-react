@@ -1,36 +1,63 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, forwardRef } from 'react';
 import { Box, IconButton, Typography } from '@mui/material';
 import { ExpandMore, ExpandLess } from '@mui/icons-material';
 import { CollapsiblePanelProps } from '../../types/collapsible';
 import './CollapsiblePanel.css';
 
-const CollapsiblePanel: React.FC<CollapsiblePanelProps> = ({
-  title,
-  children,
-  defaultExpanded = false,
-  variant = 'default',
-  size = 'medium',
-  icon,
-  onToggle,
-  className = '',
-  disabled = false,
-}) => {
-  const [isExpanded, setIsExpanded] = useState(defaultExpanded);
+const CollapsiblePanel = forwardRef<HTMLDivElement, CollapsiblePanelProps>(
+  ({
+    title,
+    children,
+    defaultExpanded = false,
+    expanded, // Add controlled expansion prop
+    variant = 'default',
+    size = 'medium',
+    icon,
+    onToggle,
+    className = '',
+    disabled = false,
+    sx = {}, // Add sx prop
+  },
+  ref) => {
+  // Use controlled expansion if provided, otherwise use internal state
+  const [internalExpanded, setInternalExpanded] = useState(defaultExpanded);
+  const isExpanded = expanded !== undefined ? expanded : internalExpanded;
   const [height, setHeight] = useState<string>('0px');
   const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (contentRef.current) {
-      setHeight(isExpanded ? `${contentRef.current.scrollHeight}px` : '0px');
+    if (contentRef.current && isExpanded) {
+      // Use a more reliable height measurement
+      const measureHeight = () => {
+        if (contentRef.current) {
+          // Temporarily set height to auto to measure natural height
+          const originalHeight = contentRef.current.style.height;
+          contentRef.current.style.height = 'auto';
+          const measuredHeight = contentRef.current.scrollHeight;
+          contentRef.current.style.height = originalHeight;
+          
+          const newHeight = `${measuredHeight}px`;
+          setHeight(newHeight);
+        }
+      };
+      
+      // Use setTimeout to ensure DOM is fully updated
+      setTimeout(measureHeight, 0);
+    } else if (!isExpanded) {
+      setHeight('0px');
     }
-  }, [isExpanded, children]);
+  }, [isExpanded, children]); // Keep children dependency to react to content changes
 
   const toggleExpanded = () => {
     if (disabled) return;
     
-    const newExpanded = !isExpanded;
-    setIsExpanded(newExpanded);
-    onToggle?.(newExpanded);
+    if (expanded !== undefined) {
+      // Controlled mode - call onToggle callback
+      onToggle?.(!expanded);
+    } else {
+      // Uncontrolled mode - update internal state
+      setInternalExpanded(!internalExpanded);
+    }
   };
 
   const panelClasses = [
@@ -43,9 +70,10 @@ const CollapsiblePanel: React.FC<CollapsiblePanelProps> = ({
   ].filter(Boolean).join(' ');
 
   return (
-    <Box className={panelClasses}>
+    <Box className={panelClasses} sx={sx}>
       {/* Header */}
       <Box
+        ref={ref}
         className="collapsible-panel__header"
         onClick={toggleExpanded}
         role="button"
@@ -67,7 +95,7 @@ const CollapsiblePanel: React.FC<CollapsiblePanelProps> = ({
           variant="h6"
           className="collapsible-panel__title"
           sx={{
-            fontSize: size === 'small' ? '0.875rem' : size === 'large' ? '1.25rem' : '1rem',
+            fontSize: size === 'small' ? '0.875rem' : size === 'large' ? '1.25rem' : size === 'compact' ? '0.875rem' : '1rem',
           }}
         >
           {title}
@@ -94,6 +122,8 @@ const CollapsiblePanel: React.FC<CollapsiblePanelProps> = ({
       </Box>
     </Box>
   );
-};
+});
+
+CollapsiblePanel.displayName = 'CollapsiblePanel';
 
 export default CollapsiblePanel;

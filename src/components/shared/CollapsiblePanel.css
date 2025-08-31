@@ -1,139 +1,284 @@
 /* Base collapsible panel styles */
 .collapsible-panel {
-  border-radius: 12px;
-  background-color: var(--color-bg-secondary);
-  border: 1px solid var(--color-border);
-  margin-bottom: 8px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, var(--meal-bg-card) 0%, rgba(255,255,255,0.8) 100%);
+  border: 1px solid var(--border-color);
+  margin-bottom: 12px;
   overflow: hidden;
-  transition: all 0.2s ease-in-out;
+  transition: box-shadow 160ms ease, border-color 160ms ease, background 160ms ease;
+  box-shadow: var(--elevation-1);
 }
 
 .collapsible-panel:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-color: var(--accent-green);
+  box-shadow: var(--elevation-2);
 }
 
 /* Header styles */
 .collapsible-panel__header {
   display: flex;
   align-items: center;
-  padding: 12px 16px;
+  padding: 16px 20px;
   cursor: pointer;
-  background-color: var(--color-bg-secondary);
-  border-bottom: 1px solid transparent;
-  transition: all 0.2s ease-in-out;
+  background: linear-gradient(135deg, var(--meal-bg-primary) 0%, var(--meal-bg-secondary) 100%);
+  border-bottom: 2px solid transparent;
+  transition: all 0.3s ease-in-out;
   user-select: none;
+  position: relative;
+  overflow: hidden;
+}
+
+.collapsible-panel__header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transition: left 0.5s;
+}
+
+.collapsible-panel__header:hover::before {
+  left: 100%;
 }
 
 .collapsible-panel__header:hover {
-  background-color: var(--color-bg-tertiary);
+  background: linear-gradient(135deg, var(--meal-bg-hover) 0%, var(--meal-bg-primary) 100%);
+  border-bottom-color: var(--meal-primary);
 }
 
 .collapsible-panel__header:focus {
-  outline: 2px solid var(--color-primary-base);
-  outline-offset: -2px;
+  box-shadow: 0 0 0 3px var(--meal-primary);
+  outline: none;
 }
 
 .collapsible-panel__icon {
-  margin-right: 12px;
+  margin-right: 16px;
   display: flex;
   align-items: center;
-  color: var(--color-primary-base);
+  color: var(--meal-primary);
+  font-size: 1.2em;
+  filter: drop-shadow(0 1px 2px rgba(59, 186, 117, 0.3));
 }
 
 .collapsible-panel__title {
   flex: 1;
-  font-weight: 600;
-  color: var(--color-text-primary);
+  font-weight: 700;
+  color: var(--meal-heading-color);
   margin: 0;
+  font-size: 1.1em;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.1);
 }
 
 .collapsible-panel__toggle {
-  color: var(--color-text-secondary);
-  transition: transform 0.2s ease-in-out, color 0.2s ease-in-out;
+  color: var(--meal-primary);
+  transition: all 0.3s ease-in-out;
+  background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(255,255,255,0.2);
+}
+
+.collapsible-panel__toggle:hover {
+  background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.1) 100%);
+  transform: scale(1.1);
+  color: var(--meal-secondary);
+  border-color: rgba(255,255,255,0.4);
+  box-shadow: 0 2px 8px rgba(59, 186, 117, 0.3);
 }
 
 .collapsible-panel--expanded .collapsible-panel__toggle {
-  color: var(--color-primary-base);
+  background: linear-gradient(135deg, var(--meal-primary) 0%, var(--meal-secondary) 100%);
+  color: white;
+  box-shadow: 0 2px 8px rgba(59, 186, 117, 0.4);
+  border-color: var(--meal-primary);
 }
 
 /* Content styles */
 .collapsible-panel__content {
   overflow: hidden;
-  transition: height 0.3s ease-in-out;
-  background-color: var(--color-bg-secondary);
+  transition: height 0.3s ease-out;
+  background-color: rgba(255,255,255,0.9);
+  backdrop-filter: blur(10px);
+  border-bottom-left-radius: 16px;
+  border-bottom-right-radius: 16px;
 }
 
 .collapsible-panel__inner {
-  padding: 16px;
-  color: var(--color-text-primary);
+  padding: 20px;
+  color: var(--meal-body-color);
+  line-height: 1.6;
+  transition: all 0.3s ease-in-out;
 }
 
 /* Variant styles */
 .collapsible-panel--primary .collapsible-panel__header {
-  background-color: rgba(var(--color-primary-base-rgb), 0.1);
-  border-bottom: 1px solid var(--color-primary-base);
+  background: linear-gradient(135deg, var(--meal-bg-primary) 0%, var(--meal-bg-accent) 100%);
+  border-bottom: 1px solid var(--meal-primary);
 }
 
 .collapsible-panel--primary .collapsible-panel__title {
-  color: var(--color-primary-base);
+  color: var(--meal-primary);
 }
 
 .collapsible-panel--secondary .collapsible-panel__header {
-  background-color: rgba(var(--color-secondary-base-rgb), 0.1);
-  border-bottom: 1px solid var(--color-secondary-base);
+  background: linear-gradient(135deg, var(--meal-bg-secondary) 0%, var(--meal-bg-primary) 100%);
+  border-bottom: 1px solid var(--meal-secondary);
 }
 
 .collapsible-panel--secondary .collapsible-panel__title {
-  color: var(--color-secondary-base);
+  color: var(--meal-secondary);
 }
 
 /* Size variants */
 .collapsible-panel--small .collapsible-panel__header {
-  padding: 8px 12px;
+  padding: 12px 16px;
 }
 
 .collapsible-panel--small .collapsible-panel__inner {
-  padding: 12px;
+  padding: 16px;
 }
 
 .collapsible-panel--large .collapsible-panel__header {
-  padding: 16px 20px;
+  padding: 20px 24px;
 }
 
 .collapsible-panel--large .collapsible-panel__inner {
-  padding: 20px;
+  padding: 24px;
+}
+
+/* Compact size variant - optimized for density */
+.collapsible-panel--compact {
+  margin-bottom: 8px; /* Reduced gap between panels */
+}
+
+.collapsible-panel--compact .collapsible-panel__header {
+  padding: 8px 12px; /* Compact header padding */
+  min-height: 36px; /* Smaller minimum height */
+}
+
+.collapsible-panel--compact .collapsible-panel__icon {
+  margin-right: 8px; /* Reduced icon margin */
+  font-size: 1em; /* Smaller icon size */
+}
+
+.collapsible-panel--compact .collapsible-panel__title {
+  font-size: 0.95rem; /* Slightly smaller title */
+  font-weight: 600; /* Medium weight for compact */
+}
+
+.collapsible-panel--compact .collapsible-panel__toggle {
+  width: 28px; /* Smaller toggle button */
+  height: 28px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+  border: 1px solid rgba(255,255,255,0.2);
+}
+
+.collapsible-panel--compact .collapsible-panel__inner {
+  padding: 10px 12px; /* Compact content padding */
+}
+
+.collapsible-panel--compact .collapsible-panel__content {
+  transition: height 0.25s ease-out; /* Faster animation for compact */
+  border-bottom-left-radius: 16px;
+  border-bottom-right-radius: 16px;
 }
 
 /* States */
 .collapsible-panel--disabled {
   opacity: 0.6;
   pointer-events: none;
+  filter: grayscale(50%);
 }
 
 .collapsible-panel--expanded .collapsible-panel__header {
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--meal-primary);
+  box-shadow: inset 0 -1px 0 var(--meal-primary);
 }
 
 /* Dark theme specific styles */
 [data-theme="dark"] .collapsible-panel {
-  background-color: var(--color-bg-secondary);
-  border-color: var(--color-border);
+  background: linear-gradient(135deg, var(--meal-bg-card) 0%, rgba(30,30,30,0.8) 100%);
+  border-color: var(--meal-border-primary);
 }
 
 [data-theme="dark"] .collapsible-panel:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 8px 25px rgba(59, 186, 117, 0.3);
+  border-color: var(--meal-primary);
 }
 
 [data-theme="dark"] .collapsible-panel__header:hover {
-  background-color: var(--color-bg-tertiary);
+  background: linear-gradient(135deg, var(--meal-bg-hover) 0%, var(--meal-bg-primary) 100%);
+}
+
+[data-theme="dark"] .collapsible-panel__content {
+  background-color: rgba(30,30,30,0.9);
+  border-bottom-left-radius: 16px;
+  border-bottom-right-radius: 16px;
+}
+
+[data-theme="dark"] .collapsible-panel__inner {
+  color: var(--meal-body-color);
 }
 
 /* Light theme specific styles */
 [data-theme="light"] .collapsible-panel {
-  background-color: #ffffff;
-  border-color: #e2e8f0;
+  background: linear-gradient(135deg, var(--meal-bg-card) 0%, rgba(255,255,255,0.9) 100%);
+  border-color: var(--meal-border-primary);
 }
 
 [data-theme="light"] .collapsible-panel:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 25px rgba(59, 186, 117, 0.15);
+}
+
+[data-theme="light"] .collapsible-panel__header:hover {
+  background: linear-gradient(135deg, var(--meal-bg-hover) 0%, var(--meal-bg-primary) 100%);
+}
+
+[data-theme="light"] .collapsible-panel__content {
+  background-color: rgba(255,255,255,0.95);
+  border-bottom-left-radius: 16px;
+  border-bottom-right-radius: 16px;
+}
+
+/* Swap highlighting animation */
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 152, 0, 0.4), var(--elevation-1);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(255, 152, 0, 0.1), var(--elevation-2);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 152, 0, 0), var(--elevation-1);
+  }
+}
+
+.swap-highlight {
+  position: relative;
+}
+
+.swap-highlight::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(45deg, var(--accent-orange), transparent, var(--accent-orange));
+  border-radius: 18px;
+  z-index: -1;
+  opacity: 0.7;
+  animation: borderGlow 1.5s ease-in-out infinite;
+}
+
+@keyframes borderGlow {
+  0%, 100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.8;
+  }
 }

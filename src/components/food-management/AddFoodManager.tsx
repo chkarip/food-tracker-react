@@ -89,6 +89,7 @@ const AddFoodManager: React.FC = () => {
             useFixedAmount: false,
             fixedAmount: 0,
             hidden: false,
+            favorite: false,
             ...food.metadata
           },
           firestoreId: food.name.toLowerCase().replace(/[^a-z0-9]/g, '-')
@@ -105,7 +106,8 @@ const AddFoodManager: React.FC = () => {
   isUnitFood: false,
   useFixedAmount: false,
   fixedAmount: 100,
-  hidden: false // ← NEW
+  hidden: false, // ← NEW
+  favorite: false // ← NEW
   });
 
   /* ---------- ui state ---------- */
@@ -128,7 +130,8 @@ const AddFoodManager: React.FC = () => {
       isUnitFood: false,
       useFixedAmount: false,
       fixedAmount: 100,
-      hidden: false // ← NEW
+      hidden: false, // ← NEW
+      favorite: false // ← NEW
     });
     setEditingFood(null);
     setError(null);
@@ -191,10 +194,10 @@ const AddFoodManager: React.FC = () => {
       
       if (editingFood) {
         await updateFood(editingFood.firestoreId, formData);
-        setSuccess(`✅ ${formData.name} updated`);
+        setSuccess(`${formData.name} updated`);
       } else {
         await addFood(formData);
-        setSuccess(`✅ ${formData.name} added`);
+        setSuccess(`${formData.name} added`);
       }
 
       resetForm(); // context will auto-refresh list
@@ -218,7 +221,8 @@ const AddFoodManager: React.FC = () => {
       isUnitFood: food.metadata?.isUnitFood ?? false,
       useFixedAmount: food.metadata?.useFixedAmount ?? false,
       fixedAmount: food.metadata?.fixedAmount ?? 0,
-      hidden: typeof food.metadata?.hidden === 'boolean' ? food.metadata.hidden : false
+      hidden: typeof food.metadata?.hidden === 'boolean' ? food.metadata.hidden : false,
+      favorite: typeof food.metadata?.favorite === 'boolean' ? food.metadata.favorite : false
     });
     setEditingFood(food);
     setError(null);
@@ -229,7 +233,7 @@ const AddFoodManager: React.FC = () => {
     try {
       setLoading(true);
       await deleteFood(food.firestoreId);
-      setSuccess(`✅ ${food.name} deleted`);
+      setSuccess(`${food.name} deleted`);
       setDeleteDialog(null);
     } catch (err) {
       setError(
@@ -321,6 +325,16 @@ const AddFoodManager: React.FC = () => {
                 label="Hidden (exclude from meal plans)"
                 sx={{ ml: 2 }}
               />
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={formData.favorite}
+                    onChange={(e) => handleInputChange('favorite', e.target.checked)}
+                  />
+                }
+                label="Favorite"
+                sx={{ ml: 2 }}
+              />
             </Stack>
 
             {formData.useFixedAmount && (
@@ -332,7 +346,7 @@ const AddFoodManager: React.FC = () => {
                   value={formData.fixedAmount}
                   onChange={(value) => handleInputChange('fixedAmount', value)}
                   min={0}
-                  max={formData.isUnitFood ? 10 : 500}
+                  max={formData.isUnitFood ? 100 : 5000}
                   step={formData.isUnitFood ? 1 : 10}
                   unit={formData.isUnitFood ? 'units' : 'g'}
                   size="small"
@@ -410,7 +424,7 @@ const AddFoodManager: React.FC = () => {
                 variant="primary"
                 size="medium"
               >
-                {editingFood ? '✏️ Update' : '➕ Add'}
+                {editingFood ? 'Update' : 'Add'}
               </AccentButton>
               {editingFood && (
                 <AccentButton
@@ -453,6 +467,9 @@ const AddFoodManager: React.FC = () => {
                         )}
                         {(food as FirestoreFood).metadata?.useFixedAmount && (
                           <Chip label="fixed" size="small" color="secondary" />
+                        )}
+                        {(food as FirestoreFood).metadata?.favorite && (
+                          <Chip label="Favorite" size="small" sx={{ backgroundColor: '#ffd700', color: '#000' }} />
                         )}
                       </>
                     }
@@ -523,7 +540,7 @@ const AddFoodManager: React.FC = () => {
             disabled={loading}
             loading={loading}
           >
-            🗑️ Delete
+            Delete
           </AccentButton>
         </DialogActions>
       </Dialog>

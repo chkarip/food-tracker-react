@@ -7,5 +7,7 @@ export interface AccentButtonProps {
   fullWidth?: boolean;
   loading?: boolean;
   className?: string;
-  style?: React.CSSProperties; // ✅ Add this line
+  style?: React.CSSProperties;
+  startIcon?: React.ReactNode;
+  endIcon?: React.ReactNode;
 }

@@ -3,15 +3,12 @@ import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import {
   Box,
   Drawer,
-  AppBar,
-  Toolbar,
   List,
   Typography,
   Divider,
   IconButton,
   ListItem,
   ListItemButton,
-  ListItemIcon,
   ListItemText,
   Button,
   Menu,
@@ -22,15 +19,10 @@ import {
 } from '@mui/material';
 import {
   Menu as MenuIcon,
-  Home as HomeIcon,
-  Restaurant as FoodIcon,
-  FitnessCenter as GymIcon,
-  AccountBalance as FinanceIcon,
   Brightness4 as DarkModeIcon,
   Brightness7 as LightModeIcon,
   Login as LoginIcon,
-  Logout as LogoutIcon,
-  ChevronLeft as ChevronLeftIcon
+  Logout as LogoutIcon
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 import { signOutUser } from '../../services/firebase/authService';
@@ -75,25 +67,21 @@ const Layout: React.FC<LayoutProps> = ({
   const menuItems = [
     {
       text: 'Dashboard',
-      icon: <HomeIcon />,
       path: '/',
       description: 'Calendar & Overview'
     },
     {
       text: 'Food',
-      icon: <FoodIcon />,
       path: '/food',
       description: 'Nutrition & Meal Planning'
     },
     {
       text: 'Gym',
-      icon: <GymIcon />,
       path: '/gym',
       description: 'Workouts & Training'
     },
     {
       text: 'Finance',
-      icon: <FinanceIcon />,
       path: '/finance',
       description: 'Budget & Expenses'
     }
@@ -149,9 +137,6 @@ const Layout: React.FC<LayoutProps> = ({
                   bgcolor: 'primary.50',
                   borderRight: 3,
                   borderColor: 'primary.main',
-                  '& .MuiListItemIcon-root': {
-                    color: 'primary.main',
-                  },
                   '& .MuiListItemText-primary': {
                     fontWeight: 600,
                     color: 'primary.main',
@@ -159,12 +144,10 @@ const Layout: React.FC<LayoutProps> = ({
                 }
               }}
             >
-              <ListItemIcon>
-                {item.icon}
-              </ListItemIcon>
               <ListItemText 
                 primary={item.text}
                 secondary={item.description}
+                sx={{ ml: 2 }}
               />
             </ListItemButton>
           </ListItem>
@@ -194,13 +177,77 @@ const Layout: React.FC<LayoutProps> = ({
           <Typography variant="body2" fontWeight="bold">0/0</Typography>
         </Box>
       </Box>
+
+      <Divider />
+
+      {/* Theme Toggle & User Profile */}
+      <Box sx={{ p: 2 }}>
+        {/* Theme Toggle */}
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+          <IconButton onClick={toggleDarkMode} sx={{ mr: 1 }}>
+            {darkMode ? <LightModeIcon /> : <DarkModeIcon />}
+          </IconButton>
+          <Typography variant="body2">
+            {darkMode ? 'Light Mode' : 'Dark Mode'}
+          </Typography>
+        </Box>
+
+        {/* User Profile/Auth */}
+        {isAuthenticated ? (
+          <Button
+            fullWidth
+            onClick={(e) => setUserMenuAnchor(e.currentTarget)}
+            startIcon={<Avatar sx={{ width: 32, height: 32 }}>{user?.email?.charAt(0).toUpperCase()}</Avatar>}
+            sx={{ justifyContent: 'flex-start', textTransform: 'none' }}
+          >
+            <Box sx={{ textAlign: 'left' }}>
+              <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                {user?.displayName || user?.email?.split('@')[0]}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {user?.email}
+              </Typography>
+            </Box>
+          </Button>
+        ) : (
+          <Button
+            fullWidth
+            startIcon={<LoginIcon />}
+            onClick={() => setAuthDialogOpen(true)}
+            sx={{ textTransform: 'none' }}
+          >
+            Sign In
+          </Button>
+        )}
+
+        {/* User Menu */}
+        <Menu
+          anchorEl={userMenuAnchor}
+          open={Boolean(userMenuAnchor)}
+          onClose={() => setUserMenuAnchor(null)}
+        >
+          <MenuItem onClick={handleSignOut}>
+            <LogoutIcon sx={{ mr: 1 }} />
+            Sign Out
+          </MenuItem>
+        </Menu>
+      </Box>
     </div>
   );
 
   return (
-    <Box sx={{ display: 'flex' }}>
-      {/* App Bar */}
-      <AppBar
+    <Box 
+      sx={{ 
+        display: 'flex',
+        minHeight: '100vh',
+        backgroundImage: 'var(--app-gradient)',
+        backgroundAttachment: 'fixed',
+        backgroundSize: 'cover',
+        color: 'var(--text-primary)'
+      }}
+    >
+      {/* App Bar - REMOVED */}
+      {/* <AppBar
         position="fixed"
         sx={{
           width: { md: `calc(100% - ${drawerWidth}px)` },
@@ -222,12 +269,10 @@ const Layout: React.FC<LayoutProps> = ({
             {menuItems.find(item => item.path === location.pathname)?.text || 'Track Everything'}
           </Typography>
 
-          {/* Theme Toggle */}
           <IconButton onClick={toggleDarkMode} color="inherit">
             {darkMode ? <LightModeIcon /> : <DarkModeIcon />}
           </IconButton>
 
-          {/* Auth Section */}
           {isAuthenticated ? (
             <>
               <Button
@@ -258,7 +303,7 @@ const Layout: React.FC<LayoutProps> = ({
             </Button>
           )}
         </Toolbar>
-      </AppBar>
+      </AppBar> */}
 
       {/* Sidebar */}
       <Box
@@ -301,10 +346,7 @@ const Layout: React.FC<LayoutProps> = ({
           width: { md: `calc(100% - ${drawerWidth}px)` },
         }}
       >
-        {/* Toolbar spacer */}
-        <Toolbar />
-        
-        {/* Page content */}
+        {/* Page content - NO SPACER NEEDED */}
         {children || <Outlet />} {/* ✅ FIXED: Render children if passed, otherwise use Outlet */}
       </Box>
 

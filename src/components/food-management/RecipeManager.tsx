@@ -86,6 +86,7 @@ import { Recipe, RecipeIngredient, RecipeFormData } from '../../types/recipe';
 import { useFoodDatabase } from '../../contexts/FoodContext';
 import { addFood, deleteFood } from '../../services/firebase/nutrition/foodService';
 import { FoodFormData } from '../../types/food';
+import SavedRecipesList from '../recipes/SavedRecipesList';
 
 const RECIPE_CATEGORIES = [
   'Breakfast',
@@ -298,7 +299,8 @@ const RecipeManager: React.FC = () => {
         isUnitFood: false,
         useFixedAmount: false,
         fixedAmount: 100,
-        hidden: false
+        hidden: false,
+        favorite: false
       };
 
       // Use the foodService.addFood function to create the food item
@@ -544,7 +546,7 @@ const RecipeManager: React.FC = () => {
       await saveRecipeWithFood(recipe);
       await loadRecipes();
 
-      setSuccess(`✅ Recipe "${recipe.name}" ${editingRecipe ? 'updated' : 'created'} successfully! Also added to foods collection.`);
+      setSuccess(`Recipe "${recipe.name}" ${editingRecipe ? 'updated' : 'created'} successfully! Also added to foods collection.`);
       setDialogOpen(false);
       resetForm();
 
@@ -572,7 +574,7 @@ const RecipeManager: React.FC = () => {
       // Reload recipes
       await loadRecipes();
 
-      setSuccess(`✅ Recipe "${recipe.name}" deleted successfully from both collections!`);
+      setSuccess(`Recipe "${recipe.name}" deleted successfully from both collections!`);
       setDeleteDialogOpen(null);
 
       // Clear success message after 3 seconds
@@ -613,7 +615,7 @@ const RecipeManager: React.FC = () => {
             disabled={loading}
             variant="primary"
           >
-            ➕ New Recipe
+            New Recipe
           </AccentButton>
         </Box>
 
@@ -631,91 +633,37 @@ const RecipeManager: React.FC = () => {
       )}
 
       {/* Recipe Cards */}
-      <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))' }}>
-        {recipes.map((recipe) => (
-          <Card key={recipe.id} sx={{ height: 'fit-content' }}>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                {recipe.name}
-              </Typography>
-              
-              <Box sx={{ display: 'flex', gap: 1, mb: 2, alignItems: 'center' }}>
-                <IconButton size="small" onClick={() => handleEditRecipe(recipe)} disabled={loading}>
-                  <EditIcon />
-                </IconButton>
-                <IconButton size="small" color="error" onClick={() => setDeleteDialogOpen(recipe)} disabled={loading}>
-                  <DeleteIcon />
-                </IconButton>
-              </Box>
-
-              {recipe.description && (
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                  {recipe.description}
-                </Typography>
-              )}
-
-              {/* Recipe Info */}
-              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 2 }}>
-                <Chip
-                  icon={<ServingsIcon />}
-                  label={`${recipe.servings || 1} servings`}
-                  size="small"
-                  variant="outlined"
-                />
-                <Chip
-                  icon={<TimerIcon />}
-                  label={`${recipe.cookingTime || 30}min`}
-                  size="small"
-                  variant="outlined"
-                />
-                <Chip
-                  icon={<DifficultyIcon />}
-                  label={recipe.difficulty || 'Easy'}
-                  size="small"
-                  variant="outlined"
-                  color={recipe.difficulty === 'Easy' ? 'success' : recipe.difficulty === 'Medium' ? 'warning' : 'error'}
-                />
-              </Box>
-
-              {/* Nutrition per serving */}
-              <Typography variant="subtitle2" gutterBottom>
-                <NutritionIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
-                Per Serving
-              </Typography>
-              <Typography variant="body2" sx={{ mb: 1 }}>
-                💪 {formatNutrition(recipe.nutritionPerServing?.protein || 0)}g protein •{' '}
-                🥑 {formatNutrition(recipe.nutritionPerServing?.fats || 0)}g fats •{' '}
-                🍞 {formatNutrition(recipe.nutritionPerServing?.carbs || 0)}g carbs •{' '}
-                🔥 {formatNutrition(recipe.nutritionPerServing?.calories || 0, 0)} kcal
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                <CostIcon sx={{ mr: 0.5, verticalAlign: 'middle', fontSize: 16 }} />
-                {formatCost(recipe.costPerServing || 0)} per serving
-              </Typography>
-
-              {/* Tags */}
-              {recipe.tags && Array.isArray(recipe.tags) && recipe.tags.length > 0 && (
-                <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                  {recipe.tags.map((tag, index) => (
-                    <Chip key={index} label={tag} size="small" />
-                  ))}
-                </Box>
-              )}
-            </CardContent>
-            
-            <CardActions>
-              <AccentButton 
-                size="small" 
-                onClick={() => handleEditRecipe(recipe)} 
-                disabled={loading}
-                variant="primary"
-              >
-                👁️ View Details
-              </AccentButton>
-            </CardActions>
-          </Card>
-        ))}
-      </Box>
+      <SavedRecipesList
+        recipes={recipes.map(recipe => ({
+          id: recipe.id,
+          name: recipe.name,
+          calories: recipe.nutritionPerServing?.calories,
+          protein: recipe.nutritionPerServing?.protein,
+          carbs: recipe.nutritionPerServing?.carbs,
+          fats: recipe.nutritionPerServing?.fats,
+          prepTime: recipe.cookingTime,
+          servings: recipe.servings,
+          tags: recipe.tags,
+          ingredients: [] // Could be populated if available in recipe data
+        }))}
+        onViewRecipe={(id) => {
+          const recipe = recipes.find(r => r.id === id);
+          if (recipe) handleEditRecipe(recipe);
+        }}
+        onAddToMeal={(id) => {
+          // Could implement add to meal functionality here
+          console.log('Add to meal:', id);
+        }}
+        onDeleteRecipe={(id) => {
+          const recipe = recipes.find(r => r.id === id);
+          if (recipe) setDeleteDialogOpen(recipe);
+        }}
+        onToggleFavorite={(id) => {
+          // Could implement favorite functionality here
+          console.log('Toggle favorite:', id);
+        }}
+        favorites={new Set()} // Could be populated from user preferences
+      />
 
       {recipes.length === 0 && !loading && (
         <Paper sx={{ p: 4, textAlign: 'center', mt: 4 }}>
@@ -730,7 +678,7 @@ const RecipeManager: React.FC = () => {
             variant="primary"
             onClick={handleNewRecipe}
           >
-            ➕ Create Your First Recipe
+            Create Your First Recipe
           </AccentButton>
         </Paper>
       )}
@@ -871,7 +819,7 @@ const RecipeManager: React.FC = () => {
                   disabled={availableFoods.length === 0}
                   variant="success"
                 >
-                  ➕ Add Ingredient
+                  Add Ingredient
                 </AccentButton>
               </Box>
 
@@ -904,10 +852,10 @@ const RecipeManager: React.FC = () => {
                   </Box>
                   
                   <Typography variant="body2" color="text.secondary">
-                    💪 {formatNutrition(ingredient.nutrition?.protein || 0)}g •{' '}
-                    🥑 {formatNutrition(ingredient.nutrition?.fats || 0)}g •{' '}
-                    🍞 {formatNutrition(ingredient.nutrition?.carbs || 0)}g •{' '}
-                    🔥 {formatNutrition(ingredient.nutrition?.calories || 0, 0)}kcal
+                    Protein: {formatNutrition(ingredient.nutrition?.protein || 0)}g •{' '}
+                    Fats: {formatNutrition(ingredient.nutrition?.fats || 0)}g •{' '}
+                    Carbs: {formatNutrition(ingredient.nutrition?.carbs || 0)}g •{' '}
+                    Calories: {formatNutrition(ingredient.nutrition?.calories || 0, 0)}kcal
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
                     Cost: {formatCost(ingredient.cost || 0)}
@@ -924,7 +872,7 @@ const RecipeManager: React.FC = () => {
                   onClick={addInstruction}
                   variant="success"
                 >
-                  ➕ Add Step
+                  Add Step
                 </AccentButton>
               </Box>
 
@@ -967,10 +915,10 @@ const RecipeManager: React.FC = () => {
                   
                   <Typography variant="body1" gutterBottom>
                     <strong>Total Nutrition:</strong><br />
-                    💪 {formatNutrition(totals.totalNutrition.protein)}g protein •{' '}
-                    🥑 {formatNutrition(totals.totalNutrition.fats)}g fats •{' '}
-                    🍞 {formatNutrition(totals.totalNutrition.carbs)}g carbs •{' '}
-                    🔥 {formatNutrition(totals.totalNutrition.calories, 0)} kcal
+                    Protein: {formatNutrition(totals.totalNutrition.protein)}g •{' '}
+                    Fats: {formatNutrition(totals.totalNutrition.fats)}g •{' '}
+                    Carbs: {formatNutrition(totals.totalNutrition.carbs)}g •{' '}
+                    Calories: {formatNutrition(totals.totalNutrition.calories, 0)} kcal
                   </Typography>
                   
                   <Typography variant="body1" gutterBottom>
@@ -979,10 +927,10 @@ const RecipeManager: React.FC = () => {
                   
                   <Typography variant="body1" gutterBottom>
                     <strong>Per Serving ({formData.servings} servings):</strong><br />
-                    💪 {formatNutrition(totals.nutritionPerServing.protein)}g protein •{' '}
-                    🥑 {formatNutrition(totals.nutritionPerServing.fats)}g fats •{' '}
-                    🍞 {formatNutrition(totals.nutritionPerServing.carbs)}g carbs •{' '}
-                    🔥 {formatNutrition(totals.nutritionPerServing.calories, 0)} kcal
+                    Protein: {formatNutrition(totals.nutritionPerServing.protein)}g protein •{' '}
+                    Fats: {formatNutrition(totals.nutritionPerServing.fats)}g fats •{' '}
+                    Carbs: {formatNutrition(totals.nutritionPerServing.carbs)}g carbs •{' '}
+                    Calories: {formatNutrition(totals.nutritionPerServing.calories, 0)} kcal
                   </Typography>
 
                   {/* Show nutrition per 100g preview */}
@@ -991,7 +939,7 @@ const RecipeManager: React.FC = () => {
                     {(() => {
                       const totalWeight = calculateTotalWeight(formData.ingredients);
                       const per100g = normalizeNutritionPer100g(totals.totalNutrition, totalWeight);
-                      return `💪 ${formatNutrition(per100g.protein)}g protein • 🥑 ${formatNutrition(per100g.fats)}g fats • 🍞 ${formatNutrition(per100g.carbs)}g carbs • 🔥 ${formatNutrition(per100g.calories, 0)} kcal`;
+                      return `Protein: ${formatNutrition(per100g.protein)}g protein • Fats: ${formatNutrition(per100g.fats)}g fats • Carbs: ${formatNutrition(per100g.carbs)}g carbs • Calories: ${formatNutrition(per100g.calories, 0)} kcal`;
                     })()}
                   </Typography>
                   
@@ -1016,7 +964,7 @@ const RecipeManager: React.FC = () => {
             disabled={loading}
             variant="secondary"
           >
-            🧹 Clear Form
+            Clear Form
           </AccentButton>
           <AccentButton 
             onClick={handleSaveRecipe}
@@ -1024,7 +972,7 @@ const RecipeManager: React.FC = () => {
             disabled={loading}
             loading={loading}
           >
-            {editingRecipe ? '💾 Update Recipe' : '💾 Save Recipe'}
+            {editingRecipe ? 'Update Recipe' : 'Save Recipe'}
           </AccentButton>
         </DialogActions>
       </Dialog>
@@ -1059,7 +1007,7 @@ const RecipeManager: React.FC = () => {
             disabled={loading}
             loading={loading}
           >
-            🗑️ Delete
+            Delete
           </AccentButton>
         </DialogActions>
       </Dialog>

@@ -7,7 +7,7 @@
  * - Global providers and layout
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import {
   createTheme,
@@ -29,29 +29,50 @@ function FoodTrackerApp() {
   const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
   const [darkMode, setDarkMode] = useState(prefersDarkMode);
 
+  // Apply data-theme attribute for CSS variable theming
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light');
+  }, [darkMode]);
+
   const theme = createTheme({
     palette: {
       mode: darkMode ? 'dark' : 'light',
       ...(darkMode ? {
-        // Dark theme colors
+        // Dark theme colors - using actual values, CSS variables handle dynamic theming
         background: {
-          default: '#121212',
-          paper: '#1e1e1e',
+          default: '#171c22',
+          paper: '#1b2128',
         },
         text: {
-          primary: '#EAEAEA',
-          secondary: '#A9A9A9',
+          primary: '#eaeaea',
+          secondary: '#bfc6cf',
         },
-        primary: { main: '#3BBA75' },
-        secondary: { main: '#FF9800' },
+        primary: { 
+          main: '#3BBA75',
+          light: '#6CCF95',
+          dark: '#2E8B57'
+        },
+        secondary: { 
+          main: '#FF9800',
+          light: '#FFB74D',
+          dark: '#F57C00'
+        },
       } : {
-        // Light theme colors
+        // Light theme colors - using actual values, CSS variables handle dynamic theming
         background: {
           default: '#ffffff',
-          paper: '#fafafa',
+          paper: '#ffffff',
         },
-        primary: { main: '#2563eb' },
-        secondary: { main: '#10b981' },
+        primary: { 
+          main: '#3BBA75',
+          light: '#6CCF95',
+          dark: '#2E8B57'
+        },
+        secondary: { 
+          main: '#FF9800',
+          light: '#FFB74D',
+          dark: '#F57C00'
+        },
       }),
     },
     typography: {
@@ -64,15 +85,18 @@ function FoodTrackerApp() {
       MuiCard: {
         styleOverrides: {
           root: {
-            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            backgroundColor: 'var(--card-bg)',
+            color: 'var(--text-primary)',
+            border: '1px solid var(--border-color)',
+            boxShadow: 'var(--elevation-1)',
           },
         },
       },
       MuiCssBaseline: {
         styleOverrides: {
           body: {
-            backgroundColor: darkMode ? '#161616' : '#ffffff',
-            color: darkMode ? '#EAEAEA' : '#000000',
+            backgroundColor: 'var(--surface-bg)',
+            color: 'var(--text-primary)',
           },
         },
       },

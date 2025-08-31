@@ -139,7 +139,7 @@ const DashboardPage: React.FC = () => {
     try {
       const year = currentDate.getFullYear();
       const month = currentDate.getMonth(); // 0-based month
-      console.log('🔍 DashboardPage: Loading data for:', { 
+      console.log('DashboardPage: Loading data for:', { 
         year, 
         month, 
         monthName: currentDate.toLocaleDateString('en-US', { month: 'long' }),
@@ -174,17 +174,17 @@ const DashboardPage: React.FC = () => {
         currentDate.getMonth() + 1 // API expects 1-based month
       );
       
-      console.log('🎯 DashboardPage: Loaded plans:', plans.length, 'plans');
-      console.log('🎯 DashboardPage: Loaded scheduled activities:', activities.length, 'activities');
-      console.log('🎯 DashboardPage: Loaded scheduled workouts:', workouts.length, 'workouts');
-      console.log('🎯 DashboardPage: Loaded activity history:', history.length, 'records');
+      console.log('DashboardPage: Loaded plans:', plans.length, 'plans');
+      console.log('DashboardPage: Loaded scheduled activities:', activities.length, 'activities');
+      console.log('DashboardPage: Loaded scheduled workouts:', workouts.length, 'workouts');
+      console.log('DashboardPage: Loaded activity history:', history.length, 'records');
       
       setMealPlans(plans);
       setScheduledActivities(activities);
       setScheduledWorkouts(workouts);
       setActivityHistory(history);
     } catch (error) {
-      console.error('❌ Error loading data:', error);
+      console.error('Error loading data:', error);
     } finally {
       setLoading(false);
     }
@@ -398,7 +398,7 @@ const DashboardPage: React.FC = () => {
       const dayDateString = day.date.toISOString().split('T')[0];
       const timeslots = await loadTimeslots(user.uid, dayDateString);
       setSelectedDayTimeslots(timeslots);
-      console.log('✅ Timeslots loaded:', !!timeslots);
+      console.log('Timeslots loaded:', !!timeslots);
     } catch (error) {
       console.error('❌ Error loading timeslots:', error);
       setSelectedDayTimeslots(null);

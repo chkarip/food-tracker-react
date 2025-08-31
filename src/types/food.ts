@@ -108,6 +108,7 @@ export interface FirebaseFoodItem {
     useFixedAmount: boolean;
     fixedAmount: number;
     hidden: boolean;
+    favorite: boolean;
   };
 }
 /**
@@ -132,6 +133,7 @@ export interface FoodMetadata {
   useFixedAmount: boolean;
   fixedAmount: number;
   hidden: boolean;
+  favorite: boolean;
   addedAt?: Date;
   lastUpdated?: Date;
 }
@@ -157,6 +159,7 @@ export interface FoodFormData {
   useFixedAmount: boolean;
   fixedAmount: number;
   hidden: boolean;
+  favorite: boolean;
 }
 
 // Firestore food item

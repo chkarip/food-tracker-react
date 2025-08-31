@@ -34,7 +34,7 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { subscribeToNutritionGoal } from '../../services/firebase/nutrition/nutritionGoalService';
 import { useAuth } from '../../contexts/AuthContext';
-import { Box, Tabs, Tab, Divider, Typography } from '@mui/material';
+import { Box, Divider, Typography } from '@mui/material';
 import {
   WbSunny as AfternoonIcon,
   Nightlight as EveningIcon,
@@ -44,7 +44,6 @@ import MacroProgress from './MacroProgress';
 import FoodSelectorWithFirebase from './FoodSelectorWithFirebase';
 import { calculateMacros } from '../../utils/nutritionCalculations';
 import ExternalNutritionInput from './ExternalNutritionInput';
-import SaveLoadPlan from './SaveLoadPlan';
 import MealCostDisplay from './MealCostDisplay';
 
 import {
@@ -75,6 +74,35 @@ const TIMESLOTS = [
   },
 ];
 
+const STORAGE_KEY = 'mealPlanner_timeslotData';
+
+/* ---------- local storage helpers ---------- */
+const saveToLocalStorage = (data: Record<string, TimeslotData>) => {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch (error) {
+    console.warn('Failed to save meal plan to localStorage:', error);
+  }
+};
+
+const loadFromLocalStorage = (): Record<string, TimeslotData> | null => {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    return stored ? JSON.parse(stored) : null;
+  } catch (error) {
+    console.warn('Failed to load meal plan from localStorage:', error);
+    return null;
+  }
+};
+
+const clearLocalStorage = () => {
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch (error) {
+    console.warn('Failed to clear meal plan from localStorage:', error);
+  }
+};
+
 /* ================================================================== */
 interface PreviewFood {
   name: string;
@@ -87,8 +115,14 @@ const TimeslotMealPlanner: React.FC = () => {
   const { foodDatabase } = useFoodDatabase();
   const { user } = useAuth();
 
-  const [timeslotData, setTimeslotData] = useState<Record<string, TimeslotData>>(
-    {
+  const [timeslotData, setTimeslotData] = useState<Record<string, TimeslotData>>(() => {
+    // Load from localStorage on initial render
+    const storedData = loadFromLocalStorage();
+    if (storedData) {
+      return storedData;
+    }
+    // Default data if nothing in localStorage
+    return {
       '6pm': {
         selectedFoods: [],
         externalNutrition: { protein: 0, fats: 0, carbs: 0, calories: 0 },
@@ -97,8 +131,8 @@ const TimeslotMealPlanner: React.FC = () => {
         selectedFoods: [],
         externalNutrition: { protein: 0, fats: 0, carbs: 0, calories: 0 },
       },
-    },
-  );
+    };
+  });
 
   // Nutrition goals state
   const [nutritionGoals, setNutritionGoals] = useState<{
@@ -110,6 +144,13 @@ const TimeslotMealPlanner: React.FC = () => {
 
   // Live preview state
   const [previewFood, setPreviewFood] = useState<PreviewFood | null>(null);
+  // Amount controls state
+  const [selectedFoodName, setSelectedFoodName] = useState('');
+  const [amount, setAmount] = useState(100);
+  // Swap flow state
+  const [isSwapping, setIsSwapping] = useState(false);
+  const [targetCategory, setTargetCategory] = useState<string>('');
+
   // Subscribe to nutrition goals from Firebase
   useEffect(() => {
     if (!user?.uid) return;
@@ -133,6 +174,11 @@ const TimeslotMealPlanner: React.FC = () => {
 
     return () => unsubscribe();
   }, [user?.uid]);
+
+  // Save to localStorage whenever timeslotData changes
+  useEffect(() => {
+    saveToLocalStorage(timeslotData);
+  }, [timeslotData]);
 
   /* ---------- helpers ---------- */
   const getCurrentTimeslotId = useCallback(
@@ -238,8 +284,18 @@ const TimeslotMealPlanner: React.FC = () => {
       updateTimeslotData(toId, {
         selectedFoods: [...timeslotData[toId].selectedFoods, food],
       });
+
+      // Set swap state for highlighting
+      setIsSwapping(true);
+      setTargetCategory(foodDatabase[food.name]?.metadata?.category || 'Other');
+      
+      // Clear swap state after animation
+      setTimeout(() => {
+        setIsSwapping(false);
+        setTargetCategory('');
+      }, 2000);
     },
-    [getCurrentTimeslotId, getCurrentData, updateTimeslotData, timeslotData],
+    [getCurrentTimeslotId, getCurrentData, updateTimeslotData, timeslotData, foodDatabase],
   );
 
   const handleUpdateExternal = useCallback(
@@ -247,6 +303,77 @@ const TimeslotMealPlanner: React.FC = () => {
       updateTimeslotData(getCurrentTimeslotId(), { externalNutrition: n }),
     [getCurrentTimeslotId, updateTimeslotData],
   );
+
+  const handleUpdateAmountForTimeslot = useCallback(
+    (timeslotId: string, idx: number, amount: number) => {
+      const d = timeslotData[timeslotId];
+      updateTimeslotData(timeslotId, {
+        selectedFoods: d.selectedFoods.map((f, i) =>
+          i === idx ? { ...f, amount } : f,
+        ),
+      });
+    },
+    [timeslotData, updateTimeslotData],
+  );
+
+  const handleRemoveFoodForTimeslot = useCallback(
+    (timeslotId: string, idx: number) => {
+      const d = timeslotData[timeslotId];
+      updateTimeslotData(timeslotId, {
+        selectedFoods: d.selectedFoods.filter((_, i) => i !== idx),
+      });
+    },
+    [timeslotData, updateTimeslotData],
+  );
+
+  const handleSwapFoodForTimeslot = useCallback(
+    (timeslotId: string, idx: number) => {
+      const fromData = timeslotData[timeslotId];
+      const food = fromData.selectedFoods[idx];
+
+      updateTimeslotData(timeslotId, {
+        selectedFoods: fromData.selectedFoods.filter((_, i) => i !== idx),
+      });
+
+      const toId = timeslotId === '6pm' ? '9:30pm' : '6pm';
+      updateTimeslotData(toId, {
+        selectedFoods: [...timeslotData[toId].selectedFoods, food],
+      });
+
+      // Set swap state for highlighting
+      setIsSwapping(true);
+      setTargetCategory(foodDatabase[food.name]?.metadata?.category || 'Other');
+      
+      // Clear swap state after animation
+      setTimeout(() => {
+        setIsSwapping(false);
+        setTargetCategory('');
+      }, 2000);
+    },
+    [timeslotData, updateTimeslotData, foodDatabase],
+  );
+
+  const handleClearPlan = useCallback(() => {
+    // Clear all selected foods and external nutrition from both timeslots
+    setTimeslotData({
+      '6pm': {
+        selectedFoods: [],
+        externalNutrition: { protein: 0, fats: 0, carbs: 0, calories: 0 },
+      },
+      '9:30pm': {
+        selectedFoods: [],
+        externalNutrition: { protein: 0, fats: 0, carbs: 0, calories: 0 },
+      },
+    });
+    
+    // Clear localStorage
+    clearLocalStorage();
+    
+    // Clear preview state
+    setPreviewFood(null);
+    setSelectedFoodName('');
+    setAmount(100);
+  }, []);
 
   // Calculate preview macros including tentative selection
   const getPreviewMacros = useMemo((): NutritionData => {
@@ -261,17 +388,47 @@ const TimeslotMealPlanner: React.FC = () => {
     };
   }, [previewFood, getTotalMacros, foodDatabase]);
 
+  /* ---------- localStorage ---------- */
+  useEffect(() => {
+    // Load timeslot data from localStorage on mount
+    const storedData = localStorage.getItem('timeslotData');
+    if (storedData) {
+      setTimeslotData(JSON.parse(storedData));
+    }
+  }, []);
+
+  useEffect(() => {
+    // Save timeslot data to localStorage whenever it changes
+    localStorage.setItem('timeslotData', JSON.stringify(timeslotData));
+  }, [timeslotData]);
+
   /* ---------- render ---------- */
   const currentData = getCurrentData();
+
+  // Get favorite foods from database
+  const getFavoriteFoods = useMemo(() => {
+    return Object.entries(foodDatabase)
+      .filter(([_, food]) => food?.metadata?.favorite === true)
+      .map(([name]) => name);
+  }, [foodDatabase]);
+
+  // Get available favorite foods (not already selected)
+  const getAvailableFavoriteFoods = useMemo(() => {
+    const allSelectedFoods = Object.values(timeslotData).flatMap(data => data.selectedFoods.map(f => f.name));
+    return getFavoriteFoods.filter(favorite => !allSelectedFoods.includes(favorite));
+  }, [getFavoriteFoods, timeslotData]);
 
   return (
     <Box 
       sx={{ 
         display: 'flex', 
-        gap: 3, 
+        gap: 4, 
         height: '100%', 
-        p: 2,
-        flexDirection: { xs: 'column', md: 'row' }
+        p: 3,
+        flexDirection: { xs: 'column', md: 'row' },
+        background: 'linear-gradient(135deg, var(--meal-bg-card) 0%, rgba(255,255,255,0.5) 100%)',
+        borderRadius: 3,
+        minHeight: 'calc(100vh - 200px)'
       }}
     >
       {/* ========== LEFT COLUMN: Food Selection & Settings ========== */}
@@ -282,22 +439,141 @@ const TimeslotMealPlanner: React.FC = () => {
           overflowY: 'auto'
         }}
       >
-        {/* Timeslot picker */}
-        <Tabs
-          value={currentTimeslot}
-          onChange={(_, v) => setCurrentTimeslot(v)}
-          variant="fullWidth"
-          sx={{ mb: 3 }}
-        >
-          {TIMESLOTS.map((t) => (
-            <Tab
-              key={t.id}
-              label={t.label}
-              icon={t.icon}
-              iconPosition="start"
-            />
-          ))}
-        </Tabs>
+        {/* Timeslot picker - Simple section without card wrapper */}
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="h6" sx={{ 
+            mb: 2, 
+            color: 'var(--text-primary)', 
+            fontWeight: 600,
+            opacity: 0.94,
+            position: 'relative',
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              left: 0,
+              top: 0,
+              bottom: 0,
+              width: '3px',
+              backgroundColor: 'var(--accent-green)',
+              borderRadius: '2px'
+            },
+            paddingLeft: '12px'
+          }}>
+            Select Timeslot
+          </Typography>
+          <Box sx={{ 
+            display: 'grid', 
+            gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, 
+            gap: 2,
+            overflow: 'visible'
+          }}>
+            {TIMESLOTS.map((timeslot, index) => (
+              <Box
+                key={timeslot.id}
+                onClick={() => setCurrentTimeslot(index)}
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '8px 12px',
+                  borderRadius: '12px',
+                  backgroundColor: currentTimeslot === index ? 'var(--meal-bg-card)' : 'var(--surface-bg)',
+                  border: currentTimeslot === index 
+                    ? `2px solid ${index === 0 ? 'var(--timeslot-afternoon)' : 'var(--timeslot-evening)'}` 
+                    : '1px solid var(--border-color)',
+                  boxShadow: currentTimeslot === index 
+                    ? `inset 0 1px 0 rgba(255,255,255,0.1), 0 4px 12px ${index === 0 ? 'rgba(59, 186, 117, 0.15)' : 'rgba(255, 152, 0, 0.15)'}, 0 2px 4px ${index === 0 ? 'rgba(59, 186, 117, 0.1)' : 'rgba(255, 152, 0, 0.1)'}`
+                    : 'inset 0 1px 0 rgba(255,255,255,0.05), 0 2px 8px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)',
+                  cursor: 'pointer',
+                  transition: 'all 200ms ease',
+                  transform: currentTimeslot === index ? 'translateY(-2px)' : 'translateY(0)',
+                  '&:hover': {
+                    transform: currentTimeslot === index ? 'translateY(-2px)' : 'translateY(-1px)',
+                    boxShadow: currentTimeslot === index 
+                      ? `inset 0 1px 0 rgba(255,255,255,0.15), 0 6px 16px ${index === 0 ? 'rgba(59, 186, 117, 0.2)' : 'rgba(255, 152, 0, 0.2)'}, 0 3px 6px ${index === 0 ? 'rgba(59, 186, 117, 0.15)' : 'rgba(255, 152, 0, 0.15)'}`
+                      : 'inset 0 1px 0 rgba(255,255,255,0.08), 0 4px 12px rgba(0,0,0,0.12), 0 2px 4px rgba(0,0,0,0.08)',
+                    borderColor: currentTimeslot === index 
+                      ? (index === 0 ? 'var(--timeslot-afternoon)' : 'var(--timeslot-evening)')
+                      : 'var(--accent-green)'
+                  },
+                  position: 'relative',
+                  overflow: 'visible',
+                  minHeight: '60px'
+                }}
+              >
+                {/* Icon */}
+                <Box sx={{ 
+                  mb: 0.5,
+                  color: currentTimeslot === index 
+                    ? (index === 0 ? 'var(--timeslot-afternoon)' : 'var(--timeslot-evening)')
+                    : 'var(--text-secondary)',
+                  transition: 'color 200ms ease',
+                  fontSize: '1.5rem'
+                }}>
+                  {timeslot.icon}
+                </Box>
+
+                {/* Label */}
+                <Typography 
+                  variant="body1" 
+                  sx={{ 
+                    color: currentTimeslot === index 
+                      ? (index === 0 ? 'var(--timeslot-afternoon)' : 'var(--timeslot-evening)')
+                      : 'var(--text-primary)',
+                    fontWeight: currentTimeslot === index ? 700 : 600,
+                    fontSize: '0.9rem',
+                    textAlign: 'center',
+                    transition: 'color 200ms ease',
+                    lineHeight: 1.2
+                  }}
+                >
+                  {timeslot.label}
+                </Typography>
+
+                {/* Subtitle */}
+                <Typography 
+                  variant="caption" 
+                  sx={{ 
+                    color: currentTimeslot === index 
+                      ? (index === 0 ? 'var(--timeslot-afternoon)' : 'var(--timeslot-evening)')
+                      : 'var(--text-secondary)',
+                    mt: 0.25,
+                    textAlign: 'center',
+                    transition: 'color 200ms ease',
+                    fontSize: '0.7rem'
+                  }}
+                >
+                  {timeslot.id === '6pm' ? 'Afternoon' : 'Evening'}
+                </Typography>
+
+                {/* Food count badge */}
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    top: 4,
+                    right: 4,
+                    backgroundColor: currentTimeslot === index 
+                      ? (index === 0 ? 'var(--timeslot-afternoon)' : 'var(--timeslot-evening)')
+                      : 'var(--accent-green)',
+                    color: 'white',
+                    borderRadius: '50%',
+                    width: 18,
+                    height: 18,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '0.6rem',
+                    fontWeight: 600,
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+                  }}
+                >
+                  {timeslotData[timeslot.id]?.selectedFoods?.length || 0}
+                </Box>
+              </Box>
+            ))}
+          </Box>
+        </Box>
 
         {/* Food selector - your existing component */}
         <Box sx={{ mb: 3 }}>
@@ -309,6 +585,22 @@ const TimeslotMealPlanner: React.FC = () => {
             onSwapFood={handleSwapFood}
             onFoodPreview={(name, amount) => setPreviewFood({ name, amount })}
             onClearPreview={() => setPreviewFood(null)}
+            onFoodSelect={(name) => {
+              setSelectedFoodName(name);
+              const defaultAmount = foodDatabase[name]?.isUnitFood 
+                ? (name === 'Eggs' ? 2 : 1) 
+                : (foodDatabase[name]?.useFixedAmount ? foodDatabase[name]?.fixedAmount || 100 : 100);
+              setAmount(defaultAmount);
+              setPreviewFood({ name, amount: defaultAmount });
+            }}
+            timeslotData={timeslotData}
+            currentTimeslot={getCurrentTimeslotId()}
+            isSwapping={isSwapping}
+            targetCategory={targetCategory}
+            onUpdateAmountForTimeslot={handleUpdateAmountForTimeslot}
+            onRemoveFoodForTimeslot={handleRemoveFoodForTimeslot}
+            onSwapFoodForTimeslot={handleSwapFoodForTimeslot}
+            selectedFromFavorite={selectedFoodName}
           />
         </Box>
 
@@ -341,6 +633,38 @@ const TimeslotMealPlanner: React.FC = () => {
               foodMacros={getCombinedFoodMacros}
               externalMacros={getCombinedExternal}
               goals={nutritionGoals}
+              timeslotData={timeslotData}
+              onLoad={setTimeslotData}
+              favoriteFoods={getAvailableFavoriteFoods}
+              onSelectFavorite={(foodName: string) => {
+                // Handle special format from SaveLoadPlan: "foodName|amount"
+                const parts = foodName.split('|');
+                const actualFoodName = parts[0];
+                const amount = parts[1] ? parseInt(parts[1]) : undefined;
+                
+                if (amount !== undefined) {
+                  // This is a direct add from SaveLoadPlan
+                  const foodToAdd: SelectedFood = { name: actualFoodName, amount };
+                  handleAddFood(foodToAdd);
+                  setSelectedFoodName('');
+                  setAmount(100);
+                  setPreviewFood(null);
+                } else {
+                  // This is a selection for configuration
+                  setSelectedFoodName(actualFoodName);
+                  const defaultAmount = foodDatabase[actualFoodName]?.isUnitFood 
+                    ? (actualFoodName === 'Eggs' ? 2 : 1) 
+                    : (foodDatabase[actualFoodName]?.useFixedAmount ? foodDatabase[actualFoodName]?.fixedAmount || 100 : 100);
+                  setAmount(defaultAmount);
+                  setPreviewFood({ name: actualFoodName, amount: defaultAmount });
+                  
+                  // Find and expand the category containing this food
+                  const foodCategory = foodDatabase[actualFoodName]?.metadata?.category || 'Other';
+                  // We need to trigger the FoodSelectorWithFirebase to expand this category
+                  // This will be handled by the FoodSelectorWithFirebase component's handleFoodSelect
+                }
+              }}
+              onClear={handleClearPlan}
             />
           ) : (
             <Typography>Loading nutrition goals...</Typography>
@@ -355,12 +679,6 @@ const TimeslotMealPlanner: React.FC = () => {
         </Box>
 
         <Divider sx={{ my: 2 }} />
-
-        {/* Save/load plan - your existing component */}
-        <SaveLoadPlan
-          timeslotData={timeslotData}
-          onLoad={setTimeslotData}
-        />
       </Box>
     </Box>
   );
