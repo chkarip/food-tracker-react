@@ -27,6 +27,10 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { signOutUser } from '../../services/firebase/authService';
 import AuthDialog from '../auth/AuthDialog';
+import GlobalHeader from './nav/GlobalHeader';
+import LocalNav from './nav/LocalNav';
+import MobileBottomNav from './nav/MobileBottomNav';
+import { getCurrentModule, getLocalItems } from '../../config/navConfig';
 
 const drawerWidth = 280;
 
@@ -49,20 +53,14 @@ const Layout: React.FC<LayoutProps> = ({
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [authDialogOpen, setAuthDialogOpen] = useState(false);
-  const [userMenuAnchor, setUserMenuAnchor] = useState<null | HTMLElement>(null);
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
   };
 
-  const handleSignOut = async () => {
-    try {
-      await signOutUser();
-      setUserMenuAnchor(null);
-    } catch (error) {
-      // Sign out error
-    }
-  };
+  const currentModule = getCurrentModule(location.pathname);
+  const localItems = getLocalItems(currentModule);
+  const hasLocalNav = localItems.length > 0;
 
   const menuItems = [
     {
@@ -164,92 +162,6 @@ const Layout: React.FC<LayoutProps> = ({
         ))}
       </List>
 
-      <Divider />
-
-      {/* Quick Stats */}
-      <Box sx={{ p: 2 }}>
-        <Typography variant="overline" display="block" gutterBottom>
-          Quick Stats
-        </Typography>
-        
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-          <Typography variant="body2">Today's Meals</Typography>
-          <Typography variant="body2" fontWeight="bold">0/3</Typography>
-        </Box>
-        
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-          <Typography variant="body2">Gym Sessions</Typography>
-          <Typography variant="body2" fontWeight="bold">0/1</Typography>
-        </Box>
-        
-        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-          <Typography variant="body2">Tasks Done</Typography>
-          <Typography variant="body2" fontWeight="bold">0/0</Typography>
-        </Box>
-      </Box>
-
-      <Divider />
-
-      {/* Theme Toggle & User Profile */}
-      <Box sx={{ p: 2 }}>
-        {/* Theme Toggle */}
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-          <IconButton onClick={toggleDarkMode} sx={{ mr: 1 }}>
-            {darkMode ? <LightModeIcon /> : <DarkModeIcon />}
-          </IconButton>
-          <Typography variant="body2">
-            {darkMode ? 'Light Mode' : 'Dark Mode'}
-          </Typography>
-        </Box>
-
-        {/* User Profile/Auth */}
-        {isAuthenticated ? (
-          <Button
-            fullWidth
-            onClick={(e) => setUserMenuAnchor(e.currentTarget)}
-            startIcon={<Avatar sx={{ width: 32, height: 32 }}>{user?.email?.charAt(0).toUpperCase()}</Avatar>}
-            sx={{ justifyContent: 'flex-start', textTransform: 'none' }}
-          >
-            <Box sx={{ textAlign: 'left' }}>
-              <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                {user?.displayName || user?.email?.split('@')[0]}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {user?.email}
-              </Typography>
-            </Box>
-          </Button>
-        ) : (
-          <Button
-            fullWidth
-            startIcon={<LoginIcon />}
-            onClick={() => setAuthDialogOpen(true)}
-            sx={{ textTransform: 'none' }}
-          >
-            Sign In
-          </Button>
-        )}
-
-        {/* User Menu */}
-        <Menu
-          anchorEl={userMenuAnchor}
-          open={Boolean(userMenuAnchor)}
-          onClose={() => setUserMenuAnchor(null)}
-        >
-          <MenuItem onClick={() => {
-            navigate('/profile');
-            setUserMenuAnchor(null);
-          }}>
-            <Avatar sx={{ mr: 1, width: 20, height: 20 }}>{user?.email?.charAt(0).toUpperCase()}</Avatar>
-            Profile Settings
-          </MenuItem>
-          <Divider />
-          <MenuItem onClick={handleSignOut}>
-            <LogoutIcon sx={{ mr: 1 }} />
-            Sign Out
-          </MenuItem>
-        </Menu>
-      </Box>
     </div>
   );
 
@@ -264,71 +176,11 @@ const Layout: React.FC<LayoutProps> = ({
         color: 'var(--text-primary)'
       }}
     >
-      {/* App Bar - REMOVED */}
-      {/* <AppBar
-        position="fixed"
-        sx={{
-          width: { md: `calc(100% - ${drawerWidth}px)` },
-          ml: { md: `${drawerWidth}px` },
-        }}
-      >
-        <Toolbar>
-          <IconButton
-            color="inherit"
-            aria-label="open drawer"
-            edge="start"
-            onClick={handleDrawerToggle}
-            sx={{ mr: 2, display: { md: 'none' } }}
-          >
-            <MenuIcon />
-          </IconButton>
-
-          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-            {menuItems.find(item => item.path === location.pathname)?.text || 'Track Everything'}
-          </Typography>
-
-          <IconButton onClick={toggleDarkMode} color="inherit">
-            {darkMode ? <LightModeIcon /> : <DarkModeIcon />}
-          </IconButton>
-
-          {isAuthenticated ? (
-            <>
-              <Button
-                onClick={(e) => setUserMenuAnchor(e.currentTarget)}
-                startIcon={<Avatar sx={{ width: 24, height: 24 }}>{user?.email?.charAt(0).toUpperCase()}</Avatar>}
-                color="inherit"
-              >
-                {user?.displayName || user?.email?.split('@')[0]}
-              </Button>
-              <Menu
-                anchorEl={userMenuAnchor}
-                open={Boolean(userMenuAnchor)}
-                onClose={() => setUserMenuAnchor(null)}
-              >
-                <MenuItem onClick={handleSignOut}>
-                  <LogoutIcon sx={{ mr: 1 }} />
-                  Sign Out
-                </MenuItem>
-              </Menu>
-            </>
-          ) : (
-            <Button
-              startIcon={<LoginIcon />}
-              color="inherit"
-              onClick={() => setAuthDialogOpen(true)}
-            >
-              Sign In
-            </Button>
-          )}
-        </Toolbar>
-      </AppBar> */}
-
-      {/* Sidebar */}
+      {/* Mobile drawer only */}
       <Box
         component="nav"
-        sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}
+        sx={{ width: { md: 0 }, flexShrink: { md: 0 } }}
       >
-        {/* Mobile drawer */}
         <Drawer
           variant="temporary"
           open={mobileOpen}
@@ -341,32 +193,51 @@ const Layout: React.FC<LayoutProps> = ({
         >
           {drawer}
         </Drawer>
-
-        {/* Desktop drawer */}
-        <Drawer
-          variant="permanent"
-          sx={{
-            display: { xs: 'none', md: 'block' },
-            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
-          }}
-          open
-        >
-          {drawer}
-        </Drawer>
       </Box>
 
-      {/* Main content */}
+      {/* Main content - full width on desktop */}
       <Box
         component="main"
         sx={{
           flexGrow: 1,
-          p: 3,
-          width: { md: `calc(100% - ${drawerWidth}px)` },
+          width: '100%', // Full width on all screen sizes
+          display: 'flex',
+          flexDirection: 'column',
+          minHeight: '100vh',
+          // Add bottom padding for mobile bottom nav
+          pb: isMobile ? '80px' : 0,
         }}
       >
-        {/* Page content - NO SPACER NEEDED */}
-        {children || <Outlet />} {/* ✅ FIXED: Render children if passed, otherwise use Outlet */}
+        {/* Global Header - Desktop only */}
+        {!isMobile && (
+          <GlobalHeader 
+            darkMode={darkMode} 
+            toggleDarkMode={toggleDarkMode}
+            onOpenAuthDialog={() => setAuthDialogOpen(true)}
+          />
+        )}
+
+        {/* Local Navigation */}
+        <LocalNav currentModule={currentModule} />
+
+        {/* Page content with conditional top padding */}
+        <Box
+          sx={{
+            flexGrow: 1,
+            p: 3,
+            pt: hasLocalNav
+              ? `calc(${isMobile ? '16px' : 'var(--nav-height)'} + var(--local-nav-height, 40px) + 24px)`
+              : `calc(${isMobile ? '16px' : 'var(--nav-height)'} + 24px)`,
+          }}
+        >
+          {children || <Outlet />}
+        </Box>
       </Box>
+
+      {/* Mobile Bottom Navigation */}
+      {isMobile && (
+        <MobileBottomNav />
+      )}
 
       {/* Auth Dialog */}
       <AuthDialog 

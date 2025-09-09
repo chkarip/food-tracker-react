@@ -8,7 +8,35 @@
  * - Integrates with scheduledActivities, mealPlans, and scheduledWorkouts for complete data.
  * - No editing; purely for review and program visibility.
  * 
- * BUSINESS VALUE:
+ *                                 <Paper
+                                  key={exercise.id}
+                                  sx={{
+                                    bgcolor: 'var(--surface-bg)',
+                                    border: '1px solid var(--border-color)',
+                                    borderRadius: 2,
+                                    p: 1.5,
+                                    mb: 1,
+                                    transition: 'all 200ms ease',
+                                    position: 'relative',
+                                    '&:hover': {
+                                      bgcolor: 'var(--meal-bg-card)',
+                                      transform: 'translateY(-1px)',
+                                      boxShadow: 'var(--elevation-1)',
+                                      borderColor: 'var(--accent-orange)'
+                                    },
+                                    '&::before': {
+                                      content: '""',
+                                      position: 'absolute',
+                                      inset: 0,
+                                      pointerEvents: 'none',
+                                      background: 'linear-gradient(135deg, rgba(255, 152, 0, 0.02), rgba(255,255,255,0.02))',
+                                      opacity: 0,
+                                      transition: 'opacity 200ms ease',
+                                      borderRadius: 2
+                                    },
+                                    '&:hover::before': { opacity: 1 }
+                                  }}
+                                >
  * - Provides a focused, uncluttered view of daily plans and progress.
  * - Supports consistency and engagement by making all details visible on demand.
  */
@@ -25,9 +53,13 @@ import {
   Chip,
   Stack,
   CircularProgress,
+  Paper,
+  alpha,
+  useTheme
 } from '@mui/material';
 import AccentButton from '../shared/AccentButton';
 import CollapsiblePanel from '../shared/CollapsiblePanel';
+import { GenericCard } from '../shared/cards/GenericCard';
 import {
   Restaurant as FoodIcon,
   FitnessCenter as GymIcon,
@@ -54,6 +86,7 @@ const DayModal: React.FC<DayModalProps> = ({
   onCreateWorkout
 }) => {
   const { user } = useAuth();
+  const theme = useTheme();
   const [loading, setLoading] = useState(false);
   const [mealPlan, setMealPlan] = useState<MealPlanDocument | null>(null);
   const [scheduledWorkout, setScheduledWorkout] = useState<ScheduledWorkoutDocument | null>(null);
@@ -123,6 +156,34 @@ const DayModal: React.FC<DayModalProps> = ({
 
   return (
     <Dialog open={!!selectedDay} onClose={onClose} fullWidth maxWidth="sm">
+      <style>
+        {`
+          @keyframes slideIn {
+            from {
+              opacity: 0;
+              transform: translateY(-10px);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+          @keyframes fadeInScale {
+            from {
+              opacity: 0;
+              transform: scale(0.95);
+            }
+            to {
+              opacity: 1;
+              transform: scale(1);
+            }
+          }
+          @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+          }
+        `}
+      </style>
       <DialogTitle>
         <Box display="flex" alignItems="center" justifyContent="space-between">
           <Box>
@@ -151,178 +212,600 @@ const DayModal: React.FC<DayModalProps> = ({
         </Typography>
       </DialogTitle>
 
-      <DialogContent dividers>
+      <DialogContent dividers sx={{
+        p: 3,
+        background: 'linear-gradient(135deg, var(--meal-bg-card) 0%, rgba(255,255,255,0.5) 100%)',
+        borderRadius: 3,
+        minHeight: '60vh',
+        position: 'relative',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          inset: 0,
+          pointerEvents: 'none',
+          background: 'linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02))',
+          opacity: 0,
+          transition: 'opacity 200ms ease',
+          borderRadius: 3
+        },
+        '&:hover::before': { opacity: 1 }
+      }}>
         {loading && (
           <Box display="flex" justifyContent="center" py={4}>
             <CircularProgress size={24} />
           </Box>
         )}
 
-        {/* Food Program Tasks */}
-        {(scheduled['meal-6pm'] || scheduled['meal-9:30pm']) && (
-          <Box mb={3}>
-            <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <FoodIcon fontSize="small" />
-              Food Program
-            </Typography>
+        {/* Responsive two-column layout for Food and Gym */}
+        <Box
+          sx={{
+            display: 'flex',
+            gap: { xs: 2.5, md: 4 },
+            flexDirection: { xs: 'column', md: 'row' },
+            alignItems: 'start'
+          }}
+        >
+          {/* Food Program Section */}
+          {(scheduled['meal-6pm'] || scheduled['meal-9:30pm']) && (
+            <Box
+              sx={{
+                flexBasis: { xs: '100%', md: '60%' },
+                minWidth: 0
+              }}
+            >
+              <GenericCard
+                title="Food Program"
+                variant="recipe"
+                size="md"
+                sx={{
+                  height: 'fit-content',
+                  '& .MuiCardContent-root': {
+                    p: 0
+                  },
+                  transition: 'all 200ms ease',
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: 'var(--elevation-2)'
+                  }
+                }}
+                content={
+                  <Box sx={{ p: 0 }}>
+                    {/* Show meal plan details if available */}
+                    {mealPlan && (
+                      <Box sx={{ p: 0 }}>
+                        {/* 6PM Meal */}
+                        {scheduled['meal-6pm'] && mealPlan.timeslots['6pm'] && (
+                          <Box sx={{
+                            p: 2.5,
+                            borderBottom: '1px solid',
+                            borderColor: 'divider',
+                            animation: 'slideIn 0.3s ease-out',
+                            position: 'relative'
+                          }}>
+                            <Typography variant="subtitle1" gutterBottom sx={{ 
+                              fontWeight: 600, 
+                              color: 'var(--accent-green)',
+                              position: 'relative',
+                              '&::before': {
+                                content: '""',
+                                position: 'absolute',
+                                left: 0,
+                                top: 0,
+                                bottom: 0,
+                                width: '3px',
+                                backgroundColor: 'var(--accent-green)',
+                                borderRadius: '2px'
+                              },
+                              paddingLeft: '12px'
+                            }}>
+                              6:00 PM Meal
+                            </Typography>
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                              {mealPlan.timeslots['6pm'].selectedFoods.map((food, idx) => (
+                                <Box
+                                  key={idx}
+                                  sx={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    p: 1.5,
+                                    bgcolor: 'var(--surface-bg)',
+                                    borderRadius: 2,
+                                    border: '1px solid var(--border-color)',
+                                    transition: 'all 200ms ease',
+                                    position: 'relative',
+                                    '&:hover': {
+                                      bgcolor: 'var(--meal-bg-card)',
+                                      transform: 'translateY(-1px)',
+                                      boxShadow: 'var(--elevation-1)',
+                                      borderColor: 'var(--accent-green)'
+                                    },
+                                    '&::before': {
+                                      content: '""',
+                                      position: 'absolute',
+                                      inset: 0,
+                                      pointerEvents: 'none',
+                                      background: 'linear-gradient(135deg, rgba(59, 186, 117, 0.02), rgba(255,255,255,0.02))',
+                                      opacity: 0,
+                                      transition: 'opacity 200ms ease',
+                                      borderRadius: 2
+                                    },
+                                    '&:hover::before': { opacity: 1 }
+                                  }}
+                                >
+                                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                                    {food.name}
+                                  </Typography>
+                                  <Typography variant="body2" sx={{ fontWeight: 600, color: 'var(--accent-green)' }}>
+                                    {food.amount}g
+                                  </Typography>
+                                </Box>
+                              ))}
+                            </Box>
 
-            {/* Show meal plan details if available */}
-            {mealPlan && (
-              <CollapsiblePanel
-                title="📋 Meal Plan Details"
-                variant="primary"
-                icon={<FoodIcon />}
-                defaultExpanded={true}
-                size="compact"
-              >
-                {/* 6PM Meal */}
-                {scheduled['meal-6pm'] && mealPlan.timeslots['6pm'] && (
-                  <Box mb={2}>
-                    <Typography variant="subtitle1" gutterBottom>
-                      🍽️ 6:00 PM Meal
-                    </Typography>
-                    {mealPlan.timeslots['6pm'].selectedFoods.map((food, idx) => (
-                      <Box key={idx} display="flex" justifyContent="space-between" mb={0.5}>
-                        <Typography variant="body2">{food.name}</Typography>
-                        <Typography variant="body2">{food.amount}g</Typography>
+                            {mealPlan.timeslots['6pm'].externalNutrition.calories > 0 && (
+                              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+                                + External: {mealPlan.timeslots['6pm'].externalNutrition.calories} cal
+                              </Typography>
+                            )}
+                          </Box>
+                        )}
+
+                        {/* 9:30PM Meal */}
+                        {scheduled['meal-9:30pm'] && mealPlan.timeslots['9:30pm'] && (
+                          <Box sx={{
+                            p: 2.5,
+                            borderBottom: scheduled['meal-6pm'] && mealPlan.timeslots['6pm'] ? '1px solid' : 'none',
+                            borderColor: 'divider',
+                            animation: 'slideIn 0.4s ease-out',
+                            position: 'relative'
+                          }}>
+                            <Typography variant="subtitle1" gutterBottom sx={{ 
+                              fontWeight: 600, 
+                              color: 'var(--accent-green)',
+                              position: 'relative',
+                              '&::before': {
+                                content: '""',
+                                position: 'absolute',
+                                left: 0,
+                                top: 0,
+                                bottom: 0,
+                                width: '3px',
+                                backgroundColor: 'var(--accent-green)',
+                                borderRadius: '2px'
+                              },
+                              paddingLeft: '12px'
+                            }}>
+                              9:30 PM Meal
+                            </Typography>
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                              {mealPlan.timeslots['9:30pm'].selectedFoods.map((food, idx) => (
+                                <Box
+                                  key={idx}
+                                  sx={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    p: 1.5,
+                                    bgcolor: 'var(--surface-bg)',
+                                    borderRadius: 2,
+                                    border: '1px solid var(--border-color)',
+                                    transition: 'all 200ms ease',
+                                    position: 'relative',
+                                    '&:hover': {
+                                      bgcolor: 'var(--meal-bg-card)',
+                                      transform: 'translateY(-1px)',
+                                      boxShadow: 'var(--elevation-1)',
+                                      borderColor: 'var(--accent-green)'
+                                    },
+                                    '&::before': {
+                                      content: '""',
+                                      position: 'absolute',
+                                      inset: 0,
+                                      pointerEvents: 'none',
+                                      background: 'linear-gradient(135deg, rgba(59, 186, 117, 0.02), rgba(255,255,255,0.02))',
+                                      opacity: 0,
+                                      transition: 'opacity 200ms ease',
+                                      borderRadius: 2
+                                    },
+                                    '&:hover::before': { opacity: 1 }
+                                  }}
+                                >
+                                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                                    {food.name}
+                                  </Typography>
+                                  <Typography variant="body2" sx={{ fontWeight: 600, color: 'var(--accent-green)' }}>
+                                    {food.amount}g
+                                  </Typography>
+                                </Box>
+                              ))}
+                            </Box>
+
+                            {mealPlan.timeslots['9:30pm'].externalNutrition.calories > 0 && (
+                              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+                                + External: {mealPlan.timeslots['9:30pm'].externalNutrition.calories} cal
+                              </Typography>
+                            )}
+                          </Box>
+                        )}
                       </Box>
-                    ))}
-                    
-                    {mealPlan.timeslots['6pm'].externalNutrition.calories > 0 && (
-                      <Typography variant="caption" color="text.secondary">
-                        + External: {mealPlan.timeslots['6pm'].externalNutrition.calories} cal
-                      </Typography>
                     )}
-                  </Box>
-                )}
 
-                {/* 9:30PM Meal */}
-                {scheduled['meal-9:30pm'] && mealPlan.timeslots['9:30pm'] && (
-                  <Box mb={2}>
-                    <Typography variant="subtitle1" gutterBottom>
-                      🌙 9:30 PM Meal
-                    </Typography>
-                    {mealPlan.timeslots['9:30pm'].selectedFoods.map((food, idx) => (
-                      <Box key={idx} display="flex" justifyContent="space-between" mb={0.5}>
-                        <Typography variant="body2">{food.name}</Typography>
-                        <Typography variant="body2">{food.amount}g</Typography>
-                      </Box>
-                    ))}
-                    
-                    {mealPlan.timeslots['9:30pm'].externalNutrition.calories > 0 && (
-                      <Typography variant="caption" color="text.secondary">
-                        + External: {mealPlan.timeslots['9:30pm'].externalNutrition.calories} cal
-                      </Typography>
-                    )}
-                  </Box>
-                )}
-
-                {/* Total Macros */}
-                {mealPlan.totalMacros && (
-                  <Box>
-                    <Typography variant="subtitle1" gutterBottom>
-                      📊 Total Macros
-                    </Typography>
-                    <Stack direction="row" spacing={2}>
-                      <Typography variant="body2">
-                        Protein: {Math.round(mealPlan.totalMacros.protein)}g
-                      </Typography>
-                      <Typography variant="body2">
-                        Fats: {Math.round(mealPlan.totalMacros.fats)}g
-                      </Typography>
-                      <Typography variant="body2">
-                        Carbs: {Math.round(mealPlan.totalMacros.carbs)}g
-                      </Typography>
-                      <Typography variant="body2">
-                        Calories: {Math.round(mealPlan.totalMacros.calories)}
-                      </Typography>
-                    </Stack>
-                  </Box>
-                )}
-              </CollapsiblePanel>
-            )}
-          </Box>
-        )}
-
-        {/* Gym Program */}
-        {scheduled.gym && (
-          <Box>
-            <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <GymIcon fontSize="small" />
-              Gym Workout
-            </Typography>
-
-            {/* Show workout details if available */}
-            {scheduledWorkout && (
-              <CollapsiblePanel
-                title="🏋️ Workout Details"
-                variant="secondary"
-                icon={<GymIcon />}
-                defaultExpanded={true}
-                size="compact"
-              >
-                <Box mb={2}>
-                  <Typography variant="h6" gutterBottom>
-                    {scheduledWorkout.name}
-                  </Typography>
-
-                  <Chip
-                    label={scheduledWorkout.status}
-                    color={scheduledWorkout.status === 'completed' ? 'success' : 'default'}
-                    size="small"
-                  />
-                </Box>
-
-                <Typography variant="subtitle1" gutterBottom sx={{ mt: 2, mb: 1 }}>
-                  📝 Exercises ({scheduledWorkout.exercises.length})
-                </Typography>
-
-                {scheduledWorkout.exercises
-                  .sort((a, b) => a.order - b.order)
-                  .map((exercise) => (
-                    <Box key={exercise.id} mb={2}>
-                      <Typography variant="body2" fontWeight="medium">
-                        {exercise.name}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {exercise.kg}kg • {exercise.sets} sets × {exercise.reps} reps • {exercise.rest}s rest
-                      </Typography>
-                      
-                      {exercise.notes && (
-                        <Typography variant="caption" color="text.secondary">
-                          💡 {exercise.notes}
+                    {/* Total Macros */}
+                    {mealPlan?.totalMacros && (
+                      <Box sx={{ 
+                        p: 2.5, 
+                        bgcolor: 'var(--surface-bg)', 
+                        borderTop: '1px solid var(--border-color)',
+                        borderRadius: 2,
+                        mt: 1,
+                        position: 'relative',
+                        transition: 'all 200ms ease',
+                        '&:hover': {
+                          bgcolor: 'var(--meal-bg-card)',
+                          transform: 'translateY(-1px)',
+                          boxShadow: 'var(--elevation-1)'
+                        },
+                        '&::before': {
+                          content: '""',
+                          position: 'absolute',
+                          inset: 0,
+                          pointerEvents: 'none',
+                          background: 'linear-gradient(135deg, rgba(59, 186, 117, 0.02), rgba(255,255,255,0.02))',
+                          opacity: 0,
+                          transition: 'opacity 200ms ease',
+                          borderRadius: 2
+                        },
+                        '&:hover::before': { opacity: 1 }
+                      }}>
+                        <Typography variant="subtitle1" gutterBottom sx={{ 
+                          fontWeight: 600, 
+                          color: 'var(--text-primary)',
+                          position: 'relative',
+                          '&::before': {
+                            content: '""',
+                            position: 'absolute',
+                            left: 0,
+                            top: 0,
+                            bottom: 0,
+                            width: '3px',
+                            backgroundColor: 'var(--accent-green)',
+                            borderRadius: '2px'
+                          },
+                          paddingLeft: '12px',
+                          mb: 2
+                        }}>
+                          Total Macros
                         </Typography>
-                      )}
-                    </Box>
-                  ))}
-
-                {scheduledWorkout.notes && (
-                  <Box mt={2}>
-                    <Typography variant="subtitle1" gutterBottom>
-                      📄 Workout Notes
-                    </Typography>
-                    <Typography variant="body2">
-                      {scheduledWorkout.notes}
-                    </Typography>
+                        <Box sx={{ 
+                          display: 'grid', 
+                          gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, 
+                          gap: 1.5,
+                          pl: '12px'
+                        }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                            <Typography variant="body2" sx={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                              Protein:
+                            </Typography>
+                            <Typography variant="body2" sx={{ fontWeight: 700, color: 'var(--accent-green)' }}>
+                              {Math.round(mealPlan.totalMacros.protein)}g
+                            </Typography>
+                          </Box>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                            <Typography variant="body2" sx={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                              Fats:
+                            </Typography>
+                            <Typography variant="body2" sx={{ fontWeight: 700, color: 'var(--accent-orange)' }}>
+                              {Math.round(mealPlan.totalMacros.fats)}g
+                            </Typography>
+                          </Box>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                            <Typography variant="body2" sx={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                              Carbs:
+                            </Typography>
+                            <Typography variant="body2" sx={{ fontWeight: 700, color: 'var(--accent-blue)' }}>
+                              {Math.round(mealPlan.totalMacros.carbs)}g
+                            </Typography>
+                          </Box>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                            <Typography variant="body2" sx={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                              Calories:
+                            </Typography>
+                            <Typography variant="body2" sx={{ fontWeight: 700, color: 'var(--text-primary)' }}>
+                              {Math.round(mealPlan.totalMacros.calories)}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </Box>
+                    )}
                   </Box>
-                )}
-              </CollapsiblePanel>
-            )}
-          </Box>
-        )}
+                }
+              />
+            </Box>
+          )}
+
+          {/* Gym Program Section */}
+          {scheduled.gym && (
+            <Box
+              sx={{
+                flexBasis: { xs: '100%', md: '40%' },
+                minWidth: 0,
+                maxHeight: { md: 560, lg: 680 },
+                overflowY: 'auto',
+                pr: 0.5
+              }}
+            >
+              <GenericCard
+                title="Gym Workout"
+                variant="exercise"
+                size="md"
+                sx={{
+                  height: 'fit-content',
+                  mb: 2,
+                  '& .MuiCardContent-root': {
+                    p: 0
+                  },
+                  transition: 'all 200ms ease',
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: 'var(--elevation-2)'
+                  }
+                }}
+                content={
+                  <Box sx={{ p: 0 }}>
+                    {/* Show workout details if available */}
+                    {scheduledWorkout && (
+                      <Box sx={{ p: 0 }}>
+                        {/* Workout Header */}
+                        <Box sx={{
+                          p: 2.5,
+                          borderBottom: '1px solid',
+                          borderColor: 'divider',
+                          animation: 'slideIn 0.3s ease-out',
+                          position: 'relative'
+                        }}>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                              {scheduledWorkout.name}
+                            </Typography>
+                            <Chip
+                              label={scheduledWorkout.status}
+                              color={scheduledWorkout.status === 'completed' ? 'success' : 'default'}
+                              size="small"
+                              sx={{ fontWeight: 600 }}
+                            />
+                          </Box>
+                          <Typography variant="subtitle2" sx={{ color: 'text.secondary', fontWeight: 500 }}>
+                            {scheduledWorkout.exercises.length} Exercise{scheduledWorkout.exercises.length !== 1 ? 's' : ''}
+                          </Typography>
+                        </Box>
+
+                        {/* Exercises Grid - Show ALL exercises */}
+                        <Box sx={{
+                          p: 2.5,
+                          animation: 'slideIn 0.4s ease-out',
+                          position: 'relative'
+                        }}>
+                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                            {scheduledWorkout.exercises
+                              .sort((a, b) => a.order - b.order)
+                              .map((exercise) => (
+                                <Paper
+                                  key={exercise.id}
+                                  sx={{
+                                    bgcolor: 'var(--surface-bg)',
+                                    border: '1px solid var(--border-color)',
+                                    borderRadius: 2,
+                                    p: 1.5,
+                                    mb: 1,
+                                    transition: 'all 200ms ease',
+                                    '&:hover': {
+                                      bgcolor: 'var(--meal-bg-card)',
+                                      transform: 'translateY(-1px)',
+                                      boxShadow: '0 4px 12px rgba(0,0,0,0.08)'
+                                    }
+                                  }}
+                                >
+                                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                                    {exercise.name}
+                                  </Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    {exercise.kg}kg • {exercise.sets} sets × {exercise.reps} reps
+                                  </Typography>
+
+                                  {exercise.notes && (
+                                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                                      {exercise.notes}
+                                    </Typography>
+                                  )}
+                                </Paper>
+                              ))}
+                          </Box>
+                        </Box>
+
+                        {/* Workout Notes */}
+                        {scheduledWorkout.notes && (
+                          <Box sx={{
+                            p: 2.5,
+                            bgcolor: 'var(--surface-bg)',
+                            borderTop: '1px solid var(--border-color)',
+                            borderRadius: 2,
+                            position: 'relative',
+                            transition: 'all 200ms ease',
+                            '&:hover': {
+                              bgcolor: 'var(--meal-bg-card)',
+                              transform: 'translateY(-1px)',
+                              boxShadow: 'var(--elevation-1)'
+                            },
+                            '&::before': {
+                              content: '""',
+                              position: 'absolute',
+                              inset: 0,
+                              pointerEvents: 'none',
+                              background: 'linear-gradient(135deg, rgba(255, 152, 0, 0.02), rgba(255,255,255,0.02))',
+                              opacity: 0,
+                              transition: 'opacity 200ms ease',
+                              borderRadius: 2
+                            },
+                            '&:hover::before': { opacity: 1 }
+                          }}>
+                            <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600 }}>
+                              Workout Notes
+                            </Typography>
+                            <Typography variant="body2" sx={{ lineHeight: 1.5 }}>
+                              {scheduledWorkout.notes}
+                            </Typography>
+                          </Box>
+                        )}
+                      </Box>
+                    )}
+                  </Box>
+                }
+              />
+            </Box>
+          )}
+        </Box>
       </DialogContent>
 
-      <DialogActions>
-        <Stack direction="row" spacing={1} sx={{ p: 1 }}>
-          <AccentButton onClick={onCreateMealPlan} size="small" variant="secondary">
-            Create Meal Plan
-          </AccentButton>
-          <AccentButton onClick={onCreateWorkout} size="small" variant="secondary">
-            Create Workout
-          </AccentButton>
-          <AccentButton onClick={onClose} size="small">
-            ✖️ Close
-          </AccentButton>
+      <DialogActions sx={{
+        p: 3,
+        bgcolor: 'var(--surface-bg)',
+        borderTop: '1px solid var(--border-color)',
+        position: 'relative',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          inset: 0,
+          pointerEvents: 'none',
+          background: 'linear-gradient(135deg, rgba(59, 186, 117, 0.02), rgba(255,255,255,0.02))',
+          opacity: 0,
+          transition: 'opacity 200ms ease'
+        },
+        '&:hover::before': { opacity: 1 }
+      }}>
+        <Stack direction="row" spacing={2} sx={{ width: '100%', justifyContent: 'center' }}>
+          <Box sx={{
+            flex: 1,
+            transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)',
+            '&:hover': {
+              transform: 'translateY(-3px) scale(1.02)'
+            },
+            '& .MuiButton-root': {
+              boxShadow: 'var(--elevation-2)',
+              background: scheduled['meal-6pm'] || scheduled['meal-9:30pm']
+                ? 'linear-gradient(135deg, var(--accent-green) 0%, rgba(59, 186, 117, 0.8) 100%)'
+                : 'linear-gradient(135deg, var(--surface-bg) 0%, rgba(255,255,255,0.1) 100%)',
+              border: '1px solid var(--border-color)',
+              color: scheduled['meal-6pm'] || scheduled['meal-9:30pm'] ? 'white' : 'var(--text-primary)',
+              fontWeight: 600,
+              fontSize: '0.9rem',
+              py: 1.5,
+              px: 2,
+              borderRadius: 2,
+              position: 'relative',
+              overflow: 'hidden',
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                inset: 0,
+                background: scheduled['meal-6pm'] || scheduled['meal-9:30pm']
+                  ? 'linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.05) 100%)'
+                  : 'linear-gradient(135deg, rgba(59, 186, 117, 0.1) 0%, rgba(59, 186, 117, 0.05) 100%)',
+                opacity: 0,
+                transition: 'opacity 300ms ease'
+              },
+              '&:hover::before': { opacity: 1 },
+              '&:hover': {
+                boxShadow: 'var(--elevation-3)',
+                borderColor: 'var(--accent-green)',
+                color: scheduled['meal-6pm'] || scheduled['meal-9:30pm'] ? 'white' : 'var(--accent-green)'
+              }
+            }
+          }}>
+            <AccentButton onClick={onCreateMealPlan} size="small" variant="secondary">
+              {scheduled['meal-6pm'] || scheduled['meal-9:30pm'] ? 'Edit Meal Plan' : 'Create Meal Plan'}
+            </AccentButton>
+          </Box>
+          <Box sx={{
+            flex: 1,
+            transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)',
+            '&:hover': {
+              transform: 'translateY(-3px) scale(1.02)'
+            },
+            '& .MuiButton-root': {
+              boxShadow: 'var(--elevation-2)',
+              background: scheduled.gym
+                ? 'linear-gradient(135deg, var(--accent-orange) 0%, rgba(255, 152, 0, 0.8) 100%)'
+                : 'linear-gradient(135deg, var(--surface-bg) 0%, rgba(255,255,255,0.1) 100%)',
+              border: '1px solid var(--border-color)',
+              color: scheduled.gym ? 'white' : 'var(--text-primary)',
+              fontWeight: 600,
+              fontSize: '0.9rem',
+              py: 1.5,
+              px: 2,
+              borderRadius: 2,
+              position: 'relative',
+              overflow: 'hidden',
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                inset: 0,
+                background: scheduled.gym
+                  ? 'linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.05) 100%)'
+                  : 'linear-gradient(135deg, rgba(255, 152, 0, 0.1) 0%, rgba(255, 152, 0, 0.05) 100%)',
+                opacity: 0,
+                transition: 'opacity 300ms ease'
+              },
+              '&:hover::before': { opacity: 1 },
+              '&:hover': {
+                boxShadow: 'var(--elevation-3)',
+                borderColor: 'var(--accent-orange)',
+                color: scheduled.gym ? 'white' : 'var(--accent-orange)'
+              }
+            }
+          }}>
+            <AccentButton onClick={onCreateWorkout} size="small" variant="secondary">
+              {scheduled.gym ? 'Edit Workout' : 'Create Workout'}
+            </AccentButton>
+          </Box>
+          <Box sx={{
+            flex: 1,
+            transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)',
+            '&:hover': {
+              transform: 'translateY(-3px) scale(1.02)'
+            },
+            '& .MuiButton-root': {
+              boxShadow: 'var(--elevation-2)',
+              background: 'linear-gradient(135deg, var(--surface-bg) 0%, rgba(255,255,255,0.1) 100%)',
+              border: '1px solid var(--border-color)',
+              color: 'var(--text-primary)',
+              fontWeight: 600,
+              fontSize: '0.9rem',
+              py: 1.5,
+              px: 2,
+              borderRadius: 2,
+              position: 'relative',
+              overflow: 'hidden',
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                inset: 0,
+                background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)',
+                opacity: 0,
+                transition: 'opacity 300ms ease'
+              },
+              '&:hover::before': { opacity: 1 },
+              '&:hover': {
+                boxShadow: 'var(--elevation-3)',
+                borderColor: 'var(--text-secondary)',
+                color: 'var(--text-secondary)'
+              }
+            }
+          }}>
+            <AccentButton onClick={onClose} size="small">
+              Close
+            </AccentButton>
+          </Box>
         </Stack>
       </DialogActions>
     </Dialog>

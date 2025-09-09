@@ -110,6 +110,26 @@
   --meal-subheading-color: #4A5568;
   --meal-body-color: #2D3748;
   --meal-caption-color: #718096;
+
+  /* Navigation tokens */
+  --nav-height: 56px;
+  --nav-bg: var(--surface-bg);
+  --nav-text: var(--text-primary);
+  --nav-border: var(--border-color);
+  --nav-hover: rgba(59, 186, 117, 0.08);
+  --nav-active: rgba(59, 186, 117, 0.12);
+  --nav-radius: 8px;
+  --nav-z: 1000;
+  --nav-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  --focus-ring: 0 0 0 2px rgba(59, 186, 117, 0.3);
+
+  /* Local navigation tokens */
+  --local-nav-height: 40px;
+  --local-nav-bg: var(--surface-bg);
+  --local-nav-text: var(--text-secondary);
+  --local-nav-border: var(--border-color);
+  --local-nav-hover: rgba(59, 186, 117, 0.06);
+  --local-nav-active: rgba(59, 186, 117, 0.1);
 }
 
 /* Dark theme */
@@ -185,6 +205,14 @@
   /* Adjust neutral grays used by inputs/disabled states */
   --color-gray-200: #1f262a;
   --color-gray-600: #94a3b8;
+
+  /* Navigation dark theme overrides */
+  --nav-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  --local-nav-text: var(--text-secondary);
+
+  /* Mobile navigation adjustments */
+  --mobile-nav-height: 56px;
+  --mobile-bottom-nav-height: 80px;
 }
 
 /* Dark theme - input element styling
@@ -292,4 +320,23 @@ code {
 .css-x4lmbv-MuiCardContent-root:last-child,
 .MuiCardContent-root:last-child {
   padding-bottom: 0 !important;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 768px) {
+  :root {
+    --nav-height: var(--mobile-nav-height);
+    --local-nav-height: 36px;
+  }
+
+  /* Adjust spacing for mobile */
+  body {
+    font-size: 14px;
+  }
+
+  /* Ensure touch targets are adequate on mobile */
+  button, .MuiButton-root {
+    min-height: 44px;
+    min-width: 44px;
+  }
 }

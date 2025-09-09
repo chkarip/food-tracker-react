@@ -8,7 +8,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import {
   createTheme,
   ThemeProvider,
@@ -26,6 +26,22 @@ import ProfilePage from './pages/ProfilePage';
 import AuthGuard from './components/auth/AuthGuard';
 import { AuthProvider } from './contexts/AuthContext';
 import { FoodProvider } from './contexts/FoodContext';
+import { getDefaultLocalPath } from './config/navConfig';
+
+// Food module components
+import FoodTrack from './components/food-management/FoodTrack';
+import FoodInventory from './components/food-management/FoodInventory';
+import NutritionGoalsManager from './components/food-management/NutritionGoalsManager';
+import RecipeManager from './components/food-management/RecipeManager';
+import MealCostDisplay from './components/food-management/MealCostDisplay';
+import AddFoodManager from './components/food-management/AddFoodManager';
+import TimeslotMealPlanner from './components/food-management/TimeslotMealPlanner';
+
+// Gym module components
+import GymWorkoutsPage from './components/workout/GymWorkoutsPage';
+import GymExercisesPage from './components/workout/GymExercisesPage';
+import GymProgressPage from './components/workout/GymProgressPage';
+import GymSchedulePage from './components/workout/GymSchedulePage';
 
 function FoodTrackerApp() {
   const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
@@ -118,10 +134,34 @@ function FoodTrackerApp() {
             <Layout darkMode={darkMode} toggleDarkMode={toggleDarkMode}>
               <Routes>
                 <Route path="/" element={<DashboardPage />} />
-                <Route path="/food" element={<FoodTrackerPage />} />
-                <Route path="/shopping" element={<ShoppingList />} />
-                <Route path="/gym" element={<GymPage />} />
-                <Route path="/finance" element={<FinancePage />} />
+                {/* Food module routes */}
+                <Route path="/food" element={<Navigate to={getDefaultLocalPath('food')} replace />} />
+                <Route path="/food/plan" element={<TimeslotMealPlanner />} />
+                <Route path="/food/track" element={<FoodTrack />} />
+                <Route path="/food/goals" element={<NutritionGoalsManager />} />
+                <Route path="/food/inventory" element={<FoodInventory />} />
+                <Route path="/food/recipes" element={<RecipeManager />} />
+                <Route path="/food/cost" element={<MealCostDisplay timeslotData={{}} />} />
+                <Route path="/food/shopping" element={<ShoppingList />} />
+                <Route path="/food/manage" element={<AddFoodManager />} />
+                {/* Gym module routes */}
+                <Route path="/gym" element={<Navigate to={getDefaultLocalPath('gym')} replace />} />
+                <Route path="/gym/workouts" element={<GymWorkoutsPage />} />
+                <Route path="/gym/schedule" element={<GymSchedulePage />} />
+                <Route path="/gym/exercises" element={<GymExercisesPage />} />
+                <Route path="/gym/progress" element={<GymProgressPage />} />
+                {/* Finance module routes */}
+                <Route path="/finance" element={<Navigate to={getDefaultLocalPath('finance')} replace />} />
+                <Route path="/finance/overview" element={<FinancePage />} />
+                <Route path="/finance/budget" element={<div>Budget Page - Coming Soon</div>} />
+                <Route path="/finance/expenses" element={<div>Expenses Page - Coming Soon</div>} />
+                <Route path="/finance/reports" element={<div>Reports Page - Coming Soon</div>} />
+                {/* Shopping module routes */}
+                <Route path="/shopping" element={<Navigate to={getDefaultLocalPath('shopping')} replace />} />
+                <Route path="/shopping/list" element={<ShoppingList />} />
+                <Route path="/shopping/recipes" element={<div>Recipe Shopping - Coming Soon</div>} />
+                <Route path="/shopping/history" element={<div>Purchase History - Coming Soon</div>} />
+                {/* Other routes */}
                 <Route path="/profile" element={<ProfilePage />} />
               </Routes>
             </Layout>

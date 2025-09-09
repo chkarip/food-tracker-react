@@ -35,7 +35,12 @@ import {
   Container,
   Typography,
   alpha,
-  useTheme
+  useTheme,
+  Button,
+  Paper,
+  IconButton,
+  CircularProgress,
+  Chip
 } from '@mui/material';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -52,19 +57,29 @@ import {
   getScheduledWorkoutsForMonth
 } from '../services/firebase';
 import { DailyPlanDocument, ActivityHistoryDocument, ScheduledActivitiesDocument, ScheduledWorkoutDocument, TimeslotsDocument } from '../types/firebase';
+import { ExpandMore as ExpandIcon, CalendarToday as CalendarIcon } from '@mui/icons-material';
+import { GenericCard } from '../components/shared/cards';
+import { loadMealPlan, loadScheduledWorkout } from '../services/firebase';
+import { MealPlanDocument } from '../types/firebase';
 
 const DashboardPage: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const theme = useTheme();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState<CalendarDay | null>(null);
+  const [clickedDay, setClickedDay] = useState<CalendarDay | null>(null); // Track clicked days separately
   const [mealPlans, setMealPlans] = useState<DailyPlanDocument[]>([]);
   const [scheduledActivities, setScheduledActivities] = useState<ScheduledActivitiesDocument[]>([]);
   const [scheduledWorkouts, setScheduledWorkouts] = useState<ScheduledWorkoutDocument[]>([]);
   const [activityHistory, setActivityHistory] = useState<ActivityHistoryDocument[]>([]);
-  const [selectedDayTimeslots, setSelectedDayTimeslots] = useState<TimeslotsDocument | null>(null);
   const [loading, setLoading] = useState(false);
   const [calendarRefresh, setCalendarRefresh] = useState(0); // Force calendar updates
+  const [isExpandedView, setIsExpandedView] = useState(false); // Control view mode
+  const [selectedDayTimeslots, setSelectedDayTimeslots] = useState<TimeslotsDocument | null>(null);
+  const [todayMealPlan, setTodayMealPlan] = useState<MealPlanDocument | null>(null);
+  const [todayWorkout, setTodayWorkout] = useState<ScheduledWorkoutDocument | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
 
   // Module stats hooks
   const { stats: foodStats } = useModuleStats('food', user?.uid);
@@ -377,6 +392,60 @@ const DashboardPage: React.FC = () => {
     return generateCalendarDays(currentDate);
   }, [currentDate, mealPlans, scheduledActivities, scheduledWorkouts, activityHistory, calendarRefresh]); // Include all data sources
 
+  // Set today's date as default selected day when data is loaded (for compact view)
+  useEffect(() => {
+    if (calendarDays.length > 0 && !selectedDay && !isExpandedView) {
+      const today = new Date();
+      const todayDay = calendarDays.find(day => 
+        day.date.toDateString() === today.toDateString()
+      );
+      if (todayDay) {
+        setSelectedDay(todayDay);
+      }
+    }
+  }, [calendarDays, selectedDay, isExpandedView]);
+
+  // Load detailed data for today's selected day
+  const loadTodayDetails = async () => {
+    if (!selectedDay || !user || isExpandedView) return;
+    
+    setDetailLoading(true);
+    try {
+      // Use local date format to match calendar
+      const year = selectedDay.date.getFullYear();
+      const month = (selectedDay.date.getMonth() + 1).toString().padStart(2, '0');
+      const day = selectedDay.date.getDate().toString().padStart(2, '0');
+      const localDayKey = `${year}-${month}-${day}`;
+
+      const scheduledActivity = scheduledActivities.find(activity => activity.date === localDayKey);
+      const scheduledTasks = scheduledActivity?.tasks || [];
+
+      // Load meal plan if meals are scheduled
+      if (scheduledTasks.some(task => task.startsWith('meal-'))) {
+        const meal = await loadMealPlan(user.uid, selectedDay.date);
+        setTodayMealPlan(meal);
+      } else {
+        setTodayMealPlan(null);
+      }
+
+      // Load workout if gym is scheduled
+      if (scheduledTasks.includes('gym-workout')) {
+        const workout = await loadScheduledWorkout(user.uid, localDayKey);
+        setTodayWorkout(workout);
+      } else {
+        setTodayWorkout(null);
+      }
+    } catch (error) {
+      console.error('Error loading today details:', error);
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadTodayDetails();
+  }, [selectedDay, scheduledActivities, user, isExpandedView]);
+
   const navigateMonth = (direction: 'prev' | 'next') => {
     const newDate = new Date(currentDate);
     newDate.setMonth(newDate.getMonth() + (direction === 'next' ? 1 : -1));
@@ -390,7 +459,7 @@ const DashboardPage: React.FC = () => {
   const handleDayClick = async (day: CalendarDay) => {
     if (!day.isCurrentMonth || !user) return;
     
-    setSelectedDay(day);
+    setClickedDay(day);
     
     // Load detailed timeslots for the selected day
     console.log('🔍 Loading timeslots for selected day:', day.date.toISOString().split('T')[0]);
@@ -410,17 +479,62 @@ const DashboardPage: React.FC = () => {
   };
 
   const handleCreateMealPlan = () => {
-    if (selectedDay) {
-      navigate(`/food?date=${formatDate(selectedDay.date)}`);
+    const dayToUse = clickedDay || selectedDay;
+    if (dayToUse) {
+      navigate(`/food?date=${formatDate(dayToUse.date)}`);
     }
-    setSelectedDay(null);
+    setClickedDay(null);
   };
 
   const handleCreateWorkout = () => {
-    if (selectedDay) {
-      navigate(`/gym?date=${formatDate(selectedDay.date)}`);
+    const dayToUse = clickedDay || selectedDay;
+    if (dayToUse) {
+      navigate(`/gym?date=${formatDate(dayToUse.date)}`);
     }
-    setSelectedDay(null);
+    setClickedDay(null);
+  };
+
+  // Helper function to get task metadata for pills
+  const getTaskMeta = (task: string) => {
+    switch (task) {
+      case 'meal-6pm': 
+        return { 
+          icon: '', 
+          title: '6:00 PM Meal', 
+          color: '#3BBA75',
+          subtitle: todayMealPlan?.timeslots?.['6pm'] ? `${todayMealPlan.timeslots['6pm'].selectedFoods?.length || 0} foods` : undefined,
+          completed: false 
+        };
+      case 'meal-9:30pm': 
+        return { 
+          icon: '', 
+          title: '9:30 PM Meal', 
+          color: '#3BBA75',
+          subtitle: todayMealPlan?.timeslots?.['9:30pm'] ? `${todayMealPlan.timeslots['9:30pm'].selectedFoods?.length || 0} foods` : undefined,
+          completed: false 
+        };
+      case 'gym-workout': 
+        return { 
+          icon: '', 
+          title: 'Gym Workout', 
+          color: '#FF9800',
+          subtitle: todayWorkout ? `${todayWorkout.exercises?.length || 0} exercises` : undefined,
+          completed: todayWorkout?.status === 'completed' 
+        };
+      default: 
+        return { 
+          icon: '', 
+          title: task, 
+          color: '#90CAF9', 
+          completed: false 
+        };
+    }
+  };
+
+  // Handle pill click to scroll to task section
+  const handlePillClick = (task: string) => {
+    // For now, just log - could be enhanced to scroll to section or open modal
+    console.log('Pill clicked:', task);
   };
 
   return (
@@ -468,23 +582,395 @@ const DashboardPage: React.FC = () => {
         )}
       </Box>
 
-      {/* Calendar */}
-      <Calendar
-        currentDate={currentDate}
-        calendarDays={calendarDays}
-        onNavigateMonth={navigateMonth}
-        onGoToToday={goToToday}
-        onDayClick={handleDayClick}
-      />
+      {/* View Toggle */}
+      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'center' }}>
+        <Button
+          variant={isExpandedView ? "outlined" : "contained"}
+          onClick={() => {
+            setIsExpandedView(!isExpandedView);
+            if (!isExpandedView) {
+              // Switching to expanded view, clear any selected day from compact view
+              setSelectedDay(null);
+            } else {
+              // Switching to compact view, set today's date
+              const today = new Date();
+              const todayDay = calendarDays.find(day => 
+                day.date.toDateString() === today.toDateString()
+              );
+              if (todayDay) {
+                setSelectedDay(todayDay);
+              }
+            }
+          }}
+          startIcon={isExpandedView ? <CalendarIcon /> : <ExpandIcon />}
+          sx={{ 
+            borderRadius: 2,
+            px: 3,
+            py: 1,
+            fontSize: '1rem',
+            fontWeight: 600
+          }}
+        >
+          {isExpandedView ? 'Show Today\'s Details' : 'Expand to Full Calendar'}
+        </Button>
+      </Box>
 
-      {/* Day Detail Modal */}
-      <DayModal
-        selectedDay={selectedDay}
-        scheduledActivities={scheduledActivities}
-        onClose={() => setSelectedDay(null)}
-        onCreateMealPlan={handleCreateMealPlan}
-        onCreateWorkout={handleCreateWorkout}
-      />
+      {/* Conditional Content */}
+      {isExpandedView ? (
+        /* Full Calendar View */
+        <Calendar
+          currentDate={currentDate}
+          calendarDays={calendarDays}
+          onNavigateMonth={navigateMonth}
+          onGoToToday={goToToday}
+          onDayClick={handleDayClick}
+        />
+      ) : (
+        /* Compact Today's Details View */
+        <Box sx={{ maxWidth: 1400, mx: 'auto' }}>
+          <GenericCard
+            variant="summary"
+            size="lg"
+            headerSlot={
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                <Typography variant="h5" sx={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                  Today's Schedule
+                </Typography>
+                <Typography variant="body2" sx={{ color: 'var(--text-secondary)' }}>
+                  {new Date().toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  })}
+                </Typography>
+              </Box>
+            }
+            bodySlot={
+              <>
+                {/* Today's Day Modal Content */}
+                {selectedDay && (
+                  <Box>
+                    {detailLoading ? (
+                      <Box display="flex" justifyContent="center" py={4}>
+                        <CircularProgress size={24} />
+                      </Box>
+                    ) : (
+                      <>
+                        {/* Two-column layout */}
+                        <Box sx={{
+                          display: 'grid',
+                          gridTemplateColumns: { xs: '1fr', md: '1.6fr 1fr' }, // ~60/40
+                          gap: { xs: 2.5, md: 4 },
+                          alignItems: 'start',
+                          mt: 1
+                        }}>
+                          {/* Left: Food Program */}
+                          <Box sx={{ minWidth: 0 }}>
+                            {(() => {
+                              const scheduledActivity = scheduledActivities.find(activity => 
+                                activity.date === `${selectedDay.date.getFullYear()}-${(selectedDay.date.getMonth() + 1).toString().padStart(2, '0')}-${selectedDay.date.getDate().toString().padStart(2, '0')}`
+                              );
+                              const scheduledTasks = scheduledActivity?.tasks || [];
+                              const hasMeals = scheduledTasks.some(task => task.startsWith('meal-'));
+
+                              if (hasMeals && todayMealPlan) {
+                                return (
+                                  <>
+                                    <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1.5, fontWeight: 600, color: 'var(--accent-green)' }}>
+                                      Food Program
+                                    </Typography>
+
+                                    {/* Vertical layout for meals within food section */}
+                                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                      {/* 6PM Meal */}
+                                      {scheduledTasks.includes('meal-6pm') && todayMealPlan.timeslots['6pm'] && (
+                                        <Box sx={{ p: 2, bgcolor: 'var(--surface-bg)', borderRadius: 1, border: '1px solid var(--border-color)' }}>
+                                          <Typography variant="subtitle1" gutterBottom sx={{ color: 'var(--text-primary)' }}>
+                                            6:00 PM Meal
+                                          </Typography>
+                                          {todayMealPlan.timeslots['6pm'].selectedFoods.map((food, idx) => (
+                                            <Box key={idx} display="flex" justifyContent="space-between" mb={0.5}>
+                                              <Typography variant="body2" sx={{ color: 'var(--text-primary)' }}>{food.name}</Typography>
+                                              <Typography variant="body2" sx={{ color: 'var(--text-secondary)' }}>{food.amount}g</Typography>
+                                            </Box>
+                                          ))}
+                                          
+                                          {todayMealPlan.timeslots['6pm'].externalNutrition.calories > 0 && (
+                                            <Typography variant="caption" sx={{ color: 'var(--text-secondary)' }}>
+                                              + External: {todayMealPlan.timeslots['6pm'].externalNutrition.calories} cal
+                                            </Typography>
+                                          )}
+                                        </Box>
+                                      )}
+
+                                      {/* 9:30PM Meal */}
+                                      {scheduledTasks.includes('meal-9:30pm') && todayMealPlan.timeslots['9:30pm'] && (
+                                        <Box sx={{ p: 2, bgcolor: 'var(--surface-bg)', borderRadius: 1, border: '1px solid var(--border-color)' }}>
+                                          <Typography variant="subtitle1" gutterBottom sx={{ color: 'var(--text-primary)' }}>
+                                            9:30 PM Meal
+                                          </Typography>
+                                          {todayMealPlan.timeslots['9:30pm'].selectedFoods.map((food, idx) => (
+                                            <Box key={idx} display="flex" justifyContent="space-between" mb={0.5}>
+                                              <Typography variant="body2" sx={{ color: 'var(--text-primary)' }}>{food.name}</Typography>
+                                              <Typography variant="body2" sx={{ color: 'var(--text-secondary)' }}>{food.amount}g</Typography>
+                                            </Box>
+                                          ))}
+                                          
+                                          {todayMealPlan.timeslots['9:30pm'].externalNutrition.calories > 0 && (
+                                            <Typography variant="caption" sx={{ color: 'var(--text-secondary)' }}>
+                                              + External: {todayMealPlan.timeslots['9:30pm'].externalNutrition.calories} cal
+                                            </Typography>
+                                          )}
+                                        </Box>
+                                      )}
+                                    </Box>
+
+                                    {/* Total Macros - Full width within food section */}
+                                    {todayMealPlan.totalMacros && (
+                                      <Box sx={{ mt: 2, p: 2, bgcolor: 'var(--accent-blue)', color: 'white', borderRadius: 1 }}>
+                                        <Typography variant="subtitle1" gutterBottom>
+                                          Total Macros
+                                        </Typography>
+                                        <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
+                                          <Typography variant="body2">
+                                            Protein: {Math.round(todayMealPlan.totalMacros.protein)}g
+                                          </Typography>
+                                          <Typography variant="body2">
+                                            Fats: {Math.round(todayMealPlan.totalMacros.fats)}g
+                                          </Typography>
+                                          <Typography variant="body2">
+                                            Carbs: {Math.round(todayMealPlan.totalMacros.carbs)}g
+                                          </Typography>
+                                          <Typography variant="body2">
+                                            Calories: {Math.round(todayMealPlan.totalMacros.calories)}
+                                          </Typography>
+                                        </Box>
+                                      </Box>
+                                    )}
+                                  </>
+                                );
+                              }
+                              return null;
+                            })()}
+                          </Box>
+
+                          {/* Right: Gym Workout */}
+                          <Box sx={{ minWidth: 0, maxHeight: { md: 560, lg: 680 }, overflowY: 'auto', pr: 0.5 }}>
+                            {(() => {
+                              const scheduledActivity = scheduledActivities.find(activity => 
+                                activity.date === `${selectedDay.date.getFullYear()}-${(selectedDay.date.getMonth() + 1).toString().padStart(2, '0')}-${selectedDay.date.getDate().toString().padStart(2, '0')}`
+                              );
+                              const scheduledTasks = scheduledActivity?.tasks || [];
+                              const hasGym = scheduledTasks.includes('gym-workout');
+
+                              if (hasGym && todayWorkout) {
+                                return (
+                                  <>
+                                    <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1.5, fontWeight: 600, color: 'var(--accent-orange)' }}>
+                                      Gym Workout
+                                    </Typography>
+
+                                    <Box sx={{ p: 2, bgcolor: 'var(--surface-bg)', borderRadius: 1, mb: 2, border: '1px solid var(--border-color)' }}>
+                                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                                        <Typography variant="h6" sx={{ color: 'var(--text-primary)' }}>
+                                          {todayWorkout.name}
+                                        </Typography>
+                                        <Chip
+                                          label={todayWorkout.status}
+                                          color={todayWorkout.status === 'completed' ? 'success' : 'default'}
+                                          size="small"
+                                        />
+                                      </Box>
+
+                                      <Typography variant="subtitle2" gutterBottom sx={{ color: 'var(--text-secondary)' }}>
+                                        {todayWorkout.exercises?.length || 0} Exercise{(todayWorkout.exercises?.length || 0) !== 1 ? 's' : ''}
+                                      </Typography>
+                                    </Box>
+
+                                    {/* Render ALL exercises - no truncation */}
+                                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                                      {todayWorkout.exercises
+                                        ?.sort((a, b) => a.order - b.order)
+                                        .map((exercise) => (
+                                          <Paper
+                                            key={exercise.id || `${exercise.name}-${exercise.order}`}
+                                            sx={{
+                                              bgcolor: 'var(--card-bg)',
+                                              border: '1px solid var(--border-color)',
+                                              borderRadius: 2,
+                                              p: 1.25,
+                                              mb: 1,
+                                              transition: 'all 0.3s ease',
+                                              '&:hover': {
+                                                bgcolor: 'var(--card-hover-bg)',
+                                                transform: 'translateY(-1px)',
+                                                boxShadow: 'var(--elevation-1)'
+                                              }
+                                            }}
+                                          >
+                                            <Typography variant="body2" sx={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                                              {exercise.name}
+                                            </Typography>
+                                            <Typography variant="caption" sx={{ color: 'var(--text-secondary)' }}>
+                                              {exercise.kg}kg • {exercise.sets} sets × {exercise.reps} reps
+                                            </Typography>
+                                            {exercise.notes && (
+                                              <Typography variant="caption" sx={{ color: 'var(--text-secondary)', display: 'block', mt: 0.5 }}>
+                                                {exercise.notes}
+                                              </Typography>
+                                            )}
+                                          </Paper>
+                                        ))}
+                                    </Box>
+
+                                    {todayWorkout.notes && (
+                                      <Box sx={{ mt: 2, p: 1.5, bgcolor: 'var(--surface-bg)', borderRadius: 1, border: '1px solid var(--border-color)' }}>
+                                        <Typography variant="subtitle2" gutterBottom sx={{ color: 'var(--text-primary)' }}>
+                                          Notes
+                                        </Typography>
+                                        <Typography variant="body2" sx={{ color: 'var(--text-primary)' }}>
+                                          {todayWorkout.notes.length > 100 
+                                            ? `${todayWorkout.notes.substring(0, 100)}...` 
+                                            : todayWorkout.notes}
+                                        </Typography>
+                                      </Box>
+                                    )}
+                                  </>
+                                );
+                              }
+                              return null;
+                            })()}
+                          </Box>
+                        </Box>
+
+                        {/* Action Buttons */}
+                        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mt: 3 }}>
+                          <Button
+                            variant="contained"
+                            onClick={handleCreateMealPlan}
+                            sx={{
+                              flex: 1,
+                              minWidth: 150,
+                              transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)',
+                              background: (() => {
+                                const scheduledActivity = scheduledActivities.find(activity => 
+                                  activity.date === `${selectedDay.date.getFullYear()}-${(selectedDay.date.getMonth() + 1).toString().padStart(2, '0')}-${selectedDay.date.getDate().toString().padStart(2, '0')}`
+                                );
+                                const scheduledTasks = scheduledActivity?.tasks || [];
+                                return scheduledTasks.includes('meal-6pm') || scheduledTasks.includes('meal-9:30pm')
+                                  ? 'linear-gradient(135deg, var(--accent-green) 0%, rgba(59, 186, 117, 0.8) 100%)'
+                                  : 'linear-gradient(135deg, var(--primary-main) 0%, rgba(25, 118, 210, 0.8) 100%)';
+                              })(),
+                              border: '1px solid var(--border-color)',
+                              color: 'white',
+                              fontWeight: 600,
+                              fontSize: '0.9rem',
+                              py: 1.5,
+                              px: 2,
+                              borderRadius: 2,
+                              position: 'relative',
+                              overflow: 'hidden',
+                              boxShadow: 'var(--elevation-2)',
+                              '&::before': {
+                                content: '""',
+                                position: 'absolute',
+                                inset: 0,
+                                background: 'linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.05) 100%)',
+                                opacity: 0,
+                                transition: 'opacity 300ms ease'
+                              },
+                              '&:hover': {
+                                transform: 'translateY(-3px) scale(1.02)',
+                                boxShadow: 'var(--elevation-3)',
+                                borderColor: 'var(--accent-green)',
+                                '&::before': { opacity: 1 }
+                              }
+                            }}
+                          >
+                            {(() => {
+                              const scheduledActivity = scheduledActivities.find(activity => 
+                                activity.date === `${selectedDay.date.getFullYear()}-${(selectedDay.date.getMonth() + 1).toString().padStart(2, '0')}-${selectedDay.date.getDate().toString().padStart(2, '0')}`
+                              );
+                              const scheduledTasks = scheduledActivity?.tasks || [];
+                              return scheduledTasks.includes('meal-6pm') || scheduledTasks.includes('meal-9:30pm')
+                                ? 'Edit Meal Plan'
+                                : 'Create Meal Plan';
+                            })()}
+                          </Button>
+                          <Button
+                            variant="contained"
+                            onClick={handleCreateWorkout}
+                            sx={{
+                              flex: 1,
+                              minWidth: 150,
+                              transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)',
+                              background: (() => {
+                                const scheduledActivity = scheduledActivities.find(activity => 
+                                  activity.date === `${selectedDay.date.getFullYear()}-${(selectedDay.date.getMonth() + 1).toString().padStart(2, '0')}-${selectedDay.date.getDate().toString().padStart(2, '0')}`
+                                );
+                                const scheduledTasks = scheduledActivity?.tasks || [];
+                                return scheduledTasks.includes('gym-workout')
+                                  ? 'linear-gradient(135deg, var(--accent-orange) 0%, rgba(255, 152, 0, 0.8) 100%)'
+                                  : 'linear-gradient(135deg, var(--primary-main) 0%, rgba(25, 118, 210, 0.8) 100%)';
+                              })(),
+                              border: '1px solid var(--border-color)',
+                              color: 'white',
+                              fontWeight: 600,
+                              fontSize: '0.9rem',
+                              py: 1.5,
+                              px: 2,
+                              borderRadius: 2,
+                              position: 'relative',
+                              overflow: 'hidden',
+                              boxShadow: 'var(--elevation-2)',
+                              '&::before': {
+                                content: '""',
+                                position: 'absolute',
+                                inset: 0,
+                                background: 'linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.05) 100%)',
+                                opacity: 0,
+                                transition: 'opacity 300ms ease'
+                              },
+                              '&:hover': {
+                                transform: 'translateY(-3px) scale(1.02)',
+                                boxShadow: 'var(--elevation-3)',
+                                borderColor: 'var(--accent-orange)',
+                                '&::before': { opacity: 1 }
+                              }
+                            }}
+                          >
+                            {(() => {
+                              const scheduledActivity = scheduledActivities.find(activity => 
+                                activity.date === `${selectedDay.date.getFullYear()}-${(selectedDay.date.getMonth() + 1).toString().padStart(2, '0')}-${selectedDay.date.getDate().toString().padStart(2, '0')}`
+                              );
+                              const scheduledTasks = scheduledActivity?.tasks || [];
+                              return scheduledTasks.includes('gym-workout')
+                                ? 'Edit Workout'
+                                : 'Create Workout';
+                            })()}
+                          </Button>
+                        </Box>
+                      </>
+                    )}
+                  </Box>
+                )}
+              </>
+            }
+          />
+        </Box>
+      )}
+
+      {/* Day Detail Modal (only shown in expanded view when clicking days) */}
+      {isExpandedView && (
+        <DayModal
+          selectedDay={clickedDay}
+          scheduledActivities={scheduledActivities}
+          onClose={() => setClickedDay(null)}
+          onCreateMealPlan={handleCreateMealPlan}
+          onCreateWorkout={handleCreateWorkout}
+        />
+      )}
     </Container>
   );
 };
