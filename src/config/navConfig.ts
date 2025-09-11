@@ -227,13 +227,7 @@ export const getDefaultLocalPath = (moduleKey: string): string => {
   const locals = getLocalItems(moduleKey);
   if (locals.length === 0) return '';
 
-  // Check if any item has rememberLastTab enabled and get last used tab
-  const lastUsedTab = getLastUsedTab(moduleKey);
-  if (lastUsedTab && locals.some(item => item.path === lastUsedTab && item.rememberLastTab)) {
-    return lastUsedTab;
-  }
-
-  // Fall back to default item or first item
+  // Always use the default item or first item (ignore remembered tab)
   const defaultItem = locals.find(item => item.default) || locals[0];
   return defaultItem?.path || '';
 };

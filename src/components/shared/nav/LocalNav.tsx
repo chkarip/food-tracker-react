@@ -52,13 +52,6 @@ const LocalNav: React.FC<LocalNavProps> = ({ currentModule = 'dashboard' }) => {
   return (
     <Box
       sx={{
-        position: 'sticky',
-        top: isMobile ? 0 : 'var(--nav-height)',
-        height: 'var(--local-nav-height, 40px)',
-        backgroundColor: 'var(--local-nav-bg)',
-        borderBottom: '1px solid var(--local-nav-border)',
-        color: 'var(--local-nav-text)',
-        zIndex: 'calc(var(--nav-z) - 1)',
         display: 'flex',
         alignItems: 'center',
         px: isMobile ? 2 : 3,
@@ -90,7 +83,7 @@ const LocalNav: React.FC<LocalNavProps> = ({ currentModule = 'dashboard' }) => {
       aria-label={`${currentModule} local navigation`}
     >
       {localItems.map((item, index) => {
-        const isActive = location.pathname === item.path;
+        const isActive = location.pathname === item.path || (index === 0 && !localItems.some(i => i.path === location.pathname));
 
         return (
           <Button
@@ -103,31 +96,44 @@ const LocalNav: React.FC<LocalNavProps> = ({ currentModule = 'dashboard' }) => {
             id={`tab-${item.key}`}
             tabIndex={isActive ? 0 : -1}
             sx={{
-              color: 'var(--local-nav-text)',
+              color: isActive ? 'var(--nav-active)' : 'var(--local-nav-text)',
               textTransform: 'none',
               fontSize: isMobile ? '0.8rem' : '0.875rem',
               fontWeight: isActive ? 600 : 400,
-              borderBottom: isActive ? '2px solid var(--nav-active)' : '2px solid transparent',
-              borderRadius: 0,
+              // Enhanced underline for active state
+              borderBottom: isActive
+                ? '3px solid var(--local-nav-underline)'
+                : '3px solid transparent',
+              borderRadius: 1,
               px: isMobile ? 1.5 : 2,
               py: 1,
               minHeight: 'var(--local-nav-height, 40px)',
               whiteSpace: 'nowrap',
               flexShrink: 0,
-              backgroundColor: isActive ? 'var(--local-nav-active)' : 'transparent',
-              transition: 'all 0.2s ease-in-out',
+              // Enhanced background states
+              backgroundColor: isActive
+                ? 'var(--local-nav-active)'
+                : 'transparent',
+              transition: 'all 0.3s ease-in-out',
               '&:hover': {
-                backgroundColor: 'var(--local-nav-hover)',
-                borderBottomColor: isActive ? 'var(--nav-active)' : 'var(--local-nav-hover)',
-                color: 'var(--nav-text)',
+                backgroundColor: isActive
+                  ? 'var(--local-nav-active)'
+                  : 'var(--local-nav-hover)',
+                borderBottomColor: isActive
+                  ? 'var(--local-nav-underline)'
+                  : 'rgba(var(--meal-primary-rgb), 0.3)',
+                color: isActive
+                  ? 'var(--nav-active)'
+                  : 'var(--nav-text)',
+                transform: 'translateY(-1px)', // Subtle lift effect
               },
               '&:focus-visible': {
-                outline: 'var(--focus-ring)',
+                outline: '2px solid var(--nav-active)',
                 outlineOffset: '2px',
                 backgroundColor: 'var(--local-nav-hover)',
               },
               '&:active': {
-                transform: 'scale(0.98)',
+                transform: 'scale(0.98) translateY(0)',
               },
             }}
           >

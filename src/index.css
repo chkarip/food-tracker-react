@@ -114,22 +114,26 @@
   /* Navigation tokens */
   --nav-height: 56px;
   --nav-bg: var(--surface-bg);
-  --nav-text: var(--text-primary);
+  --nav-text: #bfc6cf; /* Default text color */
   --nav-border: var(--border-color);
-  --nav-hover: rgba(59, 186, 117, 0.08);
-  --nav-active: rgba(59, 186, 117, 0.12);
+  --nav-hover: rgba(59, 186, 117, 0.1);
+  --nav-active: #3BBA75; /* Active item color */
+    --nav-active-bg: rgba(59, 186, 117, 0.08);
+  --nav-active-hover-bg: rgba(59, 186, 117, 0.12);
   --nav-radius: 8px;
   --nav-z: 1000;
   --nav-shadow: 0 2px 8px rgba(0,0,0,0.08);
   --focus-ring: 0 0 0 2px rgba(59, 186, 117, 0.3);
+  --meal-primary-rgb: 59, 186, 117; /* For rgba usage */
 
   /* Local navigation tokens */
   --local-nav-height: 40px;
   --local-nav-bg: var(--surface-bg);
-  --local-nav-text: var(--text-secondary);
+  --local-nav-text: #8a8f98;
   --local-nav-border: var(--border-color);
-  --local-nav-hover: rgba(59, 186, 117, 0.06);
-  --local-nav-active: rgba(59, 186, 117, 0.1);
+  --local-nav-hover: rgba(255, 255, 255, 0.05);
+  --local-nav-active: rgba(59, 186, 117, 0.15);
+  --local-nav-underline: #3BBA75;
 }
 
 /* Dark theme */
@@ -208,7 +212,12 @@
 
   /* Navigation dark theme overrides */
   --nav-shadow: 0 2px 8px rgba(0,0,0,0.25);
-  --local-nav-text: var(--text-secondary);
+  --nav-hover: rgba(59, 186, 117, 0.08);
+  --nav-text: #8a8f98; /* Slightly muted for dark theme */
+  --local-nav-text: #bfc6cf;
+  --local-nav-active: rgba(59, 186, 117, 0.12);
+  --local-nav-hover: rgba(255, 255, 255, 0.08);
+  --local-nav-underline: #3BBA75;
 
   /* Mobile navigation adjustments */
   --mobile-nav-height: 56px;

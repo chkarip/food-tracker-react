@@ -86,7 +86,9 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({ darkMode, toggleDarkMode, o
         {navConfig
           .filter(item => item.permission?.() ?? true)
           .map((item, index) => {
-            const isActive = location.pathname === item.path;
+            const isActive = item.path === '/' 
+              ? location.pathname === '/' 
+              : location.pathname.startsWith(item.path);
             const IconComponent = item.icon;
 
             return (
@@ -95,24 +97,31 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({ darkMode, toggleDarkMode, o
                 onClick={() => handleNavClick(item.path)}
                 onKeyDown={(event) => handleKeyDown(event, index)}
                 sx={{
-                  color: 'var(--nav-text)',
+                  color: isActive ? 'var(--nav-active)' : 'var(--nav-text)',
                   textTransform: 'none',
-                  fontWeight: isActive ? 600 : 400,
-                  borderBottom: isActive ? '2px solid var(--nav-active)' : '2px solid transparent',
-                  borderRadius: 0,
+                  fontWeight: isActive ? 600 : 500, // More subtle weight difference
+                  borderRadius: 1,
                   px: 2,
                   py: 1,
                   minHeight: 'var(--nav-height)',
-                  backgroundColor: isActive ? 'var(--nav-active)' : 'transparent',
-                  transition: 'all 0.2s ease-in-out',
+                  // More subtle background for active state
+                  backgroundColor: isActive
+                    ? 'rgba(var(--meal-primary-rgb), 0.06)'
+                    : 'transparent',
+                  transition: 'all 0.3s ease-in-out',
                   '&:hover': {
-                    backgroundColor: 'var(--nav-hover)',
-                    borderBottomColor: isActive ? 'var(--nav-active)' : 'var(--nav-hover)',
+                    backgroundColor: isActive
+                      ? 'rgba(var(--meal-primary-rgb), 0.1)'
+                      : 'rgba(var(--meal-primary-rgb), 0.05)',
+                    color: isActive
+                      ? 'var(--nav-active)'
+                      : 'var(--nav-text)',
+                    transform: 'translateY(-1px)', // Subtle lift
                   },
                   '&:focus-visible': {
-                    outline: 'var(--focus-ring)',
+                    outline: '2px solid var(--nav-active)',
                     outlineOffset: '2px',
-                    backgroundColor: 'var(--nav-hover)',
+                    backgroundColor: 'rgba(var(--meal-primary-rgb), 0.08)',
                   },
                   '&:active': {
                     transform: 'scale(0.98)',

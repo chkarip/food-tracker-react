@@ -217,20 +217,34 @@ const Layout: React.FC<LayoutProps> = ({
           />
         )}
 
-        {/* Local Navigation */}
-        <LocalNav currentModule={currentModule} />
-
-        {/* Page content with conditional top padding */}
+        {/* Content area with local nav positioned at top-right */}
         <Box
           sx={{
             flexGrow: 1,
             p: 3,
-            pt: hasLocalNav
-              ? `calc(${isMobile ? '16px' : 'var(--nav-height)'} + var(--local-nav-height, 40px) + 24px)`
-              : `calc(${isMobile ? '16px' : 'var(--nav-height)'} + 24px)`,
+            pt: isMobile ? '16px' : 'calc(var(--nav-height) + 24px)',
+            minHeight: '100vh',
+            display: 'flex',
+            flexDirection: 'column',
           }}
         >
-          {children || <Outlet />}
+          {/* Local Navigation positioned at top-center if it exists */}
+          {hasLocalNav && !isMobile && (
+            <Box
+              sx={{
+                alignSelf: 'center', // Position to the center
+                mb: 2, // Margin bottom to separate from content
+                maxWidth: 'fit-content', // Don't take full width
+              }}
+            >
+              <LocalNav currentModule={currentModule} />
+            </Box>
+          )}
+
+          {/* Page content */}
+          <Box sx={{ flexGrow: 1 }}>
+            {children || <Outlet />}
+          </Box>
         </Box>
       </Box>
 
