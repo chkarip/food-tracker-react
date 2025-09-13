@@ -23,6 +23,7 @@ import ShoppingList from './components/food-management/ShoppingList';
 import GymPage from './components/workout/GymPage';
 import FinancePage from './modules/finance/pages/FinancePage';
 import ProfilePage from './pages/ProfilePage';
+import WaterTrackerPage from './pages/WaterTrackerPage';
 import AuthGuard from './components/auth/AuthGuard';
 import { AuthProvider } from './contexts/AuthContext';
 import { FoodProvider } from './contexts/FoodContext';
@@ -161,6 +162,8 @@ function FoodTrackerApp() {
                 <Route path="/shopping/list" element={<ShoppingList />} />
                 <Route path="/shopping/recipes" element={<div>Recipe Shopping - Coming Soon</div>} />
                 <Route path="/shopping/history" element={<div>Purchase History - Coming Soon</div>} />
+                {/* Water module routes */}
+                <Route path="/water" element={<WaterTrackerPage />} />
                 {/* Other routes */}
                 <Route path="/profile" element={<ProfilePage />} />
               </Routes>

@@ -6,6 +6,7 @@ export * from './meal-planning/foodHistoryService';
 export * from './user/userPreferencesService';
 export * from './meal-planning/timeslotsService';
 export * from './workout/workoutService';
+export * from './water/waterService';
 
 // Export specific helpers from scheduledActivitiesService to avoid conflicts
 export { 

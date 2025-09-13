@@ -58,8 +58,8 @@ export const ACTIVITY_GRID_PRESETS = {
   // Compact view for smaller cards
   compact: {
     ...DEFAULT_ACTIVITY_GRID_CONFIG,
-    cubeSize: { small: 6, medium: 8, large: 10 },
-    gap: { small: 1, medium: 1, large: 2 },
+    cubeSize: { small: 12, medium: 16, large: 20 },
+    gap: { small: 0.5, medium: 1, large: 1.5 },
     hoverScale: 1.2,
     columns: 20
   },

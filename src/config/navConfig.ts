@@ -4,7 +4,8 @@ import {
   ShoppingCart as ShoppingIcon,
   FitnessCenter as GymIcon,
   AccountBalance as FinanceIcon,
-  Person as ProfileIcon
+  Person as ProfileIcon,
+  LocalDrink as WaterIcon
 } from '@mui/icons-material';
 import { SvgIconTypeMap } from '@mui/material';
 import { OverridableComponent } from '@mui/material/OverridableComponent';
@@ -54,6 +55,13 @@ export const navConfig: NavItem[] = [
     label: 'Finance',
     icon: FinanceIcon,
     path: '/finance',
+    permission: () => true,
+  },
+  {
+    key: 'water',
+    label: 'Water',
+    icon: WaterIcon,
+    path: '/water',
     permission: () => true,
   },
   {

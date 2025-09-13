@@ -188,3 +188,22 @@ export interface ScheduledWorkoutDocument {
   updatedAt: Timestamp;
   completedAt?: Timestamp;
 }
+
+// Water Intake collection for hydration tracking
+export interface WaterIntakeDocument {
+  id?: string;
+  userId: string;
+  date: string; // YYYY-MM-DD format
+  totalAmount: number; // ml
+  targetAmount: number; // ml (default: 2500)
+  entries: Array<{
+    id: string;
+    amount: number; // ml
+    timestamp: Timestamp;
+    source?: 'manual' | 'preset-300ml' | 'preset-700ml' | 'preset-1L';
+  }>;
+  goalAchieved: boolean;
+  streakCount: number; // consecutive days meeting goal
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}

@@ -11,7 +11,12 @@
  * KEY BUSINESS LOGIC:
  * 1. UNIFIED TASK ARCHITECTURE: Centralizes ALL user activities regardless of category
  *    (meals, workouts, financial goals, habits, projects, etc.) in one calendar view
- * 2. VISUAL TASK MANAGEMENT: Shows scheduled activities as colored pills on calendar days
+ * 2. VISUAL TASK MANAGEMENT: Shows sched                        <Box sx={{
+                          position: 'relative',
+                          minHeight: 500, // Increased to accommodate stacked cards with 40px offset
+                          width: '100%',
+                          overflow: 'visible' // Ensure cards aren't clipped
+                        }}>activities as colored pills on calendar days
  * 3. COMPLETION TRACKING: Monitors task completion rates and maintains streak information
  * 4. MODULE STATISTICS: Displays progress across all activity categories (food, gym, finance, custom)
  * 5. FLEXIBLE SCHEDULING: Supports any recurring pattern or one-time scheduled activities
@@ -29,22 +34,16 @@
  * - Supports data-driven life optimization through comprehensive analytics
  * - Scales to accommodate unlimited task categories and custom activities
  */
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Container,
   Typography,
-  alpha,
-  useTheme,
   Button,
-  Paper,
-  IconButton,
-  CircularProgress,
-  Chip
+  CircularProgress
 } from '@mui/material';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { ActivityCard } from '../components/activity/Activity';
 import Calendar from '../components/calendar/Calendar';
 import DayModal from '../components/calendar/DayModal';
 import { useModuleStats } from '../modules/shared/hooks/useModuleStats';
@@ -56,16 +55,15 @@ import {
   loadTimeslots,
   getScheduledWorkoutsForMonth
 } from '../services/firebase';
-import { DailyPlanDocument, ActivityHistoryDocument, ScheduledActivitiesDocument, ScheduledWorkoutDocument, TimeslotsDocument } from '../types/firebase';
+import { getWaterIntakeForMonth } from '../services/firebase/water/waterService';
+import { DailyPlanDocument, ActivityHistoryDocument, ScheduledActivitiesDocument, ScheduledWorkoutDocument } from '../types/firebase';
 import { ExpandMore as ExpandIcon, CalendarToday as CalendarIcon } from '@mui/icons-material';
 import { GenericCard } from '../components/shared/cards';
-import { loadMealPlan, loadScheduledWorkout } from '../services/firebase';
-import { MealPlanDocument } from '../types/firebase';
+import { TodayScheduleStack } from '../components/shared/TodayScheduleStack';
 
 const DashboardPage: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const theme = useTheme();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState<CalendarDay | null>(null);
   const [clickedDay, setClickedDay] = useState<CalendarDay | null>(null); // Track clicked days separately
@@ -73,13 +71,11 @@ const DashboardPage: React.FC = () => {
   const [scheduledActivities, setScheduledActivities] = useState<ScheduledActivitiesDocument[]>([]);
   const [scheduledWorkouts, setScheduledWorkouts] = useState<ScheduledWorkoutDocument[]>([]);
   const [activityHistory, setActivityHistory] = useState<ActivityHistoryDocument[]>([]);
-  const [loading, setLoading] = useState(false);
   const [calendarRefresh, setCalendarRefresh] = useState(0); // Force calendar updates
   const [isExpandedView, setIsExpandedView] = useState(false); // Control view mode
-  const [selectedDayTimeslots, setSelectedDayTimeslots] = useState<TimeslotsDocument | null>(null);
-  const [todayMealPlan, setTodayMealPlan] = useState<MealPlanDocument | null>(null);
-  const [todayWorkout, setTodayWorkout] = useState<ScheduledWorkoutDocument | null>(null);
-  const [detailLoading, setDetailLoading] = useState(false);
+  const [calendarDays, setCalendarDays] = useState<CalendarDay[]>([]);
+  const [calendarDataLoaded, setCalendarDataLoaded] = useState(false);
+  const [dayModalLoading, setDayModalLoading] = useState(false);
 
   // Module stats hooks
   const { stats: foodStats } = useModuleStats('food', user?.uid);
@@ -89,10 +85,9 @@ const DashboardPage: React.FC = () => {
   // Generate sample activity data for the last 100 days
   const generateActivityData = (moduleType: 'food' | 'gym' | 'finance'): ActivityData[] => {
     const activities: ActivityData[] = [];
-    const today = new Date();
     
     for (let i = 99; i >= 0; i--) {
-      const date = new Date(today);
+      const date = new Date();
       date.setDate(date.getDate() - i);
       const dateKey = date.toISOString().split('T')[0];
       
@@ -146,62 +141,58 @@ const DashboardPage: React.FC = () => {
   const gymActivityData = generateActivityData('gym');
   const financeActivityData = generateActivityData('finance');
 
-  // Load meal plans for current month and additional data
-  const loadMealPlans = async () => {
+  // Load only today's data for initial compact view
+  const loadTodayData = async () => {
     if (!user) return;
-    
-    setLoading(true);
+
+    try {
+      const today = new Date();
+      const todayKey = today.toISOString().split('T')[0];
+
+      // Load only today's scheduled activities
+      const todayActivities = await getScheduledActivitiesForMonth(
+        user.uid,
+        today.getFullYear(),
+        today.getMonth()
+      );
+
+      // Filter to only today's activities
+      const todayScheduledActivity = todayActivities.find(activity => activity.date === todayKey);
+
+      setScheduledActivities(todayScheduledActivity ? [todayScheduledActivity] : []);
+      setMealPlans([]); // Clear monthly data
+      setScheduledWorkouts([]); // Clear monthly data
+      setActivityHistory([]); // Clear monthly data
+    } catch (error) {
+      console.error('Error loading today data:', error);
+    }
+  };
+
+  // Load full month data for calendar view
+  const loadFullMonthData = async () => {
+    if (!user) return;
+
+    setCalendarDataLoaded(false);
     try {
       const year = currentDate.getFullYear();
-      const month = currentDate.getMonth(); // 0-based month
-      console.log('DashboardPage: Loading data for:', { 
-        year, 
-        month, 
-        monthName: currentDate.toLocaleDateString('en-US', { month: 'long' }),
-        userId: user.uid 
-      });
-      
-      // Load meal plans (legacy - for backward compatibility)
-      const plans = await getDailyPlansForMonth(
-        user.uid,
-        currentDate.getFullYear(),
-        currentDate.getMonth()
-      );
-      
-      // Load scheduled activities (new structure)
-      const activities = await getScheduledActivitiesForMonth(
-        user.uid,
-        currentDate.getFullYear(),
-        currentDate.getMonth()
-      );
-      
-      // Load scheduled workouts
-      const workouts = await getScheduledWorkoutsForMonth(
-        user.uid,
-        currentDate.getFullYear(),
-        currentDate.getMonth()
-      );
-      
-      // Load activity history for the same month
-      const history = await getActivityHistoryForMonth(
-        user.uid,
-        currentDate.getFullYear(),
-        currentDate.getMonth() + 1 // API expects 1-based month
-      );
-      
-      console.log('DashboardPage: Loaded plans:', plans.length, 'plans');
-      console.log('DashboardPage: Loaded scheduled activities:', activities.length, 'activities');
-      console.log('DashboardPage: Loaded scheduled workouts:', workouts.length, 'workouts');
-      console.log('DashboardPage: Loaded activity history:', history.length, 'records');
-      
+      const month = currentDate.getMonth();
+
+      // Load all monthly data
+      const [plans, activities, workouts, history] = await Promise.all([
+        getDailyPlansForMonth(user.uid, year, month),
+        getScheduledActivitiesForMonth(user.uid, year, month),
+        getScheduledWorkoutsForMonth(user.uid, year, month),
+        getActivityHistoryForMonth(user.uid, year, month + 1)
+      ]);
+
       setMealPlans(plans);
       setScheduledActivities(activities);
       setScheduledWorkouts(workouts);
       setActivityHistory(history);
+      setCalendarDataLoaded(true);
     } catch (error) {
-      console.error('Error loading data:', error);
-    } finally {
-      setLoading(false);
+      console.error('Error loading full month data:', error);
+      setCalendarDataLoaded(true); // Set to true even on error to prevent infinite loading
     }
   };
 
@@ -209,7 +200,6 @@ const DashboardPage: React.FC = () => {
   const loadAdditionalCalendarData = () => {
     // Force re-render to load localStorage data for gym and finance
     // This ensures the calendar updates when we navigate between months
-    const today = new Date();
     const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
     const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
     
@@ -230,7 +220,7 @@ const DashboardPage: React.FC = () => {
   };
 
   useEffect(() => {
-    loadMealPlans();
+    loadTodayData();
     loadAdditionalCalendarData();
     
     // Add storage event listener for localStorage changes
@@ -245,18 +235,31 @@ const DashboardPage: React.FC = () => {
     return () => {
       window.removeEventListener('storage', handleStorageChange);
     };
-  }, [currentDate, user]);
+  }, [user]); // Remove currentDate dependency since we start with today's data
 
   // Generate calendar days with comprehensive task tracking
-  const generateCalendarDays = (date: Date): CalendarDay[] => {
+  const generateCalendarDays = async (date: Date): Promise<CalendarDay[]> => {
     const year = date.getFullYear();
     const month = date.getMonth();
     
     // Get first day of month and how many days to show from previous month
     const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
+    
     const startDate = new Date(firstDay);
     startDate.setDate(startDate.getDate() - firstDay.getDay());
+    
+    // Load all water intake data for the current month to avoid 42 individual requests
+    const waterDataMap = new Map<string, any>();
+    if (user) {
+      try {
+        const monthlyWaterData = await getWaterIntakeForMonth(user.uid, year, month + 1); // API expects 1-based month
+        monthlyWaterData.forEach(waterDoc => {
+          waterDataMap.set(waterDoc.date, waterDoc);
+        });
+      } catch (error) {
+        console.error('Error loading monthly water data:', error);
+      }
+    }
     
     // Generate 42 days (6 weeks)
     const days: CalendarDay[] = [];
@@ -286,12 +289,14 @@ const DashboardPage: React.FC = () => {
         activityMap.set(activity.activityType, activity.completed);
       });
       
+      // Get water intake for this day from the pre-loaded monthly data
+      const waterIntake = waterDataMap.get(dayKey) || null;
+      
       // Generate events based on scheduled activities and meal plans
       const events: CalendarEvent[] = [];
       
       // Food events - check scheduled activities first, then fallback to meal plans
       const scheduledTasks = scheduledActivity?.tasks || [];
-      //console.log('📅 Generating day:', dayKey, { scheduledTasks });
       const has6pmScheduled = scheduledTasks.includes('meal-6pm');
       const has930pmScheduled = scheduledTasks.includes('meal-9:30pm');
       const hasGymScheduled = scheduledTasks.includes('gym');
@@ -378,7 +383,18 @@ const DashboardPage: React.FC = () => {
           finance: financeTransactions.length > 0 ? {
             hasTransactions: true,
             count: financeTransactions.length
-          } : undefined
+          } : undefined,
+          water: waterIntake ? {
+            hasIntake: waterIntake.totalAmount > 0,
+            totalAmount: waterIntake.totalAmount,
+            goalAchieved: waterIntake.goalAchieved,
+            entries: waterIntake.entries.length
+          } : {
+            hasIntake: false,
+            totalAmount: 0,
+            goalAchieved: false,
+            entries: 0
+          }
         }
       });
       
@@ -388,68 +404,82 @@ const DashboardPage: React.FC = () => {
     return days;
   };
 
-  const calendarDays = useMemo(() => {
-    return generateCalendarDays(currentDate);
-  }, [currentDate, mealPlans, scheduledActivities, scheduledWorkouts, activityHistory, calendarRefresh]); // Include all data sources
+  // Load calendar days asynchronously - only when expanded view and data is loaded
+  useEffect(() => {
+    const loadCalendarDays = async () => {
+      if (!user || !isExpandedView || !calendarDataLoaded) return;
+      try {
+        const days = await generateCalendarDays(currentDate);
+        setCalendarDays(days);
+      } catch (error) {
+        console.error('Error loading calendar days:', error);
+      }
+    };
+    loadCalendarDays();
+  }, [currentDate, mealPlans, scheduledActivities, scheduledWorkouts, activityHistory, calendarRefresh, user, isExpandedView, calendarDataLoaded]);
 
   // Set today's date as default selected day when data is loaded (for compact view)
   useEffect(() => {
-    if (calendarDays.length > 0 && !selectedDay && !isExpandedView) {
+    if (!isExpandedView && scheduledActivities.length >= 0 && !selectedDay) {
+      // Create a mock today day for compact view
       const today = new Date();
-      const todayDay = calendarDays.find(day => 
-        day.date.toDateString() === today.toDateString()
-      );
-      if (todayDay) {
-        setSelectedDay(todayDay);
-      }
+      const todayKey = today.toISOString().split('T')[0];
+      
+      // Find today's scheduled activity
+      const todayScheduledActivity = scheduledActivities.find(activity => activity.date === todayKey);
+      
+      const todayDay: CalendarDay = {
+        date: today,
+        isCurrentMonth: true,
+        isToday: true,
+        hasEvents: !!(todayScheduledActivity?.tasks?.length),
+        events: [], // We'll populate this in the compact view
+        scheduledTasks: todayScheduledActivity?.tasks || [],
+        moduleData: {
+          food: { hasMealPlan: false, completedMeals: 0, totalMeals: 2 },
+          gym: { hasWorkout: false, completed: false },
+          finance: undefined,
+          water: { hasIntake: false, totalAmount: 0, goalAchieved: false, entries: 0 }
+        }
+      };
+      
+      setSelectedDay(todayDay);
     }
-  }, [calendarDays, selectedDay, isExpandedView]);
+  }, [scheduledActivities, selectedDay, isExpandedView]);
 
-  // Load detailed data for today's selected day
-  const loadTodayDetails = async () => {
-    if (!selectedDay || !user || isExpandedView) return;
-    
-    setDetailLoading(true);
-    try {
-      // Use local date format to match calendar
-      const year = selectedDay.date.getFullYear();
-      const month = (selectedDay.date.getMonth() + 1).toString().padStart(2, '0');
-      const day = selectedDay.date.getDate().toString().padStart(2, '0');
-      const localDayKey = `${year}-${month}-${day}`;
-
-      const scheduledActivity = scheduledActivities.find(activity => activity.date === localDayKey);
-      const scheduledTasks = scheduledActivity?.tasks || [];
-
-      // Load meal plan if meals are scheduled
-      if (scheduledTasks.some(task => task.startsWith('meal-'))) {
-        const meal = await loadMealPlan(user.uid, selectedDay.date);
-        setTodayMealPlan(meal);
-      } else {
-        setTodayMealPlan(null);
-      }
-
-      // Load workout if gym is scheduled
-      if (scheduledTasks.includes('gym-workout')) {
-        const workout = await loadScheduledWorkout(user.uid, localDayKey);
-        setTodayWorkout(workout);
-      } else {
-        setTodayWorkout(null);
-      }
-    } catch (error) {
-      console.error('Error loading today details:', error);
-    } finally {
-      setDetailLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadTodayDetails();
-  }, [selectedDay, scheduledActivities, user, isExpandedView]);
-
-  const navigateMonth = (direction: 'prev' | 'next') => {
+  const navigateMonth = async (direction: 'prev' | 'next') => {
     const newDate = new Date(currentDate);
     newDate.setMonth(newDate.getMonth() + (direction === 'next' ? 1 : -1));
     setCurrentDate(newDate);
+    
+    // Reload full month data for the new month if in expanded view
+    if (isExpandedView) {
+      // Temporarily store the new date for loading
+      const tempDate = new Date(newDate);
+      setTimeout(async () => {
+        const year = tempDate.getFullYear();
+        const month = tempDate.getMonth();
+        
+        setCalendarDataLoaded(false);
+        try {
+          const [plans, activities, workouts, history] = await Promise.all([
+            getDailyPlansForMonth(user!.uid, year, month),
+            getScheduledActivitiesForMonth(user!.uid, year, month),
+            getScheduledWorkoutsForMonth(user!.uid, year, month),
+            getActivityHistoryForMonth(user!.uid, year, month + 1)
+          ]);
+
+          setMealPlans(plans);
+          setScheduledActivities(activities);
+          setScheduledWorkouts(workouts);
+          setActivityHistory(history);
+          setCalendarDataLoaded(true);
+        } catch (error) {
+          console.error('Error loading new month data:', error);
+          setCalendarDataLoaded(true);
+        }
+      }, 0);
+    }
   };
 
   const goToToday = () => {
@@ -460,17 +490,16 @@ const DashboardPage: React.FC = () => {
     if (!day.isCurrentMonth || !user) return;
     
     setClickedDay(day);
+    setDayModalLoading(true);
     
-    // Load detailed timeslots for the selected day
-    console.log('🔍 Loading timeslots for selected day:', day.date.toISOString().split('T')[0]);
     try {
+      // Load detailed timeslots for the selected day
       const dayDateString = day.date.toISOString().split('T')[0];
-      const timeslots = await loadTimeslots(user.uid, dayDateString);
-      setSelectedDayTimeslots(timeslots);
-      console.log('Timeslots loaded:', !!timeslots);
+      await loadTimeslots(user.uid, dayDateString);
     } catch (error) {
-      console.error('❌ Error loading timeslots:', error);
-      setSelectedDayTimeslots(null);
+      console.error('Error loading timeslots:', error);
+    } finally {
+      setDayModalLoading(false);
     }
   };
 
@@ -494,140 +523,79 @@ const DashboardPage: React.FC = () => {
     setClickedDay(null);
   };
 
-  // Helper function to get task metadata for pills
-  const getTaskMeta = (task: string) => {
-    switch (task) {
-      case 'meal-6pm': 
-        return { 
-          icon: '', 
-          title: '6:00 PM Meal', 
-          color: '#3BBA75',
-          subtitle: todayMealPlan?.timeslots?.['6pm'] ? `${todayMealPlan.timeslots['6pm'].selectedFoods?.length || 0} foods` : undefined,
-          completed: false 
-        };
-      case 'meal-9:30pm': 
-        return { 
-          icon: '', 
-          title: '9:30 PM Meal', 
-          color: '#3BBA75',
-          subtitle: todayMealPlan?.timeslots?.['9:30pm'] ? `${todayMealPlan.timeslots['9:30pm'].selectedFoods?.length || 0} foods` : undefined,
-          completed: false 
-        };
-      case 'gym-workout': 
-        return { 
-          icon: '', 
-          title: 'Gym Workout', 
-          color: '#FF9800',
-          subtitle: todayWorkout ? `${todayWorkout.exercises?.length || 0} exercises` : undefined,
-          completed: todayWorkout?.status === 'completed' 
-        };
-      default: 
-        return { 
-          icon: '', 
-          title: task, 
-          color: '#90CAF9', 
-          completed: false 
-        };
-    }
-  };
-
-  // Handle pill click to scroll to task section
-  const handlePillClick = (task: string) => {
-    // For now, just log - could be enhanced to scroll to section or open modal
-    console.log('Pill clicked:', task);
-  };
-
   return (
-    <Container maxWidth="xl" sx={{ py: 3 }}>
-      {/* Header */}
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h3" sx={{ fontWeight: 700, mb: 1 }}>
-          Dashboard
-        </Typography>
-        <Typography variant="h6" color="text.secondary">
-          Track your daily progress across all activities
-        </Typography>
-      </Box>
-
-      {/* Module Activity Cube Cards */}
-      <Box sx={{ 
-        display: 'grid', 
-        gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' },
-        gap: 3, 
-        mb: 4 
-      }}>
-        {foodStats && (
-          <ActivityCard 
-            stats={foodStats} 
-            activityData={foodActivityData}
-            preset="enhanced"
-            size="medium"
-          />
-        )}
-        {gymStats && (
-          <ActivityCard 
-            stats={gymStats} 
-            activityData={gymActivityData}
-            preset="enhanced"
-            size="medium"
-          />
-        )}
-        {financeStats && (
-          <ActivityCard 
-            stats={financeStats} 
-            activityData={financeActivityData}
-            preset="enhanced"
-            size="medium"
-          />
-        )}
-      </Box>
-
-      {/* View Toggle */}
-      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'center' }}>
-        <Button
-          variant={isExpandedView ? "outlined" : "contained"}
-          onClick={() => {
-            setIsExpandedView(!isExpandedView);
-            if (!isExpandedView) {
-              // Switching to expanded view, clear any selected day from compact view
-              setSelectedDay(null);
-            } else {
-              // Switching to compact view, set today's date
-              const today = new Date();
-              const todayDay = calendarDays.find(day => 
-                day.date.toDateString() === today.toDateString()
-              );
-              if (todayDay) {
-                setSelectedDay(todayDay);
-              }
-            }
-          }}
-          startIcon={isExpandedView ? <CalendarIcon /> : <ExpandIcon />}
-          sx={{ 
-            borderRadius: 2,
-            px: 3,
-            py: 1,
-            fontSize: '1rem',
-            fontWeight: 600
-          }}
-        >
-          {isExpandedView ? 'Show Today\'s Details' : 'Expand to Full Calendar'}
-        </Button>
-      </Box>
-
+    <Container maxWidth="xl" sx={{ pt: 1, pb: 3 }}>
       {/* Conditional Content */}
       {isExpandedView ? (
         /* Full Calendar View */
-        <Calendar
-          currentDate={currentDate}
-          calendarDays={calendarDays}
-          onNavigateMonth={navigateMonth}
-          onGoToToday={goToToday}
-          onDayClick={handleDayClick}
-        />
+        !calendarDataLoaded ? (
+          <Box display="flex" justifyContent="center" py={8}>
+            <Box textAlign="center">
+              <CircularProgress size={48} sx={{ mb: 2 }} />
+              <Typography variant="h6" color="text.secondary">
+                Loading calendar data...
+              </Typography>
+            </Box>
+          </Box>
+        ) : (
+          <Calendar
+            currentDate={currentDate}
+            calendarDays={calendarDays}
+            onNavigateMonth={navigateMonth}
+            onGoToToday={goToToday}
+            onDayClick={handleDayClick}
+          />
+        )
       ) : (
         /* Compact Today's Details View */
         <Box sx={{ maxWidth: 1400, mx: 'auto' }}>
+          {/* Header with Title and Expand Button side by side */}
+          <Box
+            display="flex"
+            flexDirection={{ xs: 'column', sm: 'row' }}
+            alignItems="center"
+            justifyContent="space-between"
+            sx={{ mb: 2 }}
+          >
+            <Typography variant="h3" sx={{ fontWeight: 700, mb: { xs: 2, sm: 0 } }}>
+              Dashboard
+            </Typography>
+
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={async () => {
+                const newExpandedView = !isExpandedView;
+                setIsExpandedView(newExpandedView);
+
+                if (newExpandedView) {
+                  // Switching to expanded view - load full month data
+                  await loadFullMonthData();
+                  // Clear any selected day from compact view
+                  setSelectedDay(null);
+                } else {
+                  // Switching to compact view - reload today's data and set today's date
+                  await loadTodayData();
+                  const today = new Date();
+                  const todayDay = calendarDays.find(day =>
+                    day.date.toDateString() === today.toDateString()
+                  );
+                  if (todayDay) {
+                    setSelectedDay(todayDay);
+                  }
+                }
+              }}
+              startIcon={isExpandedView ? <CalendarIcon /> : <ExpandIcon />}
+              sx={{
+                borderRadius: 5,
+                px: 4,
+                minWidth: { xs: '100%', sm: 'auto' }
+              }}
+            >
+              {isExpandedView ? "Show Today's Details" : 'Expand to Full Calendar'}
+            </Button>
+          </Box>
+
           <GenericCard
             variant="summary"
             size="lg"
@@ -648,312 +616,12 @@ const DashboardPage: React.FC = () => {
             }
             bodySlot={
               <>
-                {/* Today's Day Modal Content */}
+                {/* Schedule Cards */}
                 {selectedDay && (
-                  <Box>
-                    {detailLoading ? (
-                      <Box display="flex" justifyContent="center" py={4}>
-                        <CircularProgress size={24} />
-                      </Box>
-                    ) : (
-                      <>
-                        {/* Two-column layout */}
-                        <Box sx={{
-                          display: 'grid',
-                          gridTemplateColumns: { xs: '1fr', md: '1.6fr 1fr' }, // ~60/40
-                          gap: { xs: 2.5, md: 4 },
-                          alignItems: 'start',
-                          mt: 1
-                        }}>
-                          {/* Left: Food Program */}
-                          <Box sx={{ minWidth: 0 }}>
-                            {(() => {
-                              const scheduledActivity = scheduledActivities.find(activity => 
-                                activity.date === `${selectedDay.date.getFullYear()}-${(selectedDay.date.getMonth() + 1).toString().padStart(2, '0')}-${selectedDay.date.getDate().toString().padStart(2, '0')}`
-                              );
-                              const scheduledTasks = scheduledActivity?.tasks || [];
-                              const hasMeals = scheduledTasks.some(task => task.startsWith('meal-'));
-
-                              if (hasMeals && todayMealPlan) {
-                                return (
-                                  <>
-                                    <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1.5, fontWeight: 600, color: 'var(--accent-green)' }}>
-                                      Food Program
-                                    </Typography>
-
-                                    {/* Vertical layout for meals within food section */}
-                                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                                      {/* 6PM Meal */}
-                                      {scheduledTasks.includes('meal-6pm') && todayMealPlan.timeslots['6pm'] && (
-                                        <Box sx={{ p: 2, bgcolor: 'var(--surface-bg)', borderRadius: 1, border: '1px solid var(--border-color)' }}>
-                                          <Typography variant="subtitle1" gutterBottom sx={{ color: 'var(--text-primary)' }}>
-                                            6:00 PM Meal
-                                          </Typography>
-                                          {todayMealPlan.timeslots['6pm'].selectedFoods.map((food, idx) => (
-                                            <Box key={idx} display="flex" justifyContent="space-between" mb={0.5}>
-                                              <Typography variant="body2" sx={{ color: 'var(--text-primary)' }}>{food.name}</Typography>
-                                              <Typography variant="body2" sx={{ color: 'var(--text-secondary)' }}>{food.amount}g</Typography>
-                                            </Box>
-                                          ))}
-                                          
-                                          {todayMealPlan.timeslots['6pm'].externalNutrition.calories > 0 && (
-                                            <Typography variant="caption" sx={{ color: 'var(--text-secondary)' }}>
-                                              + External: {todayMealPlan.timeslots['6pm'].externalNutrition.calories} cal
-                                            </Typography>
-                                          )}
-                                        </Box>
-                                      )}
-
-                                      {/* 9:30PM Meal */}
-                                      {scheduledTasks.includes('meal-9:30pm') && todayMealPlan.timeslots['9:30pm'] && (
-                                        <Box sx={{ p: 2, bgcolor: 'var(--surface-bg)', borderRadius: 1, border: '1px solid var(--border-color)' }}>
-                                          <Typography variant="subtitle1" gutterBottom sx={{ color: 'var(--text-primary)' }}>
-                                            9:30 PM Meal
-                                          </Typography>
-                                          {todayMealPlan.timeslots['9:30pm'].selectedFoods.map((food, idx) => (
-                                            <Box key={idx} display="flex" justifyContent="space-between" mb={0.5}>
-                                              <Typography variant="body2" sx={{ color: 'var(--text-primary)' }}>{food.name}</Typography>
-                                              <Typography variant="body2" sx={{ color: 'var(--text-secondary)' }}>{food.amount}g</Typography>
-                                            </Box>
-                                          ))}
-                                          
-                                          {todayMealPlan.timeslots['9:30pm'].externalNutrition.calories > 0 && (
-                                            <Typography variant="caption" sx={{ color: 'var(--text-secondary)' }}>
-                                              + External: {todayMealPlan.timeslots['9:30pm'].externalNutrition.calories} cal
-                                            </Typography>
-                                          )}
-                                        </Box>
-                                      )}
-                                    </Box>
-
-                                    {/* Total Macros - Full width within food section */}
-                                    {todayMealPlan.totalMacros && (
-                                      <Box sx={{ mt: 2, p: 2, bgcolor: 'var(--accent-blue)', color: 'white', borderRadius: 1 }}>
-                                        <Typography variant="subtitle1" gutterBottom>
-                                          Total Macros
-                                        </Typography>
-                                        <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
-                                          <Typography variant="body2">
-                                            Protein: {Math.round(todayMealPlan.totalMacros.protein)}g
-                                          </Typography>
-                                          <Typography variant="body2">
-                                            Fats: {Math.round(todayMealPlan.totalMacros.fats)}g
-                                          </Typography>
-                                          <Typography variant="body2">
-                                            Carbs: {Math.round(todayMealPlan.totalMacros.carbs)}g
-                                          </Typography>
-                                          <Typography variant="body2">
-                                            Calories: {Math.round(todayMealPlan.totalMacros.calories)}
-                                          </Typography>
-                                        </Box>
-                                      </Box>
-                                    )}
-                                  </>
-                                );
-                              }
-                              return null;
-                            })()}
-                          </Box>
-
-                          {/* Right: Gym Workout */}
-                          <Box sx={{ minWidth: 0, maxHeight: { md: 560, lg: 680 }, overflowY: 'auto', pr: 0.5 }}>
-                            {(() => {
-                              const scheduledActivity = scheduledActivities.find(activity => 
-                                activity.date === `${selectedDay.date.getFullYear()}-${(selectedDay.date.getMonth() + 1).toString().padStart(2, '0')}-${selectedDay.date.getDate().toString().padStart(2, '0')}`
-                              );
-                              const scheduledTasks = scheduledActivity?.tasks || [];
-                              const hasGym = scheduledTasks.includes('gym-workout');
-
-                              if (hasGym && todayWorkout) {
-                                return (
-                                  <>
-                                    <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1.5, fontWeight: 600, color: 'var(--accent-orange)' }}>
-                                      Gym Workout
-                                    </Typography>
-
-                                    <Box sx={{ p: 2, bgcolor: 'var(--surface-bg)', borderRadius: 1, mb: 2, border: '1px solid var(--border-color)' }}>
-                                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                                        <Typography variant="h6" sx={{ color: 'var(--text-primary)' }}>
-                                          {todayWorkout.name}
-                                        </Typography>
-                                        <Chip
-                                          label={todayWorkout.status}
-                                          color={todayWorkout.status === 'completed' ? 'success' : 'default'}
-                                          size="small"
-                                        />
-                                      </Box>
-
-                                      <Typography variant="subtitle2" gutterBottom sx={{ color: 'var(--text-secondary)' }}>
-                                        {todayWorkout.exercises?.length || 0} Exercise{(todayWorkout.exercises?.length || 0) !== 1 ? 's' : ''}
-                                      </Typography>
-                                    </Box>
-
-                                    {/* Render ALL exercises - no truncation */}
-                                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                                      {todayWorkout.exercises
-                                        ?.sort((a, b) => a.order - b.order)
-                                        .map((exercise) => (
-                                          <Paper
-                                            key={exercise.id || `${exercise.name}-${exercise.order}`}
-                                            sx={{
-                                              bgcolor: 'var(--card-bg)',
-                                              border: '1px solid var(--border-color)',
-                                              borderRadius: 2,
-                                              p: 1.25,
-                                              mb: 1,
-                                              transition: 'all 0.3s ease',
-                                              '&:hover': {
-                                                bgcolor: 'var(--card-hover-bg)',
-                                                transform: 'translateY(-1px)',
-                                                boxShadow: 'var(--elevation-1)'
-                                              }
-                                            }}
-                                          >
-                                            <Typography variant="body2" sx={{ fontWeight: 600, color: 'var(--text-primary)' }}>
-                                              {exercise.name}
-                                            </Typography>
-                                            <Typography variant="caption" sx={{ color: 'var(--text-secondary)' }}>
-                                              {exercise.kg}kg • {exercise.sets} sets × {exercise.reps} reps
-                                            </Typography>
-                                            {exercise.notes && (
-                                              <Typography variant="caption" sx={{ color: 'var(--text-secondary)', display: 'block', mt: 0.5 }}>
-                                                {exercise.notes}
-                                              </Typography>
-                                            )}
-                                          </Paper>
-                                        ))}
-                                    </Box>
-
-                                    {todayWorkout.notes && (
-                                      <Box sx={{ mt: 2, p: 1.5, bgcolor: 'var(--surface-bg)', borderRadius: 1, border: '1px solid var(--border-color)' }}>
-                                        <Typography variant="subtitle2" gutterBottom sx={{ color: 'var(--text-primary)' }}>
-                                          Notes
-                                        </Typography>
-                                        <Typography variant="body2" sx={{ color: 'var(--text-primary)' }}>
-                                          {todayWorkout.notes.length > 100 
-                                            ? `${todayWorkout.notes.substring(0, 100)}...` 
-                                            : todayWorkout.notes}
-                                        </Typography>
-                                      </Box>
-                                    )}
-                                  </>
-                                );
-                              }
-                              return null;
-                            })()}
-                          </Box>
-                        </Box>
-
-                        {/* Action Buttons */}
-                        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mt: 3 }}>
-                          <Button
-                            variant="contained"
-                            onClick={handleCreateMealPlan}
-                            sx={{
-                              flex: 1,
-                              minWidth: 150,
-                              transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)',
-                              background: (() => {
-                                const scheduledActivity = scheduledActivities.find(activity => 
-                                  activity.date === `${selectedDay.date.getFullYear()}-${(selectedDay.date.getMonth() + 1).toString().padStart(2, '0')}-${selectedDay.date.getDate().toString().padStart(2, '0')}`
-                                );
-                                const scheduledTasks = scheduledActivity?.tasks || [];
-                                return scheduledTasks.includes('meal-6pm') || scheduledTasks.includes('meal-9:30pm')
-                                  ? 'linear-gradient(135deg, var(--accent-green) 0%, rgba(59, 186, 117, 0.8) 100%)'
-                                  : 'linear-gradient(135deg, var(--primary-main) 0%, rgba(25, 118, 210, 0.8) 100%)';
-                              })(),
-                              border: '1px solid var(--border-color)',
-                              color: 'white',
-                              fontWeight: 600,
-                              fontSize: '0.9rem',
-                              py: 1.5,
-                              px: 2,
-                              borderRadius: 2,
-                              position: 'relative',
-                              overflow: 'hidden',
-                              boxShadow: 'var(--elevation-2)',
-                              '&::before': {
-                                content: '""',
-                                position: 'absolute',
-                                inset: 0,
-                                background: 'linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.05) 100%)',
-                                opacity: 0,
-                                transition: 'opacity 300ms ease'
-                              },
-                              '&:hover': {
-                                transform: 'translateY(-3px) scale(1.02)',
-                                boxShadow: 'var(--elevation-3)',
-                                borderColor: 'var(--accent-green)',
-                                '&::before': { opacity: 1 }
-                              }
-                            }}
-                          >
-                            {(() => {
-                              const scheduledActivity = scheduledActivities.find(activity => 
-                                activity.date === `${selectedDay.date.getFullYear()}-${(selectedDay.date.getMonth() + 1).toString().padStart(2, '0')}-${selectedDay.date.getDate().toString().padStart(2, '0')}`
-                              );
-                              const scheduledTasks = scheduledActivity?.tasks || [];
-                              return scheduledTasks.includes('meal-6pm') || scheduledTasks.includes('meal-9:30pm')
-                                ? 'Edit Meal Plan'
-                                : 'Create Meal Plan';
-                            })()}
-                          </Button>
-                          <Button
-                            variant="contained"
-                            onClick={handleCreateWorkout}
-                            sx={{
-                              flex: 1,
-                              minWidth: 150,
-                              transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)',
-                              background: (() => {
-                                const scheduledActivity = scheduledActivities.find(activity => 
-                                  activity.date === `${selectedDay.date.getFullYear()}-${(selectedDay.date.getMonth() + 1).toString().padStart(2, '0')}-${selectedDay.date.getDate().toString().padStart(2, '0')}`
-                                );
-                                const scheduledTasks = scheduledActivity?.tasks || [];
-                                return scheduledTasks.includes('gym-workout')
-                                  ? 'linear-gradient(135deg, var(--accent-orange) 0%, rgba(255, 152, 0, 0.8) 100%)'
-                                  : 'linear-gradient(135deg, var(--primary-main) 0%, rgba(25, 118, 210, 0.8) 100%)';
-                              })(),
-                              border: '1px solid var(--border-color)',
-                              color: 'white',
-                              fontWeight: 600,
-                              fontSize: '0.9rem',
-                              py: 1.5,
-                              px: 2,
-                              borderRadius: 2,
-                              position: 'relative',
-                              overflow: 'hidden',
-                              boxShadow: 'var(--elevation-2)',
-                              '&::before': {
-                                content: '""',
-                                position: 'absolute',
-                                inset: 0,
-                                background: 'linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.05) 100%)',
-                                opacity: 0,
-                                transition: 'opacity 300ms ease'
-                              },
-                              '&:hover': {
-                                transform: 'translateY(-3px) scale(1.02)',
-                                boxShadow: 'var(--elevation-3)',
-                                borderColor: 'var(--accent-orange)',
-                                '&::before': { opacity: 1 }
-                              }
-                            }}
-                          >
-                            {(() => {
-                              const scheduledActivity = scheduledActivities.find(activity => 
-                                activity.date === `${selectedDay.date.getFullYear()}-${(selectedDay.date.getMonth() + 1).toString().padStart(2, '0')}-${selectedDay.date.getDate().toString().padStart(2, '0')}`
-                              );
-                              const scheduledTasks = scheduledActivity?.tasks || [];
-                              return scheduledTasks.includes('gym-workout')
-                                ? 'Edit Workout'
-                                : 'Create Workout';
-                            })()}
-                          </Button>
-                        </Box>
-                      </>
-                    )}
-                  </Box>
+                  <TodayScheduleStack
+                    gymStats={gymStats}
+                    gymActivityData={gymActivityData}
+                  />
                 )}
               </>
             }
@@ -962,14 +630,36 @@ const DashboardPage: React.FC = () => {
       )}
 
       {/* Day Detail Modal (only shown in expanded view when clicking days) */}
-      {isExpandedView && (
-        <DayModal
-          selectedDay={clickedDay}
-          scheduledActivities={scheduledActivities}
-          onClose={() => setClickedDay(null)}
-          onCreateMealPlan={handleCreateMealPlan}
-          onCreateWorkout={handleCreateWorkout}
-        />
+      {isExpandedView && clickedDay && (
+        dayModalLoading ? (
+          <Box
+            position="fixed"
+            top={0}
+            left={0}
+            right={0}
+            bottom={0}
+            bgcolor="rgba(0,0,0,0.5)"
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+            zIndex={1300}
+          >
+            <Box textAlign="center" bgcolor="background.paper" p={4} borderRadius={2}>
+              <CircularProgress size={48} sx={{ mb: 2 }} />
+              <Typography variant="h6" color="text.secondary">
+                Loading day details...
+              </Typography>
+            </Box>
+          </Box>
+        ) : (
+          <DayModal
+            selectedDay={clickedDay}
+            scheduledActivities={scheduledActivities}
+            onClose={() => setClickedDay(null)}
+            onCreateMealPlan={handleCreateMealPlan}
+            onCreateWorkout={handleCreateWorkout}
+          />
+        )
       )}
     </Container>
   );

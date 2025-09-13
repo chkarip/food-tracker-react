@@ -16,12 +16,14 @@ import {
 import { UserProfileFormData, GoalType } from '../../types/food';
 import { saveUserProfile, getUserProfile } from '../../services/firebase/nutrition/userProfileService';
 import { useAuth } from '../../contexts/AuthContext';
-import { CustomSelect, SelectOption } from '../shared/inputs';
+import { useWaterSettings } from '../../hooks/useWaterSettings';
+import { CustomSelect } from '../shared/inputs';
 import { GenericCard } from '../shared/cards/GenericCard';
 import AccentButton from '../shared/AccentButton';
 
 const UserProfileManager: React.FC = () => {
   const { user } = useAuth();
+  const { waterGoal, loading: waterLoading, error: waterError, saveWaterGoal, updateWaterGoal } = useWaterSettings();
 
   const [profile, setProfile] = useState<UserProfileFormData>({
     gender: 'male',
@@ -30,7 +32,8 @@ const UserProfileManager: React.FC = () => {
     weight: 70,
     activityLevel: 'moderate',
     goal: 'maintain',
-    bodyFatPercentage: undefined
+    bodyFatPercentage: undefined,
+    waterIntakeGoal: waterGoal
   });
   const [includeBodyFat, setIncludeBodyFat] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -77,6 +80,14 @@ const UserProfileManager: React.FC = () => {
     loadProfile();
   }, [user?.uid]);
 
+  // Sync water goal with profile
+  useEffect(() => {
+    setProfile(prev => ({
+      ...prev,
+      waterIntakeGoal: waterGoal
+    }));
+  }, [waterGoal]);
+
   const handleInputChange = (field: keyof UserProfileFormData, value: string | number | undefined) => {
     setProfile(prev => ({
       ...prev,
@@ -85,22 +96,44 @@ const UserProfileManager: React.FC = () => {
   };
 
   const handleSaveProfile = async () => {
-    if (!user?.uid) return;
+    console.log('🔄 Save Profile button clicked');
+    console.log('👤 User:', user);
+    console.log('📊 Profile data:', profile);
+
+    if (!user?.uid) {
+      console.error('❌ No user UID found - user not authenticated');
+      return;
+    }
 
     try {
+      console.log('📝 Preparing profile data for save...');
       const profileToSave = {
         ...profile,
         bodyFatPercentage: includeBodyFat ? profile.bodyFatPercentage : undefined
       };
+      console.log('📋 Profile to save:', profileToSave);
+
+      console.log('💾 Calling saveUserProfile...');
       await saveUserProfile(user.uid, profileToSave);
+      console.log('✅ saveUserProfile completed');
+
+      // Also save water goal separately
+      if (profile.waterIntakeGoal !== undefined) {
+        console.log('💧 Saving water goal:', profile.waterIntakeGoal);
+        await saveWaterGoal(profile.waterIntakeGoal);
+        console.log('✅ Water goal saved');
+      }
+
+      console.log('🎉 Profile save completed successfully');
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch (error) {
-      console.error('Failed to save user profile:', error);
+      console.error('❌ Failed to save user profile:', error);
+      console.error('❌ Error details:', error);
     }
   };
 
-  if (loading) {
+  if (loading || waterLoading) {
     return <Typography>Loading profile...</Typography>;
   }
 
@@ -112,6 +145,18 @@ const UserProfileManager: React.FC = () => {
       <Typography variant="body1" sx={{ color: 'var(--text-secondary)', mb: 3 }}>
         Manage your personal information for accurate macro calculations
       </Typography>
+
+      {!user && (
+        <Alert severity="warning" sx={{ mb: 3 }}>
+          You must be logged in to save your profile.
+        </Alert>
+      )}
+
+      {waterError && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          Water settings error: {waterError}
+        </Alert>
+      )}
 
       <GenericCard
         variant="default"
@@ -262,6 +307,31 @@ const UserProfileManager: React.FC = () => {
               size="small"
             />
 
+            {/* Water Intake Goal */}
+            <TextField
+              label="Daily Water Intake Goal (ml)"
+              type="number"
+              size="small"
+              value={profile.waterIntakeGoal ?? waterGoal}
+              onChange={(e) => {
+                const value = Number(e.target.value);
+                updateWaterGoal(value);
+                handleInputChange('waterIntakeGoal', value);
+              }}
+              inputProps={{ min: 500, max: 5000, step: 100 }}
+              helperText={waterError || "Recommended: 2500-3500ml per day"}
+              error={!!waterError}
+              InputProps={{
+                endAdornment: <InputAdornment position="end">ml</InputAdornment>
+              }}
+              sx={{
+                backgroundColor: 'var(--surface-bg)',
+                '& .MuiOutlinedInput-notchedOutline': {
+                  borderColor: waterError ? 'red' : 'var(--border-color)'
+                }
+              }}
+            />
+
             {/* Save Profile Button */}
             <Box sx={{ mt: 2 }}>
               <AccentButton
@@ -269,12 +339,13 @@ const UserProfileManager: React.FC = () => {
                 disabled={!user?.uid}
                 variant="primary"
                 style={{
-                  backgroundColor: 'var(--accent-green)',
+                  backgroundColor: !user?.uid ? '#ccc' : 'var(--accent-green)',
                   borderRadius: '8px',
-                  fontWeight: 600
+                  fontWeight: 600,
+                  cursor: !user?.uid ? 'not-allowed' : 'pointer'
                 }}
               >
-                Save Profile
+                {!user?.uid ? 'Login Required to Save' : 'Save Profile'}
               </AccentButton>
             </Box>
 

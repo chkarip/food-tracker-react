@@ -65,6 +65,12 @@ export interface CalendarDay {
       totalAmount?: number;
       count?: number;
     };
+    water?: {
+      hasIntake: boolean;
+      totalAmount: number;
+      goalAchieved: boolean;
+      entries: number;
+    };
   };
 }
 

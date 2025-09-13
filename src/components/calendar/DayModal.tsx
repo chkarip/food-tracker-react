@@ -64,10 +64,13 @@ import {
   Restaurant as FoodIcon,
   FitnessCenter as GymIcon,
   Close as CloseIcon,
+  LocalDrink as WaterIcon
 } from '@mui/icons-material';
 import { CalendarDay } from '../../modules/shared/types';
 import { ScheduledActivitiesDocument, MealPlanDocument, ScheduledWorkoutDocument } from '../../types/firebase';
 import { loadMealPlan, loadScheduledWorkout } from '../../services/firebase';
+import { getWaterIntakeForDate } from '../../services/firebase/water/waterService';
+import { WaterIntakeDocument } from '../../types/water';
 import { useAuth } from '../../contexts/AuthContext';
 
 interface DayModalProps {
@@ -90,6 +93,7 @@ const DayModal: React.FC<DayModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [mealPlan, setMealPlan] = useState<MealPlanDocument | null>(null);
   const [scheduledWorkout, setScheduledWorkout] = useState<ScheduledWorkoutDocument | null>(null);
+  const [waterIntake, setWaterIntake] = useState<WaterIntakeDocument | null>(null);
 
   // Load detailed data when a day is selected
   useEffect(() => {
@@ -115,12 +119,14 @@ const DayModal: React.FC<DayModalProps> = ({
         }
 
         // Load workout if gym is scheduled
-        if (scheduledTasks.includes('gym-workout')) {
-          const workout = await loadScheduledWorkout(user.uid, localDayKey);
+        if (scheduled.gym) {
+          const workout = await loadScheduledWorkout(user.uid, selectedDay.date.toISOString().split('T')[0]);
           setScheduledWorkout(workout);
-        } else {
-          setScheduledWorkout(null);
         }
+
+        // Load water intake for the day
+        const water = await getWaterIntakeForDate(user.uid, selectedDay.date);
+        setWaterIntake(water);
 
       } catch (error) {
         console.error('Error loading detailed data:', error);
@@ -657,6 +663,91 @@ const DayModal: React.FC<DayModalProps> = ({
                             </Typography>
                           </Box>
                         )}
+                      </Box>
+                    )}
+                  </Box>
+                }
+              />
+            </Box>
+          )}
+
+          {/* Water Intake Section */}
+          {waterIntake && waterIntake.totalAmount > 0 && (
+            <Box
+              sx={{
+                flexBasis: { xs: '100%', md: '30%' },
+                minWidth: 0
+              }}
+            >
+              <GenericCard
+                title="Water Intake"
+                variant="default"
+                size="md"
+                sx={{
+                  height: 'fit-content',
+                  '& .MuiCardContent-root': {
+                    p: 0
+                  },
+                  transition: 'all 200ms ease',
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: 'var(--elevation-2)'
+                  }
+                }}
+                content={
+                  <Box sx={{ p: 2.5 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                      <WaterIcon sx={{ color: waterIntake.goalAchieved ? '#4CAF50' : '#2196F3' }} />
+                      <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                        {waterIntake.totalAmount}ml / {waterIntake.targetAmount}ml
+                      </Typography>
+                      {waterIntake.goalAchieved && (
+                        <Chip
+                          label="Goal Met"
+                          color="success"
+                          size="small"
+                          sx={{ fontWeight: 600 }}
+                        />
+                      )}
+                    </Box>
+
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                      {waterIntake.entries.length} intake{waterIntake.entries.length !== 1 ? 's' : ''} logged
+                    </Typography>
+
+                    {/* Show recent entries */}
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                      {waterIntake.entries.slice(-3).map((entry, idx) => (
+                        <Box
+                          key={entry.id}
+                          sx={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            p: 1,
+                            bgcolor: 'var(--surface-bg)',
+                            borderRadius: 1,
+                            border: '1px solid var(--border-color)'
+                          }}
+                        >
+                          <Typography variant="body2">
+                            +{entry.amount}ml
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {entry.timestamp.toDate().toLocaleTimeString([], {
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </Typography>
+                        </Box>
+                      ))}
+                    </Box>
+
+                    {waterIntake.streakCount > 0 && (
+                      <Box sx={{ mt: 2, p: 1.5, bgcolor: 'var(--accent-blue)', borderRadius: 1 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 600, color: 'white' }}>
+                          🔥 {waterIntake.streakCount} day streak
+                        </Typography>
                       </Box>
                     )}
                   </Box>

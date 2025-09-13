@@ -18,7 +18,9 @@ export const COLLECTIONS = {
   SCHEDULED_ACTIVITIES: 'scheduledActivities',
   SCHEDULED_WORKOUTS: 'scheduledWorkouts',
   WORKOUT_TEMPLATES: 'workoutTemplates', // This is needed
-  EXERCISES: 'exercises' // Add this if you don't have it
+  EXERCISES: 'exercises', // Add this if you don't have it
+  WATER_INTAKE: 'waterIntake',
+  USER_PROFILES: 'userProfiles'
 } as const;
 
 // Common Firestore utilities

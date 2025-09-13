@@ -42,6 +42,7 @@ export interface UserProfile {
   activityLevel: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
   goal: GoalType;
   bodyFatPercentage?: number;
+  waterIntakeGoal?: number; // ml per day
   createdAt: Date;
   updatedAt: Date;
 }
@@ -54,6 +55,7 @@ export interface UserProfileFormData {
   activityLevel: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
   goal: GoalType;
   bodyFatPercentage?: number;
+  waterIntakeGoal?: number; // ml per day
 }
 
 export interface UserProfileFormData {
