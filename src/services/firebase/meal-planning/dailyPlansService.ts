@@ -47,6 +47,7 @@ import {
   updateDoc,
   deleteDoc
 } from 'firebase/firestore';
+import { useQuery } from '@tanstack/react-query';
 import { db } from '../../../config/firebase';
 import { DailyPlanDocument, ScheduledActivitiesDocument, MealPlanDocument } from '../../../types/firebase';
 import { SelectedFood, ExternalNutrition } from '../../../types/nutrition';
@@ -823,4 +824,32 @@ export const loadMealPlan = async (
     console.error('Error loading meal plan:', error);
     return null;
   }
+};
+
+// React Query Hooks for Calendar Integration
+export const useMonthlyScheduledActivities = (userId: string, year: number, month: number) => {
+  return useQuery({
+    queryKey: ['scheduledActivities', userId, year, month],
+    queryFn: () => getScheduledActivitiesForMonth(userId, year, month),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    enabled: !!userId,
+  });
+};
+
+export const useDailyPlansForMonth = (userId: string, year: number, month: number) => {
+  return useQuery({
+    queryKey: ['dailyPlans', userId, year, month], 
+    queryFn: () => getDailyPlansForMonth(userId, year, month),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    enabled: !!userId,
+  });
+};
+
+export const useMealPlan = (userId: string, date: Date) => {
+  return useQuery({
+    queryKey: ['mealPlan', userId, formatDate(date)],
+    queryFn: () => loadMealPlan(userId, date),
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    enabled: !!userId,
+  });
 };

@@ -10,7 +10,7 @@ import {
   alpha,
   useTheme
 } from '@mui/material';
-import { Restaurant as MealIcon, FitnessCenter as WorkoutIcon, LocalDrink as WaterIcon } from '@mui/icons-material';
+import { Restaurant as MealIcon, FitnessCenter as WorkoutIcon, LocalDrink as WaterIcon, Clear as ClearIcon } from '@mui/icons-material';
 import { useScheduleData } from '../../hooks/useScheduleData';
 import { MealCardContent } from './content/MealCardContent';
 import { WorkoutCardContent } from './content/WorkoutCardContent';
@@ -18,15 +18,25 @@ import { useAuth } from '../../contexts/AuthContext';
 import {
   getTodayWaterIntake,
   addWaterIntake,
-  subscribeToTodayWaterIntake
+  useTodayWaterIntake,
+  clearTodayWaterIntake
 } from '../../services/firebase/water/waterService';
+import { 
+  updateWorkoutStatus,
+  updateWorkoutDetails,
+  getRecentScheduledWorkouts
+} from '../../services/firebase/workout/workoutService';
 import { WaterIntakeDocument, WATER_PRESETS } from '../../types/water';
+import { ScheduledWorkoutDocument } from '../../types/firebase';
 import { ActivityData } from '../../modules/shared/types';
+import { useQueryClient } from '@tanstack/react-query';
+import { createTimestamp } from '../../services/firebase/shared/utils';
 
 interface TodayScheduleStackProps {
   date?: Date;
   gymStats?: any;
   gymActivityData?: ActivityData[];
+  onWorkoutStatusChange?: (workout: ScheduledWorkoutDocument) => void;
 }
 
 type ViewType = 'meal' | 'workout';
@@ -34,11 +44,13 @@ type ViewType = 'meal' | 'workout';
 export const TodayScheduleStack: React.FC<TodayScheduleStackProps> = ({
   date,
   gymStats,
-  gymActivityData
+  gymActivityData,
+  onWorkoutStatusChange
 }) => {
   const { user } = useAuth();
   const theme = useTheme();
-  const { scheduledTasks, mealPlan, workout, loading, mealPlanLoading, workoutLoading, error } = useScheduleData({
+  const queryClient = useQueryClient();
+  const { scheduledTasks, mealPlan, workout, loading, mealPlanLoading, workoutLoading, error, refresh } = useScheduleData({
     date,
     autoLoadDetails: true
   });
@@ -47,6 +59,22 @@ export const TodayScheduleStack: React.FC<TodayScheduleStackProps> = ({
   const [waterData, setWaterData] = useState<WaterIntakeDocument | null>(null);
   const [waterLoading, setWaterLoading] = useState(false);
   const [selectedPreset, setSelectedPreset] = useState<number | null>(null);
+  const [workoutData, setWorkoutData] = useState<ScheduledWorkoutDocument | null>(null);
+  const [workoutStatusLoading, setWorkoutStatusLoading] = useState(false);
+
+  // Use React Query for water data instead of real-time listeners
+  const { data: waterQueryData, isLoading: waterQueryLoading } = useTodayWaterIntake(user?.uid || '');
+
+  // Sync React Query data to local state for compatibility
+  useEffect(() => {
+    if (waterQueryData) {
+      setWaterData(waterQueryData);
+    }
+  }, [waterQueryData]);
+
+  useEffect(() => {
+    setWorkoutData(workout ?? null);
+  }, [workout]);
 
   const hasMeals = scheduledTasks.some(task => task.startsWith('meal-'));
   const hasWorkout = scheduledTasks.includes('gym-workout');
@@ -54,50 +82,197 @@ export const TodayScheduleStack: React.FC<TodayScheduleStackProps> = ({
   // Auto-select the first available view
   React.useEffect(() => {
     if (!loading) {
-      if (hasMeals) {
-        setCurrentView('meal');
-      } else if (hasWorkout) {
+      if (hasWorkout) {
         setCurrentView('workout');
+      } else if (hasMeals) {
+        setCurrentView('meal');
       }
     }
   }, [hasMeals, hasWorkout, loading]);
 
-  // Load water data
-  useEffect(() => {
-    if (!user) return;
-
-    const loadData = async () => {
-      try {
-        const todayData = await getTodayWaterIntake(user.uid);
-        setWaterData(todayData);
-      } catch (error) {
-        console.error('Error loading water data:', error);
-      }
-    };
-
-    loadData();
-
-    // Subscribe to real-time updates
-    const unsubscribe = subscribeToTodayWaterIntake(user.uid, (data) => {
-      setWaterData(data);
-    });
-
-    return () => unsubscribe();
-  }, [user]);
-
   const handleAddWater = async (amount: number, source: string) => {
+    if (!user || !waterData || waterLoading) return;
+
+    // Store previous state for rollback
+    const previousWaterData = waterData;
+    
+    // Set loading BEFORE optimistic update to prevent race conditions
+    setWaterLoading(true);
+    setSelectedPreset(amount);
+
+    // Optimistically update the local state for instant UI feedback
+    const newTotalAmount = waterData.totalAmount + amount;
+    const optimisticEntry = {
+      id: `temp-${Date.now()}`, // Temporary ID for optimistic update
+      amount,
+      timestamp: createTimestamp(),
+      source: source as any
+    };
+    const optimisticWaterData = {
+      ...waterData,
+      totalAmount: newTotalAmount,
+      entries: [...waterData.entries, optimisticEntry],
+      goalAchieved: newTotalAmount >= waterData.targetAmount
+    };
+    setWaterData(optimisticWaterData);
+
+    try {
+      await addWaterIntake(user.uid, amount, source as any);
+
+      // Add small delay to prevent race condition with Firestore
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Invalidate cache in background after successful API call
+      queryClient.invalidateQueries({
+        queryKey: ['waterIntake', user.uid, 'today']
+      });
+    } catch (error) {
+      console.error('Error adding water intake:', error);
+      // Revert optimistic update on error
+      setWaterData(previousWaterData);
+    } finally {
+      setWaterLoading(false);
+      // Clear selection after animation
+      setTimeout(() => setSelectedPreset(null), 500);
+    }
+  };
+
+  const handleClearWater = async () => {
     if (!user || !waterData) return;
+
+    // If no water to clear, just return without doing anything
+    if (waterData.totalAmount === 0) return;
 
     setWaterLoading(true);
     try {
-      await addWaterIntake(user.uid, amount, source as any);
-      setSelectedPreset(amount);
-      // Clear selection after animation
-      setTimeout(() => setSelectedPreset(null), 500);
+      await clearTodayWaterIntake(user.uid);
+      
+      // Immediately invalidate and refetch the water data
+      await queryClient.invalidateQueries({
+        queryKey: ['waterIntake', user.uid, 'today']
+      });
     } catch (error) {
-      console.error('Error adding water intake:', error);
+      console.error('Error clearing water intake:', error);
     } finally {
       setWaterLoading(false);
+    }
+  };
+
+  const handleWorkoutStatusChange = async (completed: boolean) => {
+    if (!user || !workoutData?.id || workoutStatusLoading) return;
+
+    const previousWorkout = workoutData;
+    const nextStatus: ScheduledWorkoutDocument['status'] = completed ? 'completed' : 'scheduled';
+    const optimisticWorkout: ScheduledWorkoutDocument = {
+      ...previousWorkout,
+      status: nextStatus,
+      completedAt: completed ? createTimestamp() : null
+    };
+
+    setWorkoutData(optimisticWorkout);
+    setWorkoutStatusLoading(true);
+
+    try {
+      await updateWorkoutStatus(previousWorkout.id!, nextStatus);
+
+      onWorkoutStatusChange?.(optimisticWorkout);
+
+      queryClient.invalidateQueries({
+        queryKey: ['workout-progress', user.uid]
+      });
+
+      await refresh();
+    } catch (error) {
+      console.error('Error updating workout status:', error);
+      setWorkoutData(previousWorkout);
+    } finally {
+      setWorkoutStatusLoading(false);
+    }
+  };
+
+  const handleUpdateExercise = async (
+    exerciseId: string, 
+    updates: { kg?: number; reps?: number; rest?: number }
+  ) => {
+    if (!user || !workoutData?.id) return;
+
+    const exerciseIndex = workoutData.exercises.findIndex(ex => ex.id === exerciseId);
+    if (exerciseIndex === -1) return;
+
+    // Store previous state for rollback
+    const previousWorkout = workoutData;
+
+    const updatedExercises = [...workoutData.exercises];
+    updatedExercises[exerciseIndex] = {
+      ...updatedExercises[exerciseIndex],
+      ...updates
+    };
+
+    const optimisticWorkout = {
+      ...workoutData,
+      exercises: updatedExercises
+    };
+
+    setWorkoutData(optimisticWorkout);
+
+    try {
+      await updateWorkoutDetails(workoutData.id, { exercises: updatedExercises });
+      await refresh();
+    } catch (error) {
+      console.error('Error updating exercise:', error);
+      // Rollback to previous state on error
+      setWorkoutData(previousWorkout);
+    }
+  };
+
+  const handleSwapExercise = async (exerciseId: string, newExerciseName: string) => {
+    if (!user || !workoutData?.id) return;
+
+    // Store previous state for rollback
+    const previousWorkout = workoutData;
+
+    // Find last stats for the new exercise from history
+    try {
+      const recentWorkouts = await getRecentScheduledWorkouts(user.uid, 90);
+      
+      let lastStats = { kg: 20, reps: 10, sets: 3, rest: 90 }; // defaults
+      
+      for (const workout of recentWorkouts) {
+        const exercise = workout.exercises?.find(ex => ex.name === newExerciseName);
+        if (exercise) {
+          lastStats = {
+            kg: exercise.kg,
+            reps: exercise.reps,
+            sets: exercise.sets,
+            rest: exercise.rest
+          };
+          break;
+        }
+      }
+
+      const exerciseIndex = workoutData.exercises.findIndex(ex => ex.id === exerciseId);
+      if (exerciseIndex === -1) return;
+
+      const updatedExercises = [...workoutData.exercises];
+      updatedExercises[exerciseIndex] = {
+        ...updatedExercises[exerciseIndex],
+        name: newExerciseName,
+        ...lastStats
+      };
+
+      const optimisticWorkout = {
+        ...workoutData,
+        exercises: updatedExercises
+      };
+
+      setWorkoutData(optimisticWorkout);
+
+      await updateWorkoutDetails(workoutData.id, { exercises: updatedExercises });
+      await refresh();
+    } catch (error) {
+      console.error('Error swapping exercise:', error);
+      // Rollback to previous state on error
+      setWorkoutData(previousWorkout);
     }
   };
 
@@ -238,8 +413,8 @@ export const TodayScheduleStack: React.FC<TodayScheduleStackProps> = ({
                     <Box sx={{
                       display: 'flex',
                       justifyContent: 'center',
-                      mb: 2,
-                      flex: 1
+                      mb: 0.5,
+                      flex: 0.6
                     }}>
                       <Box sx={{
                         position: 'relative',
@@ -263,7 +438,7 @@ export const TodayScheduleStack: React.FC<TodayScheduleStackProps> = ({
                     </Box>
 
                     {/* Quick Add Buttons */}
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.3, mb: 0.5 }}>
                       <Button
                         variant={selectedPreset === WATER_PRESETS.SMALL ? "contained" : "outlined"}
                         size="small"
@@ -310,6 +485,52 @@ export const TodayScheduleStack: React.FC<TodayScheduleStackProps> = ({
                         +1L
                       </Button>
                     </Box>
+
+                    {/* Clear Button */}
+                    <Box sx={{ display: 'flex', justifyContent: 'center', mt: 0.5 }}>
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        startIcon={<ClearIcon sx={{ fontSize: 14 }} />}
+                        onClick={handleClearWater}
+                        disabled={waterLoading}
+                        sx={{
+                          minWidth: 70,
+                          fontSize: '0.7rem',
+                          py: 0.5,
+                          px: 1.5,
+                          borderRadius: 1,
+                          fontWeight: 600,
+                          borderColor: waterData.totalAmount === 0
+                            ? alpha('#FF5722', 0.3)
+                            : alpha('#FF5722', 0.5),
+                          color: waterData.totalAmount === 0
+                            ? alpha('#FF5722', 0.5)
+                            : '#FF5722',
+                          '&:hover': {
+                            backgroundColor: waterData.totalAmount === 0
+                              ? 'transparent'
+                              : alpha('#FF5722', 0.1),
+                            borderColor: waterData.totalAmount === 0
+                              ? alpha('#FF5722', 0.3)
+                              : '#FF5722',
+                            transform: waterData.totalAmount === 0
+                              ? 'none'
+                              : 'translateY(-1px)',
+                            boxShadow: waterData.totalAmount === 0
+                              ? 'none'
+                              : `0 2px 6px ${alpha('#FF5722', 0.3)}`
+                          },
+                          '&:disabled': {
+                            borderColor: alpha('#FF5722', 0.3),
+                            color: alpha('#FF5722', 0.3),
+                            cursor: 'not-allowed'
+                          }
+                        }}
+                      >
+                        {waterData.totalAmount > 0 ? 'Clear' : 'None'}
+                      </Button>
+                    </Box>
                   </Box>
                 ) : (
                   <Box sx={{
@@ -348,11 +569,14 @@ export const TodayScheduleStack: React.FC<TodayScheduleStackProps> = ({
             }}
           >
             <WorkoutCardContent
-              workout={workout}
-              scheduledTasks={scheduledTasks}
+              workout={workoutData}
               loading={workoutLoading}
               gymStats={gymStats}
               gymActivityData={gymActivityData}
+              onToggleStatus={handleWorkoutStatusChange}
+              statusUpdating={workoutStatusLoading}
+              onUpdateExercise={handleUpdateExercise}
+              onSwapExercise={handleSwapExercise}
             />
           </Paper>
         )}

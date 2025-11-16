@@ -186,7 +186,7 @@ export interface ScheduledWorkoutDocument {
   status: 'scheduled' | 'completed' | 'skipped';
   createdAt: Timestamp;
   updatedAt: Timestamp;
-  completedAt?: Timestamp;
+  completedAt?: Timestamp | null;
 }
 
 // Water Intake collection for hydration tracking

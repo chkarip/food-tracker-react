@@ -1,29 +1,109 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Box,
   Typography,
   Paper,
-  Chip
+  Chip,
+  Checkbox,
+  FormControlLabel,
+  CircularProgress,
+  IconButton,
+  TextField,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemText
 } from '@mui/material';
+import {
+  Edit as EditIcon,
+  SwapHoriz as SwapIcon,
+  Check as CheckIcon,
+  Close as CloseIcon
+} from '@mui/icons-material';
 import { ScheduledWorkoutDocument } from '../../../types/firebase';
 import { ModuleStats, ActivityData } from '../../../modules/shared/types';
 import ActivityGridSection from '../../activity/ActivityGridSection';
 
 interface WorkoutCardContentProps {
   workout: ScheduledWorkoutDocument | null;
-  scheduledTasks: string[];
   loading?: boolean;
   gymStats?: ModuleStats;
   gymActivityData?: ActivityData[];
+  onToggleStatus?: (completed: boolean) => Promise<void> | void;
+  statusUpdating?: boolean;
+  onUpdateExercise?: (exerciseId: string, updates: { kg?: number; reps?: number; rest?: number }) => Promise<void>;
+  onSwapExercise?: (exerciseId: string, newExerciseName: string) => Promise<void>;
 }
 
 export const WorkoutCardContent: React.FC<WorkoutCardContentProps> = ({
   workout,
-  scheduledTasks,
   loading = false,
   gymStats,
-  gymActivityData = []
+  gymActivityData = [],
+  onToggleStatus,
+  statusUpdating = false,
+  onUpdateExercise,
+  onSwapExercise
 }) => {
+  const [editingExerciseId, setEditingExerciseId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({ kg: 0, reps: 0, rest: 0 });
+  const [swapDialogOpen, setSwapDialogOpen] = useState(false);
+  const [swappingExerciseId, setSwappingExerciseId] = useState<string | null>(null);
+  const [availableExercises, setAvailableExercises] = useState<string[]>([]);
+
+  const handleEditClick = (exercise: ScheduledWorkoutDocument['exercises'][0]) => {
+    setEditingExerciseId(exercise.id);
+    setEditForm({
+      kg: exercise.kg,
+      reps: exercise.reps,
+      rest: exercise.rest
+    });
+  };
+
+  const handleSaveEdit = async () => {
+    if (editingExerciseId && onUpdateExercise) {
+      await onUpdateExercise(editingExerciseId, editForm);
+      setEditingExerciseId(null);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingExerciseId(null);
+  };
+
+  const handleSwapClick = async (exerciseId: string) => {
+    setSwappingExerciseId(exerciseId);
+    
+    // Load available exercises from Firestore
+    try {
+      const { collection, getDocs } = await import('firebase/firestore');
+      const { db } = await import('../../../config/firebase');
+      const exercisesSnapshot = await getDocs(collection(db, 'exercises'));
+      const exercises = exercisesSnapshot.docs
+        .map(doc => doc.data().name as string)
+        .filter(name => name)
+        .sort();
+      setAvailableExercises(exercises);
+    } catch (error) {
+      console.error('Error loading exercises:', error);
+      setAvailableExercises([]);
+    }
+    
+    setSwapDialogOpen(true);
+  };
+
+  const handleSwapConfirm = async (newExerciseName: string) => {
+    if (swappingExerciseId && onSwapExercise) {
+      await onSwapExercise(swappingExerciseId, newExerciseName);
+      setSwapDialogOpen(false);
+      setSwappingExerciseId(null);
+    }
+  };
   // Convert ActivityData to ActivityGridDay format for the grid
   const gridActivityData = useMemo(() => {
     const days = [];
@@ -89,6 +169,24 @@ export const WorkoutCardContent: React.FC<WorkoutCardContentProps> = ({
               />
             </Box>
 
+            {onToggleStatus && (
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', mb: 2, gap: 1 }}>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={workout.status === 'completed'}
+                      onChange={(event) => onToggleStatus?.(event.target.checked)}
+                      disabled={statusUpdating}
+                      sx={{ color: 'var(--accent-orange)' }}
+                    />
+                  }
+                  label="Mark complete"
+                  sx={{ color: 'var(--text-secondary)' }}
+                />
+                {statusUpdating && <CircularProgress size={20} />}
+              </Box>
+            )}
+
             <Typography variant="subtitle2" gutterBottom sx={{ color: 'var(--text-secondary)' }}>
               {workout.exercises?.length || 0} Exercise{(workout.exercises?.length || 0) !== 1 ? 's' : ''}
             </Typography>
@@ -118,38 +216,125 @@ export const WorkoutCardContent: React.FC<WorkoutCardContentProps> = ({
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
           {workout.exercises
             ?.sort((a, b) => a.order - b.order)
-            .map((exercise) => (
-              <Paper
-                key={exercise.id || `${exercise.name}-${exercise.order}`}
-                sx={{
-                  bgcolor: 'var(--card-bg)',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: 2,
-                  p: 1.25,
-                  mb: 1,
-                  transition: 'all 0.3s ease',
-                  '&:hover': {
-                    bgcolor: 'var(--card-hover-bg)',
-                    transform: 'translateY(-1px)',
-                    boxShadow: 'var(--elevation-1)'
-                  }
-                }}
-              >
-                <Typography variant="body2" sx={{ fontWeight: 600, color: 'var(--text-primary)' }}>
-                  {exercise.name}
-                </Typography>
-                <Typography variant="caption" sx={{ color: 'var(--text-secondary)' }}>
-                  {exercise.kg}kg • {exercise.sets} sets × {exercise.reps} reps
-                </Typography>
-                {exercise.notes && (
-                  <Typography variant="caption" sx={{ color: 'var(--text-secondary)', display: 'block', mt: 0.5 }}>
-                    {exercise.notes}
-                  </Typography>
-                )}
-              </Paper>
-            ))}
+            .map((exercise) => {
+              const isEditing = editingExerciseId === exercise.id;
+              
+              return (
+                <Paper
+                  key={exercise.id || `${exercise.name}-${exercise.order}`}
+                  sx={{
+                    bgcolor: 'var(--card-bg)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: 2,
+                    p: 1.25,
+                    mb: 1,
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                      bgcolor: 'var(--card-hover-bg)',
+                      transform: 'translateY(-1px)',
+                      boxShadow: 'var(--elevation-1)'
+                    }
+                  }}
+                >
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 600, color: 'var(--text-primary)', mb: 0.5 }}>
+                        {exercise.name}
+                      </Typography>
+                      
+                      {isEditing ? (
+                        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
+                          <TextField
+                            size="small"
+                            type="number"
+                            label="kg"
+                            value={editForm.kg}
+                            onChange={(e) => setEditForm({ ...editForm, kg: Number(e.target.value) })}
+                            sx={{ width: 80 }}
+                          />
+                          <TextField
+                            size="small"
+                            type="number"
+                            label="reps"
+                            value={editForm.reps}
+                            onChange={(e) => setEditForm({ ...editForm, reps: Number(e.target.value) })}
+                            sx={{ width: 80 }}
+                          />
+                          <TextField
+                            size="small"
+                            type="number"
+                            label="rest (s)"
+                            value={editForm.rest}
+                            onChange={(e) => setEditForm({ ...editForm, rest: Number(e.target.value) })}
+                            sx={{ width: 90 }}
+                          />
+                          <IconButton size="small" onClick={handleSaveEdit} color="success">
+                            <CheckIcon />
+                          </IconButton>
+                          <IconButton size="small" onClick={handleCancelEdit} color="error">
+                            <CloseIcon />
+                          </IconButton>
+                        </Box>
+                      ) : (
+                        <Typography variant="caption" sx={{ color: 'var(--text-secondary)' }}>
+                          {exercise.kg}kg • {exercise.sets} sets × {exercise.reps} reps • {exercise.rest}s rest
+                        </Typography>
+                      )}
+                      
+                      {exercise.notes && !isEditing && (
+                        <Typography variant="caption" sx={{ color: 'var(--text-secondary)', display: 'block', mt: 0.5 }}>
+                          {exercise.notes}
+                        </Typography>
+                      )}
+                    </Box>
+                    
+                    {!isEditing && (onUpdateExercise || onSwapExercise) && (
+                      <Box sx={{ display: 'flex', gap: 0.5 }}>
+                        {onUpdateExercise && (
+                          <IconButton 
+                            size="small" 
+                            onClick={() => handleEditClick(exercise)}
+                            sx={{ color: 'var(--text-secondary)' }}
+                          >
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                        )}
+                        {onSwapExercise && (
+                          <IconButton 
+                            size="small" 
+                            onClick={() => handleSwapClick(exercise.id)}
+                            sx={{ color: 'var(--text-secondary)' }}
+                          >
+                            <SwapIcon fontSize="small" />
+                          </IconButton>
+                        )}
+                      </Box>
+                    )}
+                  </Box>
+                </Paper>
+              );
+            })}
         </Box>
       )}
+
+      {/* Swap Exercise Dialog */}
+      <Dialog open={swapDialogOpen} onClose={() => setSwapDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Swap Exercise</DialogTitle>
+        <DialogContent>
+          <List>
+            {availableExercises.map((exerciseName) => (
+              <ListItem key={exerciseName} disablePadding>
+                <ListItemButton onClick={() => handleSwapConfirm(exerciseName)}>
+                  <ListItemText primary={exerciseName} />
+                </ListItemButton>
+              </ListItem>
+            ))}
+          </List>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setSwapDialogOpen(false)}>Cancel</Button>
+        </DialogActions>
+      </Dialog>
 
       {workout?.notes && (
         <Box sx={{ mt: 2, p: 1.5, bgcolor: 'var(--surface-bg)', borderRadius: 1, border: '1px solid var(--border-color)' }}>

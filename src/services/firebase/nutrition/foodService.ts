@@ -25,6 +25,7 @@ import {
   Timestamp,
 } from 'firebase/firestore';
 import { db } from '../../../config/firebase';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 /**
  * Get all foods from Firestore database
@@ -61,7 +62,7 @@ export const addFood = async (foodData: FoodFormData): Promise<string> => {
   const timestamp = new Date();
   const documentId = foodData.name.toLowerCase().replace(/[^a-z0-9]/g, '-');
   
-  const costEfficiency = foodData.nutrition.protein > 0
+  const costEfficiency = foodData.cost && foodData.nutrition.protein > 0
     ? (foodData.cost.unit === 'unit'
         ? foodData.cost.costPerKg
         : (foodData.cost.costPerKg / 1000) * 100) / foodData.nutrition.protein
@@ -75,10 +76,14 @@ export const addFood = async (foodData: FoodFormData): Promise<string> => {
     id: documentId,
     name: foodData.name,
     nutrition: foodData.nutrition,
-    cost: {
+    cost: foodData.cost ? {
       costPerKg: foodData.cost.costPerKg,
       unit: foodData.cost.unit,
       costEfficiency: costEfficiency,
+    } : {
+      costPerKg: 0,
+      unit: 'kg',
+      costEfficiency: null,
     },
     metadata: {
       category: foodData.category,
@@ -104,7 +109,7 @@ export const addFood = async (foodData: FoodFormData): Promise<string> => {
  */
 export const updateFood = async (firestoreId: string, foodData: FoodFormData): Promise<void> => {
   const timestamp = new Date();
-  const costEfficiency = foodData.nutrition.protein > 0
+  const costEfficiency = foodData.cost && foodData.nutrition.protein > 0
     ? (foodData.cost.unit === 'unit'
         ? foodData.cost.costPerKg
         : (foodData.cost.costPerKg / 1000) * 100) / foodData.nutrition.protein
@@ -117,10 +122,14 @@ export const updateFood = async (firestoreId: string, foodData: FoodFormData): P
   const updateData = {
     name: foodData.name,
     nutrition: foodData.nutrition,
-    cost: {
+    cost: foodData.cost ? {
       costPerKg: foodData.cost.costPerKg,
       unit: foodData.cost.unit,
       costEfficiency: costEfficiency,
+    } : {
+      costPerKg: 0,
+      unit: 'kg',
+      costEfficiency: null,
     },
     metadata: {
       category: foodData.category,
@@ -302,6 +311,88 @@ export const formatCost = (cost: number, decimals: number = 2): string => {
   return `€${cost.toFixed(decimals)}`;
 };
 
+// React Query Hooks for Food Database
+
+/**
+ * Hook to fetch all foods with React Query caching
+ */
+export const useFoodDatabase = () => {
+  return useQuery({
+    queryKey: ['foods'],
+    queryFn: getAllFoods,
+    staleTime: 10 * 60 * 1000, // 10 minutes - food DB rarely changes
+  });
+};
+
+/**
+ * Hook to fetch foods by category with React Query caching
+ */
+export const useFoodsByCategory = (category: string) => {
+  return useQuery({
+    queryKey: ['foods', 'category', category],
+    queryFn: () => getFoodsByCategory(category),
+    enabled: !!category,
+    staleTime: 10 * 60 * 1000, // 10 minutes
+  });
+};
+
+/**
+ * Hook to fetch food categories with React Query caching
+ */
+export const useFoodCategories = () => {
+  return useQuery({
+    queryKey: ['foodCategories'],
+    queryFn: getFoodCategories,
+    staleTime: 30 * 60 * 1000, // 30 minutes - categories change rarely
+  });
+};
+
+/**
+ * Mutation hook for adding foods
+ */
+export const useAddFood = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (foodData: FoodFormData) => addFood(foodData),
+    onSuccess: () => {
+      // Invalidate food cache to refetch
+      queryClient.invalidateQueries({ queryKey: ['foods'] });
+    },
+  });
+};
+
+/**
+ * Mutation hook for updating foods
+ */
+export const useUpdateFood = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ firestoreId, foodData }: { firestoreId: string; foodData: FoodFormData }) =>
+      updateFood(firestoreId, foodData),
+    onSuccess: () => {
+      // Invalidate food cache to refetch
+      queryClient.invalidateQueries({ queryKey: ['foods'] });
+    },
+  });
+};
+
+/**
+ * Mutation hook for deleting foods
+ */
+export const useDeleteFood = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (firestoreId: string) => deleteFood(firestoreId),
+    onSuccess: () => {
+      // Invalidate food cache to refetch
+      queryClient.invalidateQueries({ queryKey: ['foods'] });
+    },
+  });
+};
+
 const foodService = {
   getAllFoods,
   addFood,
@@ -314,6 +405,13 @@ const foodService = {
   calculatePortionCost,
   calculateTotalMealCost,
   formatCost,
+  // React Query hooks
+  useFoodDatabase,
+  useFoodsByCategory,
+  useFoodCategories,
+  useAddFood,
+  useUpdateFood,
+  useDeleteFood,
 };
 
 export default foodService;

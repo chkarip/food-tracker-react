@@ -1,8 +1,7 @@
 import { 
   doc, 
   setDoc, 
-  getDoc, 
-  updateDoc 
+  getDoc
 } from 'firebase/firestore';
 import { db } from '../../../config/firebase';
 import { UserPreferences } from '../../../types/firebase';

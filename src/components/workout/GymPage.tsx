@@ -16,7 +16,7 @@ import { db } from '../../config/firebase';
 import ExerciseCard from './ExerciseCard';
 import ExerciseDialog from './ExerciseDialog';
 import ExerciseFilters from './ExerciseFilters';
-import WorkoutBuilder from './WorkoutBuilder';
+import ProgressTab from './ProgressTab';
 
 // Exercise interface matching Firebase structure
 interface Exercise {
@@ -173,23 +173,11 @@ const GymPage: React.FC = () => {
   const uniqueMuscles = Array.from(new Set(exercises.map(ex => ex.primaryMuscle))).sort();
 
   return (
-    <Box sx={{ width: '100%', minHeight: '100vh', px: 3, py: 3 }}>
-      {/* Header */}
-      <Box sx={{ mb: 4, maxWidth: '1400px', mx: 'auto' }}>
-        <Typography variant="h3" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 2 }}>
-          <GymIcon fontSize="large" color="primary" />
-          Gym Tracker
-        </Typography>
-        <Typography variant="h6" color="text.secondary">
-          Manage your workouts and track your fitness progress
-        </Typography>
-      </Box>
-
+    <Box sx={{ width: '100%', minHeight: '100vh', px: 3, py: 2 }}>
       {/* Tabs */}
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3, maxWidth: '1400px', mx: 'auto' }}>
         <Tabs value={tabValue} onChange={handleTabChange} aria-label="gym tabs">
           <Tab label="Exercise Library" />
-          <Tab label="My Workouts" />
           <Tab label="Progress" />
         </Tabs>
       </Box>
@@ -253,21 +241,9 @@ const GymPage: React.FC = () => {
         </AccentButton>
       </TabPanel>
 
-      {/* Tab 2: My Workouts */}
+      {/* Tab 2: Progress */}
       <TabPanel value={tabValue} index={1}>
-        <WorkoutBuilder />
-      </TabPanel>
-
-      {/* Tab 3: Progress */}
-      <TabPanel value={tabValue} index={2}>
-        <Alert severity="info" sx={{ borderRadius: 2 }}>
-          <Typography variant="h6" gutterBottom>
-            📊 Coming Soon: Progress Tracking
-          </Typography>
-          <Typography>
-            Track your strength gains, personal records, and workout analytics here.
-          </Typography>
-        </Alert>
+        <ProgressTab />
       </TabPanel>
 
       {/* Exercise Dialog */}

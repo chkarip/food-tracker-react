@@ -43,6 +43,7 @@ import {
   onSnapshot,
   getDocs
 } from 'firebase/firestore';
+import { useQuery } from '@tanstack/react-query';
 import { db } from '../../../config/firebase';
 import { COLLECTIONS, formatDate, createTimestamp } from '../shared/utils';
 import {
@@ -306,38 +307,6 @@ export const getWaterActivityData = async (
 };
 
 /**
- * Subscribe to today's water intake changes
- */
-export const subscribeToTodayWaterIntake = (
-  userId: string,
-  callback: (data: WaterIntakeDocument) => void
-) => {
-  const today = formatDate(new Date());
-  const docRef = doc(db, COLLECTIONS.WATER_INTAKE, `${userId}_${today}`);
-
-  return onSnapshot(docRef, async (docSnap) => {
-    if (docSnap.exists()) {
-      callback(docSnap.data() as WaterIntakeDocument);
-    } else {
-      // Get user's custom water goal for empty document
-      const userWaterGoal = await getUserWaterGoal(userId);
-      const emptyDoc: WaterIntakeDocument = {
-        userId,
-        date: today,
-        totalAmount: 0,
-        targetAmount: userWaterGoal,
-        entries: [],
-        goalAchieved: false,
-        streakCount: 0,
-        createdAt: createTimestamp(),
-        updatedAt: createTimestamp()
-      };
-      callback(emptyDoc);
-    }
-  });
-};
-
-/**
  * Update daily target
  */
 export const updateDailyTarget = async (userId: string, target: number): Promise<void> => {
@@ -352,4 +321,58 @@ export const updateDailyTarget = async (userId: string, target: number): Promise
       updatedAt: createTimestamp()
     });
   }
+};
+
+/**
+ * Clear today's water intake (reset to zero)
+ */
+export const clearTodayWaterIntake = async (userId: string): Promise<void> => {
+  const today = formatDate(new Date());
+  const docRef = doc(db, COLLECTIONS.WATER_INTAKE, `${userId}_${today}`);
+
+  const docSnap = await getDoc(docRef);
+  if (docSnap.exists()) {
+    const currentDoc = docSnap.data() as WaterIntakeDocument;
+
+    // Reset water intake data
+    const clearedDoc: WaterIntakeDocument = {
+      ...currentDoc,
+      totalAmount: 0,
+      entries: [],
+      goalAchieved: false,
+      streakCount: 0, // Reset streak since goal is not achieved
+      updatedAt: createTimestamp()
+    };
+
+    await setDoc(docRef, clearedDoc);
+  }
+};
+
+// React Query Hooks for better performance (no real-time listeners)
+export const useTodayWaterIntake = (userId: string) => {
+  return useQuery({
+    queryKey: ['waterIntake', userId, 'today'],
+    queryFn: () => getTodayWaterIntake(userId),
+    staleTime: 10 * 1000, // 10 seconds - water data changes frequently
+    refetchInterval: 15 * 1000, // Refetch every 15 seconds for better responsiveness
+    enabled: !!userId,
+  });
+};
+
+export const useWaterIntakeForMonth = (userId: string, year: number, month: number) => {
+  return useQuery({
+    queryKey: ['waterIntake', userId, 'month', year, month],
+    queryFn: () => getWaterIntakeForMonth(userId, year, month),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    enabled: !!userId,
+  });
+};
+
+export const useWaterStats = (userId: string) => {
+  return useQuery({
+    queryKey: ['waterStats', userId],
+    queryFn: () => getWaterStats(userId),
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    enabled: !!userId,
+  });
 };

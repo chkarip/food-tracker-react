@@ -61,8 +61,12 @@ export const saveScheduledWorkout = async (
       exercises: workout.exercises.length
     });
 
+    const baseStatus = workout.status ?? 'scheduled';
+
     const workoutDoc: Omit<ScheduledWorkoutDocument, 'id'> = {
       ...workout,
+      status: baseStatus,
+      completedAt: baseStatus === 'completed' ? createTimestamp() : null,
       scheduledDate: scheduledDateString, // ✅ store as string
       userId,
       createdAt: createTimestamp(),
@@ -202,7 +206,7 @@ export const updateWorkoutStatus = async (
       doc(db, COLLECTIONS.SCHEDULED_WORKOUTS, workoutId),
       {
         status,
-        completedAt: status === 'completed' ? createTimestamp() : undefined,
+        completedAt: status === 'completed' ? createTimestamp() : null,
         updatedAt: createTimestamp()
       }
     );

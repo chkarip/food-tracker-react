@@ -59,62 +59,62 @@ import {
   Add as AddIcon,
   History as HistoryIcon,
   TrendingUp as TrendingIcon,
-  EmojiEvents as TrophyIcon
+  EmojiEvents as TrophyIcon,
+  Clear as ClearIcon
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import {
-  getTodayWaterIntake,
   addWaterIntake,
-  subscribeToTodayWaterIntake,
-  getWaterActivityData
+  useTodayWaterIntake,
+  getWaterActivityData,
+  clearTodayWaterIntake
 } from '../services/firebase/water/waterService';
-import { WaterIntakeDocument, WaterActivityData, WATER_PRESETS } from '../types/water';
+import { WaterActivityData, WATER_PRESETS } from '../types/water';
 import ActivityGrid from '../components/activity/ActivityGrid';
+import { useQueryClient } from '@tanstack/react-query';
 
 const WaterTrackerPage: React.FC = () => {
   const { user } = useAuth();
   const theme = useTheme();
-  const [waterData, setWaterData] = useState<WaterIntakeDocument | null>(null);
+  const queryClient = useQueryClient();
   const [activityData, setActivityData] = useState<WaterActivityData[]>([]);
   const [loading, setLoading] = useState(false);
   const [manualAmount, setManualAmount] = useState('');
   const [showManualDialog, setShowManualDialog] = useState(false);
   const [selectedPreset, setSelectedPreset] = useState<number | null>(null);
 
-  // Load initial data
+  // Use React Query hook for water data
+  const { data: waterData, isLoading, error } = useTodayWaterIntake(user?.uid || '');
+
+  // Load activity data on mount
   useEffect(() => {
     if (!user) return;
 
-    const loadData = async () => {
+    const loadActivityData = async () => {
       try {
-        const [todayData, historyData] = await Promise.all([
-          getTodayWaterIntake(user.uid),
-          getWaterActivityData(user.uid, 30) // Last 30 days
-        ]);
-        setWaterData(todayData);
+        const historyData = await getWaterActivityData(user.uid, 30);
         setActivityData(historyData);
       } catch (error) {
-        console.error('Error loading water data:', error);
+        console.error('Error loading water activity data:', error);
       }
     };
 
-    loadData();
-
-    // Subscribe to real-time updates
-    const unsubscribe = subscribeToTodayWaterIntake(user.uid, (data) => {
-      setWaterData(data);
-    });
-
-    return () => unsubscribe();
+    loadActivityData();
   }, [user]);
 
   const handleAddWater = async (amount: number, source: string) => {
-    if (!user || !waterData) return;
+    if (!user) return;
 
     setLoading(true);
     try {
       await addWaterIntake(user.uid, amount, source as any);
       setSelectedPreset(amount);
+      
+      // Immediately invalidate and refetch the water data
+      await queryClient.invalidateQueries({
+        queryKey: ['waterIntake', user.uid, 'today']
+      });
+      
       // Clear selection after animation
       setTimeout(() => setSelectedPreset(null), 500);
     } catch (error) {
@@ -133,6 +133,24 @@ const WaterTrackerPage: React.FC = () => {
     }
   };
 
+  const handleClearWater = async () => {
+    if (!user) return;
+
+    setLoading(true);
+    try {
+      await clearTodayWaterIntake(user.uid);
+      
+      // Immediately invalidate and refetch the water data
+      await queryClient.invalidateQueries({
+        queryKey: ['waterIntake', user.uid, 'today']
+      });
+    } catch (error) {
+      console.error('Error clearing water intake:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const getProgressColor = (progress: number) => {
     if (progress >= 100) return '#4CAF50'; // Green when goal achieved
     if (progress >= 75) return '#2196F3'; // Blue for good progress
@@ -145,7 +163,7 @@ const WaterTrackerPage: React.FC = () => {
     return Math.min(progress, 100);
   };
 
-  if (!waterData) {
+  if (isLoading || !waterData) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
         <Typography>Loading water tracker...</Typography>
@@ -168,48 +186,6 @@ const WaterTrackerPage: React.FC = () => {
           boxShadow: 'var(--elevation-1)'
         }}
       >
-        {/* Header */}
-        <Box sx={{
-          p: 3,
-          background: `linear-gradient(135deg, ${alpha(progressColor, 0.1)} 0%, ${alpha(progressColor, 0.05)} 100%)`,
-          borderRadius: '16px 16px 0 0',
-          borderBottom: `2px solid ${alpha(progressColor, 0.3)}`,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 2,
-          boxShadow: `0 4px 12px ${alpha(progressColor, 0.15)}`
-        }}>
-          <WaterIcon
-            sx={{
-              fontSize: 40,
-              color: progressColor,
-              filter: `drop-shadow(0 2px 4px ${alpha(progressColor, 0.3)})`
-            }}
-          />
-          <Box>
-            <Typography
-              variant="h4"
-              sx={{
-                color: 'var(--text-primary)',
-                fontWeight: 700,
-                textShadow: '0 1px 2px rgba(0,0,0,0.1)',
-                mb: 0.5
-              }}
-            >
-              Water Tracker
-            </Typography>
-            <Typography
-              variant="body1"
-              sx={{
-                color: 'var(--text-secondary)',
-                fontWeight: 500
-              }}
-            >
-              Stay hydrated and track your daily water intake
-            </Typography>
-          </Box>
-        </Box>
-
         {/* Main Content */}
         <Box sx={{
           p: 3,
@@ -363,6 +339,34 @@ const WaterTrackerPage: React.FC = () => {
                       }}
                     >
                       1L
+                    </Button>
+                  </Box>
+
+                  {/* Clear Button */}
+                  <Box sx={{ mb: 2 }}>
+                    <Button
+                      variant="outlined"
+                      startIcon={<ClearIcon />}
+                      onClick={handleClearWater}
+                      disabled={loading || waterData.totalAmount === 0}
+                      sx={{
+                        borderColor: '#FF5722',
+                        color: '#FF5722',
+                        fontWeight: 600,
+                        borderRadius: 2,
+                        '&:hover': {
+                          backgroundColor: alpha('#FF5722', 0.1),
+                          borderColor: '#FF5722',
+                          transform: 'translateY(-1px)',
+                          boxShadow: `0 4px 12px ${alpha('#FF5722', 0.3)}`
+                        },
+                        '&:disabled': {
+                          borderColor: alpha('#FF5722', 0.3),
+                          color: alpha('#FF5722', 0.3)
+                        }
+                      }}
+                    >
+                      Clear Today's Water
                     </Button>
                   </Box>
 

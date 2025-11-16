@@ -49,11 +49,11 @@ import DayModal from '../components/calendar/DayModal';
 import { useModuleStats } from '../modules/shared/hooks/useModuleStats';
 import { CalendarDay, CalendarEvent, ActivityData } from '../modules/shared/types';
 import { 
-  getDailyPlansForMonth,
   getActivityHistoryForMonth,
-  getScheduledActivitiesForMonth,
   loadTimeslots,
-  getScheduledWorkoutsForMonth
+  getScheduledWorkoutsForMonth,
+  useMonthlyScheduledActivities,
+  useDailyPlansForMonth
 } from '../services/firebase';
 import { getWaterIntakeForMonth } from '../services/firebase/water/waterService';
 import { DailyPlanDocument, ActivityHistoryDocument, ScheduledActivitiesDocument, ScheduledWorkoutDocument } from '../types/firebase';
@@ -81,6 +81,18 @@ const DashboardPage: React.FC = () => {
   const { stats: foodStats } = useModuleStats('food', user?.uid);
   const { stats: gymStats } = useModuleStats('gym', user?.uid);
   const { stats: financeStats } = useModuleStats('finance', user?.uid);
+
+  // React Query hooks for calendar data
+  const { data: monthlyScheduledActivities, isLoading: scheduledActivitiesLoading } = useMonthlyScheduledActivities(
+    user?.uid || '', 
+    currentDate.getFullYear(), 
+    currentDate.getMonth()
+  );
+  const { data: monthlyDailyPlans, isLoading: dailyPlansLoading } = useDailyPlansForMonth(
+    user?.uid || '', 
+    currentDate.getFullYear(), 
+    currentDate.getMonth()
+  );
 
   // Generate sample activity data for the last 100 days
   const generateActivityData = (moduleType: 'food' | 'gym' | 'finance'): ActivityData[] => {
@@ -146,20 +158,8 @@ const DashboardPage: React.FC = () => {
     if (!user) return;
 
     try {
-      const today = new Date();
-      const todayKey = today.toISOString().split('T')[0];
-
-      // Load only today's scheduled activities
-      const todayActivities = await getScheduledActivitiesForMonth(
-        user.uid,
-        today.getFullYear(),
-        today.getMonth()
-      );
-
-      // Filter to only today's activities
-      const todayScheduledActivity = todayActivities.find(activity => activity.date === todayKey);
-
-      setScheduledActivities(todayScheduledActivity ? [todayScheduledActivity] : []);
+      // Don't load scheduled activities for compact view - only needed for calendar
+      setScheduledActivities([]);
       setMealPlans([]); // Clear monthly data
       setScheduledWorkouts([]); // Clear monthly data
       setActivityHistory([]); // Clear monthly data
@@ -168,7 +168,7 @@ const DashboardPage: React.FC = () => {
     }
   };
 
-  // Load full month data for calendar view
+  // Load full month data for calendar view - now uses React Query hooks
   const loadFullMonthData = async () => {
     if (!user) return;
 
@@ -177,10 +177,12 @@ const DashboardPage: React.FC = () => {
       const year = currentDate.getFullYear();
       const month = currentDate.getMonth();
 
-      // Load all monthly data
-      const [plans, activities, workouts, history] = await Promise.all([
-        getDailyPlansForMonth(user.uid, year, month),
-        getScheduledActivitiesForMonth(user.uid, year, month),
+      // Use React Query data instead of direct calls
+      const plans = monthlyDailyPlans || [];
+      const activities = monthlyScheduledActivities || [];
+
+      // Load other data that still needs direct calls
+      const [workouts, history] = await Promise.all([
         getScheduledWorkoutsForMonth(user.uid, year, month),
         getActivityHistoryForMonth(user.uid, year, month + 1)
       ]);
@@ -416,7 +418,7 @@ const DashboardPage: React.FC = () => {
       }
     };
     loadCalendarDays();
-  }, [currentDate, mealPlans, scheduledActivities, scheduledWorkouts, activityHistory, calendarRefresh, user, isExpandedView, calendarDataLoaded]);
+  }, [currentDate, mealPlans, scheduledActivities, scheduledWorkouts, activityHistory, calendarRefresh, user, isExpandedView, calendarDataLoaded, monthlyScheduledActivities, monthlyDailyPlans]);
 
   // Set today's date as default selected day when data is loaded (for compact view)
   useEffect(() => {
@@ -445,7 +447,7 @@ const DashboardPage: React.FC = () => {
       
       setSelectedDay(todayDay);
     }
-  }, [scheduledActivities, selectedDay, isExpandedView]);
+  }, [scheduledActivities, selectedDay, isExpandedView, monthlyScheduledActivities]);
 
   const navigateMonth = async (direction: 'prev' | 'next') => {
     const newDate = new Date(currentDate);
@@ -462,9 +464,12 @@ const DashboardPage: React.FC = () => {
         
         setCalendarDataLoaded(false);
         try {
-          const [plans, activities, workouts, history] = await Promise.all([
-            getDailyPlansForMonth(user!.uid, year, month),
-            getScheduledActivitiesForMonth(user!.uid, year, month),
+          // Use React Query data instead of direct calls
+          const plans = monthlyDailyPlans || [];
+          const activities = monthlyScheduledActivities || [];
+
+          // Load other data that still needs direct calls
+          const [workouts, history] = await Promise.all([
             getScheduledWorkoutsForMonth(user!.uid, year, month),
             getActivityHistoryForMonth(user!.uid, year, month + 1)
           ]);

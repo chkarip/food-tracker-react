@@ -31,69 +31,43 @@
  * - Integrates seamlessly with existing dashboard system
  */
 
-import { useState, useEffect } from 'react';
 import { ModuleStats } from '../../shared/types';
-import { getWaterStats, subscribeToTodayWaterIntake } from '../../../services/firebase/water/waterService';
+import { useTodayWaterIntake, useWaterStats } from '../../../services/firebase/water/waterService';
 
 export const useWaterModuleStats = (userId?: string) => {
-  const [stats, setStats] = useState<ModuleStats | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // Use React Query hooks for data fetching
+  const { data: todayWaterData, isLoading: todayLoading, error: todayError } = useTodayWaterIntake(userId || '');
+  const { data: waterStatsData, isLoading: statsLoading, error: statsError } = useWaterStats(userId || '');
 
-  useEffect(() => {
-    if (!userId) return;
+  // Combine loading and error states
+  const loading = todayLoading || statsLoading;
+  const error = todayError || statsError;
 
-    const loadStats = async () => {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const waterStats = await getWaterStats(userId);
-
-        const moduleStats: ModuleStats = {
-          title: 'Water Tracking',
-          description: 'Daily hydration goals',
-          icon: '💧',
-          gradient: '#2196F3', // Blue theme for water
-          todayStatus: {
-            completed: waterStats.todayProgress >= 100,
-            progress: waterStats.todayProgress,
-            label: `${Math.round(waterStats.todayAmount)}ml / ${waterStats.todayTarget}ml`
-          },
-          monthlyStats: {
-            completed: waterStats.monthlyCompleted,
-            total: waterStats.monthlyTotal,
-            percentage: waterStats.monthlyPercentage
-          },
-          streakInfo: {
-            current: waterStats.currentStreak,
-            longest: waterStats.longestStreak
-          },
-          actionButton: {
-            label: 'Track Water',
-            route: '/water'
-          }
-        };
-
-        setStats(moduleStats);
-      } catch (err) {
-        console.error('Error loading water stats:', err);
-        setError('Failed to load water statistics');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadStats();
-
-    // Subscribe to real-time updates for today
-    const unsubscribe = subscribeToTodayWaterIntake(userId, async () => {
-      // Reload stats when today's data changes
-      await loadStats();
-    });
-
-    return () => unsubscribe();
-  }, [userId]);
+  // Transform data into ModuleStats format
+  const stats = todayWaterData && waterStatsData ? {
+    title: 'Water Tracking',
+    description: 'Daily hydration goals',
+    icon: '💧',
+    gradient: '#2196F3', // Blue theme for water
+    todayStatus: {
+      completed: todayWaterData.totalAmount >= todayWaterData.targetAmount,
+      progress: Math.min((todayWaterData.totalAmount / todayWaterData.targetAmount) * 100, 100),
+      label: `${Math.round(todayWaterData.totalAmount)}ml / ${todayWaterData.targetAmount}ml`
+    },
+    monthlyStats: {
+      completed: waterStatsData.monthlyCompleted,
+      total: waterStatsData.monthlyTotal,
+      percentage: waterStatsData.monthlyPercentage
+    },
+    streakInfo: {
+      current: waterStatsData.currentStreak,
+      longest: waterStatsData.longestStreak
+    },
+    actionButton: {
+      label: 'Track Water',
+      route: '/water'
+    }
+  } : null;
 
   return { stats, loading, error };
 };

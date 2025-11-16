@@ -5,7 +5,8 @@ import {
   FitnessCenter as GymIcon,
   AccountBalance as FinanceIcon,
   Person as ProfileIcon,
-  LocalDrink as WaterIcon
+  LocalDrink as WaterIcon,
+  Info as InfoIcon
 } from '@mui/icons-material';
 import { SvgIconTypeMap } from '@mui/material';
 import { OverridableComponent } from '@mui/material/OverridableComponent';
@@ -65,6 +66,13 @@ export const navConfig: NavItem[] = [
     permission: () => true,
   },
   {
+    key: 'about',
+    label: 'About',
+    icon: InfoIcon,
+    path: '/about',
+    permission: () => true,
+  },
+  {
     key: 'profile',
     label: 'Profile',
     icon: ProfileIcon,
@@ -104,12 +112,6 @@ export const moduleConfigs: Record<string, ModuleConfig> = {
         rememberLastTab: true,
       },
       {
-        key: 'goals',
-        label: 'Nutrition Goals',
-        path: '/food/goals',
-        rememberLastTab: true,
-      },
-      {
         key: 'inventory',
         label: 'Inventory',
         path: '/food/inventory',
@@ -119,18 +121,6 @@ export const moduleConfigs: Record<string, ModuleConfig> = {
         key: 'recipes',
         label: 'Recipes',
         path: '/food/recipes',
-        rememberLastTab: true,
-      },
-      {
-        key: 'cost',
-        label: 'Cost Analysis',
-        path: '/food/cost',
-        rememberLastTab: true,
-      },
-      {
-        key: 'shopping',
-        label: 'Shopping List',
-        path: '/food/shopping',
         rememberLastTab: true,
       },
       {

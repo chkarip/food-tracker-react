@@ -40,7 +40,8 @@ import  AccentButton  from '../shared/AccentButton';
 import { NumberStepper } from '../shared/inputs';
 import CollapsiblePanel from '../shared/CollapsiblePanel';
 import { GenericCard } from '../shared/cards/GenericCard';
-import { useFoodDatabase } from '../../contexts/FoodContext';
+import { useFoodDatabase, convertToLegacyFoodFormat } from '../../services/firebase/nutrition/foodService';
+import { useFoodSearch } from '../../services/external/openFoodFactsService';
 import groupFoodsByCategory from '../../utils/groupFoodsByCategory';
 import { calculateMacros, formatMacroValue } from '../../utils/nutritionCalculations';
 import { calculatePortionCost, formatCost } from '../../services/firebase/nutrition/foodService';
@@ -76,7 +77,7 @@ interface FoodSelectorWithFirebaseProps {
 /* ================================================================== */
 /* COMPONENT                                                          */
 /* ================================================================== */
-const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = ({
+const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = React.memo(({
   selectedFoods,
   onAddFood,
   onUpdateAmount,
@@ -98,7 +99,15 @@ const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = ({
   onUpdateExternalNutrition,
 }) => {
   /* ---------- data ---------- */
-  const { foodDatabase, loading, error } = useFoodDatabase();
+  const { data: firestoreFoods = [], isLoading: foodsLoading } = useFoodDatabase();
+  const [searchQuery, setSearchQuery] = useState('');
+  const { data: apiResults = [] } = useFoodSearch(searchQuery);
+
+  // Convert Firestore foods to legacy format
+  const foodDatabase = useMemo(() => {
+    if (!firestoreFoods.length) return {};
+    return convertToLegacyFoodFormat(firestoreFoods);
+  }, [firestoreFoods]);
   const [selectedFoodName, setSelectedFoodName] = useState('');
   const [amount, setAmount] = useState(100);
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null); // Track expanded category
@@ -448,17 +457,10 @@ const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = ({
   };
 
   /* ---------- guards ---------- */
-  if (loading)
+  if (foodsLoading)
     return (
       <Alert icon={<CircularProgress size={18} />} severity="info">
         Loading foods…
-      </Alert>
-    );
-
-  if (error)
-    return (
-      <Alert severity="error" sx={{ whiteSpace: 'pre-wrap' }}>
-        {error}
       </Alert>
     );
 
@@ -1189,6 +1191,6 @@ const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = ({
       />
     </Box>
   );
-};
+});
 
 export default FoodSelectorWithFirebase;

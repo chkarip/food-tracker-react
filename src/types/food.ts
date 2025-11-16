@@ -2,11 +2,49 @@
  * Central food type definitions - Single source of truth
  */
 
+// ✅ Open Food Facts API Types
+export interface OpenFoodFactsProduct {
+  code: string;
+  product_name: string;
+  brands?: string;
+  categories?: string;
+  nutriments?: {
+    proteins_100g?: number;
+    fat_100g?: number;
+    carbohydrates_100g?: number;
+    energy_kcal_100g?: number;
+    sugars_100g?: number;
+    fiber_100g?: number;
+    sodium_100g?: number;
+  };
+  serving_size?: string;
+  quantity?: string;
+  image_url?: string;
+  ingredients_text?: string;
+  nutriscore_grade?: string;
+  ecoscore_grade?: string;
+}
+
+export interface OpenFoodFactsSearchResult {
+  products: OpenFoodFactsProduct[];
+  count: number;
+  page: number;
+  page_size: number;
+}
+
+// ✅ Food Search State for Open Food Facts API Integration
+export interface FoodSearchState {
+  isSearching: boolean;
+  searchResults: OpenFoodFactsProduct[];
+  selectedApiFood: OpenFoodFactsProduct | null;
+  error: string | null;
+}
+
 // ✅ Consolidated GoalType with all options
-export type GoalType = 
+export type GoalType =
   // Range-based goals (new format)
   | 'lose_2_3'
-  | 'lose_3_5' 
+  | 'lose_3_5'
   | 'lose_5_10'
   | 'lose_10_15'
   | 'lose_15_20'
@@ -23,7 +61,7 @@ export type GoalType =
   | 'gain_muscle'
   | 'lose_aggressive'
   | 'lose_moderate'
-  | 'lose_gradual' 
+  | 'lose_gradual'
   | 'lose_conservative'
   | 'lose_mild'
   | 'gain_mild'
@@ -152,7 +190,7 @@ export interface BaseFoodData {
 export interface FoodFormData {
   name: string;
   nutrition: FoodNutrition;
-  cost: {
+  cost?: {
     costPerKg: number;
     unit: 'kg' | 'unit';
   };

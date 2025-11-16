@@ -74,8 +74,35 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({ darkMode, toggleDarkMode, o
         gap: 2,
       }}
     >
-      {/* Brand/Title Area */}
-      <Box sx={{ flexShrink: 0 }}>
+      {/* Brand/Title Area with Logo */}
+      <Box 
+        sx={{ 
+          flexShrink: 0, 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: 1.5,
+          cursor: 'pointer'
+        }}
+        onClick={() => navigate('/')}
+      >
+        {/* Logo Placeholder */}
+        <Box
+          sx={{
+            width: 36,
+            height: 36,
+            borderRadius: 1,
+            background: 'linear-gradient(135deg, var(--accent-orange) 0%, var(--accent-green) 100%)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontWeight: 700,
+            fontSize: '1.25rem',
+            color: 'white',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+          }}
+        >
+          TE
+        </Box>
         <Typography variant="h6" sx={{ fontWeight: 700 }}>
           Track Everything
         </Typography>

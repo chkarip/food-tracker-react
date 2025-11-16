@@ -9,10 +9,10 @@ import {
   Typography,
   Button,
   Stack,
-  Alert
+  Alert,
+  Card,
+  CardContent
 } from '@mui/material';
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
 import { NumberStepper } from '../shared/inputs';
 import { saveNutritionGoal, getNutritionGoal } from '../../services/firebase/nutrition/nutritionGoalService';
 import { getUserProfile } from '../../services/firebase/nutrition/userProfileService';

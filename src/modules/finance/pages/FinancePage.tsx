@@ -177,18 +177,7 @@ const FinancePage: React.FC = () => {
   };
 
   return (
-    <Container maxWidth="lg" sx={{ py: 3 }}>
-      {/* Header */}
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h3" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 2 }}>
-          <FinanceIcon fontSize="large" color="primary" />
-          Finance Tracker
-        </Typography>
-        <Typography variant="h6" color="text.secondary">
-          Monitor your income, expenses, and financial goals
-        </Typography>
-      </Box>
-
+    <Container maxWidth="lg" sx={{ py: 2 }}>
       {/* Month Selector */}
       <Card sx={{ mb: 3, borderRadius: 3 }}>
         <CardContent>

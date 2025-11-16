@@ -17,6 +17,49 @@ import { DailyPlanDocument, UserPreferences, FoodHistory, ActivityHistoryDocumen
 import { SelectedFood, ExternalNutrition } from '../../types/nutrition';
 import { calculateTotalMacros } from '../../utils/nutritionCalculations';
 
+// Global Firebase Request Logger
+const logFirebaseOperation = (operation: string, collection: string, details?: any) => {
+  const timestamp = new Date().toISOString();
+  
+  // Create descriptive operation names based on collection and operation
+  let description = '';
+  switch (collection) {
+    case 'mealPlans':
+      if (operation === 'SAVE') description = '💾 Saving Daily Meal Plan';
+      else if (operation === 'LOAD') description = '� Loading Daily Meal Plan';
+      else if (operation === 'DELETE') description = '🗑️ Deleting Daily Meal Plan';
+      else if (operation === 'QUERY') description = '🔍 Querying Meal Plans';
+      break;
+    case 'userPreferences':
+      if (operation === 'SAVE') description = '⚙️ Saving User Preferences';
+      else if (operation === 'LOAD') description = '📋 Loading User Preferences';
+      break;
+    case 'foodHistory':
+      if (operation === 'UPDATE') description = '📊 Updating Food Usage History';
+      else if (operation === 'QUERY') description = '📈 Getting Popular Foods';
+      break;
+    case 'activityHistory':
+      if (operation === 'SAVE') description = '✅ Saving Activity Completion';
+      else if (operation === 'QUERY') description = '📊 Loading Activity History';
+      break;
+    case 'timeslots':
+      if (operation === 'SAVE') description = '🍽️ Saving Meal Timeslots';
+      else if (operation === 'LOAD') description = '📅 Loading Meal Timeslots';
+      break;
+    case 'scheduledActivities':
+      if (operation === 'SAVE') description = '📅 Saving Scheduled Activities';
+      else if (operation === 'LOAD') description = '📋 Loading Scheduled Activities';
+      break;
+    case 'scheduledWorkouts':
+      if (operation === 'QUERY') description = '💪 Loading Scheduled Workouts';
+      break;
+    default:
+      description = `🔥 ${operation} on ${collection}`;
+  }
+  
+  console.log(`${description} [${timestamp}]`, details || '');
+};
+
 const MEAL_PLANS_COLLECTION = 'mealPlans';
 const USER_PREFERENCES_COLLECTION = 'userPreferences';
 const FOOD_HISTORY_COLLECTION = 'foodHistory';
@@ -47,6 +90,7 @@ export const saveDailyPlan = async (
   }
 ): Promise<void> => {
   try {
+    logFirebaseOperation('SAVE', MEAL_PLANS_COLLECTION, { userId, date: date?.toISOString() });
     const planDate = formatDate(date || new Date());
     console.log('💾 Firestore DEBUG - saveDailyPlan:');
     console.log('  👤 UserId:', userId);
@@ -106,6 +150,7 @@ export const loadDailyPlan = async (
   date?: Date
 ): Promise<DailyPlanDocument | null> => {
   try {
+    logFirebaseOperation('LOAD', MEAL_PLANS_COLLECTION, { userId, date: date?.toISOString() });
     const planDate = formatDate(date || new Date());
     const docId = `${userId}_${planDate}`;
     

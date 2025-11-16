@@ -34,15 +34,9 @@
  * - Scales infinitely to accommodate evolving user needs and new activity types
  */
 import { 
-  collection, 
   doc, 
   setDoc, 
   getDoc, 
-  query, 
-  where, 
-  getDocs, 
-  orderBy, 
-  limit,
   Timestamp 
 } from 'firebase/firestore';
 import { db } from '../../../config/firebase';

@@ -34,10 +34,7 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { subscribeToNutritionGoal } from '../../services/firebase/nutrition/nutritionGoalService';
 import { useAuth } from '../../contexts/AuthContext';
-import { Box, Divider, Typography } from '@mui/material';
-import { GenericCard } from '../shared/cards/GenericCard';
-import  AccentButton  from '../shared/AccentButton';
-import { Clear as ClearIcon } from '@mui/icons-material';
+import { Box, Typography } from '@mui/material';
 import {
   WbSunny as AfternoonIcon,
   Nightlight as EveningIcon,
@@ -49,6 +46,7 @@ import { calculateMacros } from '../../utils/nutritionCalculations';
 import ExternalNutritionInput from './ExternalNutritionInput';
 import SaveLoadPlan from './SaveLoadPlan';
 import MealCostDisplay from './MealCostDisplay';
+import { useLocalStorageWithExpiry } from '../../hooks/useLocalStorage';
 
 import {
   SelectedFood,
@@ -56,7 +54,7 @@ import {
   NutritionData,
 } from '../../types/nutrition';
 import { calculateTotalMacros } from '../../utils/nutritionCalculations';
-import { useFoodDatabase } from '../../contexts/FoodContext';
+import { useFoodDatabase, convertToLegacyFoodFormat } from '../../services/firebase/nutrition/foodService';
 
 /* ---------- local types ---------- */
 interface TimeslotData {
@@ -78,35 +76,6 @@ const TIMESLOTS = [
   },
 ];
 
-const STORAGE_KEY = 'mealPlanner_timeslotData';
-
-/* ---------- local storage helpers ---------- */
-const saveToLocalStorage = (data: Record<string, TimeslotData>) => {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  } catch (error) {
-    console.warn('Failed to save meal plan to localStorage:', error);
-  }
-};
-
-const loadFromLocalStorage = (): Record<string, TimeslotData> | null => {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    return stored ? JSON.parse(stored) : null;
-  } catch (error) {
-    console.warn('Failed to load meal plan from localStorage:', error);
-    return null;
-  }
-};
-
-const clearLocalStorage = () => {
-  try {
-    localStorage.removeItem(STORAGE_KEY);
-  } catch (error) {
-    console.warn('Failed to clear meal plan from localStorage:', error);
-  }
-};
-
 /* ================================================================== */
 interface PreviewFood {
   name: string;
@@ -116,17 +85,18 @@ interface PreviewFood {
 const TimeslotMealPlanner: React.FC = () => {
   /* ---------- state ---------- */
   const [currentTimeslot, setCurrentTimeslot] = useState(0);
-  const { foodDatabase } = useFoodDatabase();
+  const { data: firestoreFoods = [] } = useFoodDatabase();
   const { user } = useAuth();
 
-  const [timeslotData, setTimeslotData] = useState<Record<string, TimeslotData>>(() => {
-    // Load from localStorage on initial render
-    const storedData = loadFromLocalStorage();
-    if (storedData) {
-      return storedData;
-    }
-    // Default data if nothing in localStorage
-    return {
+  // Convert Firestore foods to legacy format for compatibility
+  const foodDatabase = useMemo(() => {
+    if (!firestoreFoods.length) return {};
+    return convertToLegacyFoodFormat(firestoreFoods);
+  }, [firestoreFoods]);
+
+  const [timeslotData, setTimeslotData] = useLocalStorageWithExpiry<Record<string, TimeslotData>>(
+    'mealPlanner_timeslotData', // ✅ Use the correct key name
+    {
       '6pm': {
         selectedFoods: [],
         externalNutrition: { protein: 0, fats: 0, carbs: 0, calories: 0 },
@@ -135,8 +105,9 @@ const TimeslotMealPlanner: React.FC = () => {
         selectedFoods: [],
         externalNutrition: { protein: 0, fats: 0, carbs: 0, calories: 0 },
       },
-    };
-  });
+    },
+    { expiresOnNewDay: true } // ✅ Fresh start each day
+  );
 
   // Nutrition goals state
   const [nutritionGoals, setNutritionGoals] = useState<{
@@ -178,11 +149,6 @@ const TimeslotMealPlanner: React.FC = () => {
 
     return () => unsubscribe();
   }, [user?.uid]);
-
-  // Save to localStorage whenever timeslotData changes
-  useEffect(() => {
-    saveToLocalStorage(timeslotData);
-  }, [timeslotData]);
 
   /* ---------- helpers ---------- */
   const getCurrentTimeslotId = useCallback(
@@ -370,9 +336,6 @@ const TimeslotMealPlanner: React.FC = () => {
       },
     });
     
-    // Clear localStorage
-    clearLocalStorage();
-    
     // Clear preview state
     setPreviewFood(null);
     setSelectedFoodName('');
@@ -392,19 +355,43 @@ const TimeslotMealPlanner: React.FC = () => {
     };
   }, [previewFood, getTotalMacros, foodDatabase]);
 
-  /* ---------- localStorage ---------- */
+  // Aggressive cleanup - run immediately on every render
   useEffect(() => {
-    // Load timeslot data from localStorage on mount
-    const storedData = localStorage.getItem('timeslotData');
-    if (storedData) {
-      setTimeslotData(JSON.parse(storedData));
-    }
-  }, []);
+    // Aggressive cleanup - run immediately on every render
+    const cleanupDuplicates = () => {
+      const duplicateKeys = ['timeslotData'];
+      duplicateKeys.forEach(key => {
+        if (localStorage.getItem(key)) {
+          console.log(`🧹 Removing duplicate localStorage key: ${key}`);
+          localStorage.removeItem(key);
+        }
+      });
+    };
 
+    // Clean up immediately
+    cleanupDuplicates();
+
+    // Also clean up after a short delay to catch async race conditions
+    const timeout = setTimeout(cleanupDuplicates, 100);
+
+    return () => {
+      clearTimeout(timeout);
+      // Clean up on unmount too
+      cleanupDuplicates();
+    };
+  }, []); // Run on every mount
+
+  // Additional periodic cleanup
   useEffect(() => {
-    // Save timeslot data to localStorage whenever it changes
-    localStorage.setItem('timeslotData', JSON.stringify(timeslotData));
-  }, [timeslotData]);
+    const interval = setInterval(() => {
+      if (localStorage.getItem('timeslotData')) {
+        console.log('🧹 Periodic cleanup: removing duplicate timeslotData');
+        localStorage.removeItem('timeslotData');
+      }
+    }, 2000); // Check every 2 seconds
+
+    return () => clearInterval(interval);
+  }, []);
 
   /* ---------- render ---------- */
   const currentData = getCurrentData();

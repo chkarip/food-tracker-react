@@ -36,6 +36,74 @@ import { getFirestore } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { getAnalytics } from 'firebase/analytics';
 
+// Global Request Logger - Logs all HTTP requests in the app with operation context
+const originalFetch = window.fetch;
+
+function getRequestDescription(url: string, method: string, options?: RequestInit): string {
+  // Firebase Firestore requests
+  if (url.includes('firestore.googleapis.com') || url.includes('firebasedatabase.app')) {
+    return 'Firebase Database';
+  }
+  
+  // Firebase Auth requests
+  if (url.includes('identitytoolkit.googleapis.com') || url.includes('securetoken.googleapis.com')) {
+    return 'Firebase Auth';
+  }
+  
+  // Open Food Facts API
+  if (url.includes('world.openfoodfacts.org')) {
+    if (url.includes('/cgi/search.pl')) {
+      const searchParams = new URLSearchParams(url.split('?')[1]);
+      const query = searchParams.get('search_terms');
+      return `Open Food Facts Search: "${query}"`;
+    }
+    if (url.includes('/api/v0/product/')) {
+      const barcode = url.split('/product/')[1]?.split('.')[0];
+      return `Open Food Facts Product: ${barcode}`;
+    }
+    return 'Open Food Facts API';
+  }
+  
+  // Firebase Storage
+  if (url.includes('firebasestorage.googleapis.com')) {
+    return 'Firebase Storage';
+  }
+  
+  // Firebase Analytics/Performance
+  if (url.includes('firebaseinstallations.googleapis.com') || 
+      url.includes('firebaselogging.googleapis.com') ||
+      url.includes('firebaseremoteconfig.googleapis.com')) {
+    return 'Firebase Analytics/Config';
+  }
+  
+  // Generic fallback
+  try {
+    const urlObj = new URL(url);
+    return `${urlObj.hostname}`;
+  } catch {
+    return 'Unknown Service';
+  }
+}
+
+window.fetch = async function(...args) {
+  const [url, options] = args;
+  const method = options?.method || 'GET';
+  const timestamp = new Date().toISOString();
+  const urlString = typeof url === 'string' ? url : url instanceof URL ? url.href : url.url;
+  const description = getRequestDescription(urlString, method, options);
+  
+  console.log(`🌐 REQUEST [${timestamp}] ${description} - ${method} ${urlString}`);
+  
+  try {
+    const response = await originalFetch.apply(this, args);
+    console.log(`✅ RESPONSE [${timestamp}] ${description} - Status: ${response.status}`);
+    return response;
+  } catch (error) {
+    console.log(`❌ REQUEST FAILED [${timestamp}] ${description} - Error: ${error}`);
+    throw error;
+  }
+};
+
 // Firebase configuration object
 const firebaseConfig = {
   apiKey: process.env.REACT_APP_FIREBASE_API_KEY,

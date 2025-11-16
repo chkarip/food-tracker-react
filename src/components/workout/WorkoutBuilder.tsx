@@ -63,16 +63,46 @@ const WorkoutBuilder: React.FC = () => {
     loadExercises();
   }, []);
 
-  // Instead of loading from legacy "workouts" collection, clear or initialize empty on type change:
+  // Load latest template when workout type changes
   useEffect(() => {
-    setCurrentWorkout({
-      name: selectedWorkoutType,
-      exercises: [],
-      lastModified: new Date(),
-      isActive: true,
-    });
-    clearSelectedTemplate(); // Clear any selected template on type change
-  }, [selectedWorkoutType]);
+    const loadLatestTemplate = async () => {
+      if (!user) return;
+      
+      // Clear current selection when changing workout type
+      clearSelectedTemplate();
+      
+      // Load templates for the selected workout type
+      await loadTemplatesForWorkoutType(selectedWorkoutType);
+    };
+    
+    loadLatestTemplate();
+  }, [selectedWorkoutType, user, loadTemplatesForWorkoutType, clearSelectedTemplate]);
+
+  // Auto-select latest template when templates are loaded
+  useEffect(() => {
+    if (templates.length > 0 && !selectedTemplate) {
+      // Auto-load the most recent template (sorted by lastUsed desc)
+      const latestTemplate = templates[0];
+      loadTemplate(latestTemplate.id).then(template => {
+        if (template) {
+          setCurrentWorkout({
+            name: template.name,
+            exercises: template.exercises,
+            lastModified: new Date(),
+            isActive: true,
+          });
+        }
+      });
+    } else if (templates.length === 0 && !selectedTemplate) {
+      // No templates available, show empty workout
+      setCurrentWorkout({
+        name: selectedWorkoutType,
+        exercises: [],
+        lastModified: new Date(),
+        isActive: true,
+      });
+    }
+  }, [templates, selectedTemplate, loadTemplate, selectedWorkoutType]);
 
   const loadExercises = async () => {
     try {

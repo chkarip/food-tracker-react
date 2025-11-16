@@ -31,7 +31,7 @@
  * - Integrates seamlessly with existing dashboard workflow
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Card,
   CardContent,
@@ -45,14 +45,14 @@ import {
 import { LocalDrink as WaterIcon } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 import {
-  getTodayWaterIntake,
   addWaterIntake,
-  subscribeToTodayWaterIntake
+  useTodayWaterIntake
 } from '../../services/firebase/water/waterService';
 import { WaterIntakeDocument, WATER_PRESETS } from '../../types/water';
 import { db } from '../../config/firebase';
 import { COLLECTIONS, createTimestamp } from '../../services/firebase/shared/utils';
 import { doc, setDoc } from 'firebase/firestore';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface WaterCardProps {
   size?: 'small' | 'medium' | 'large';
@@ -61,32 +61,12 @@ interface WaterCardProps {
 const WaterCard: React.FC<WaterCardProps> = ({ size = 'medium' }) => {
   const { user } = useAuth();
   const theme = useTheme();
-  const [waterData, setWaterData] = useState<WaterIntakeDocument | null>(null);
+  const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
   const [selectedPreset, setSelectedPreset] = useState<number | null>(null);
 
-  // Load initial data
-  useEffect(() => {
-    if (!user) return;
-
-    const loadData = async () => {
-      try {
-        const todayData = await getTodayWaterIntake(user.uid);
-        setWaterData(todayData);
-      } catch (error) {
-        console.error('Error loading water data:', error);
-      }
-    };
-
-    loadData();
-
-    // Subscribe to real-time updates
-    const unsubscribe = subscribeToTodayWaterIntake(user.uid, (data) => {
-      setWaterData(data);
-    });
-
-    return () => unsubscribe();
-  }, [user]);
+  // Use React Query hook for water data
+  const { data: waterData, isLoading, error } = useTodayWaterIntake(user?.uid || '');
 
   const handleAddWater = async (amount: number, source: string) => {
     if (!user || !waterData) return;
@@ -95,6 +75,12 @@ const WaterCard: React.FC<WaterCardProps> = ({ size = 'medium' }) => {
     try {
       await addWaterIntake(user.uid, amount, source as any);
       setSelectedPreset(amount);
+      
+      // Immediately invalidate and refetch the water data
+      await queryClient.invalidateQueries({
+        queryKey: ['waterIntake', user.uid, 'today']
+      });
+      
       // Clear selection after animation
       setTimeout(() => setSelectedPreset(null), 500);
     } catch (error) {
@@ -105,7 +91,10 @@ const WaterCard: React.FC<WaterCardProps> = ({ size = 'medium' }) => {
   };
 
   const handleClearWater = async () => {
-    if (!user || !waterData || waterData.totalAmount === 0) return;
+    if (!user || !waterData) return;
+
+    // If no water to clear, just return without doing anything
+    if (waterData.totalAmount === 0) return;
 
     setLoading(true);
     try {
@@ -120,6 +109,11 @@ const WaterCard: React.FC<WaterCardProps> = ({ size = 'medium' }) => {
 
       const docRef = doc(db, COLLECTIONS.WATER_INTAKE, `${user.uid}_${waterData.date}`);
       await setDoc(docRef, clearedDoc);
+
+      // Immediately invalidate and refetch the water data
+      await queryClient.invalidateQueries({
+        queryKey: ['waterIntake', user.uid, 'today']
+      });
     } catch (error) {
       console.error('Error clearing water intake:', error);
     } finally {
@@ -138,7 +132,7 @@ const WaterCard: React.FC<WaterCardProps> = ({ size = 'medium' }) => {
     return Math.min(progress, 100);
   };
 
-  if (!waterData) {
+  if (isLoading || !waterData) {
     return (
       <Card sx={{
         height: size === 'small' ? 200 : size === 'large' ? 280 : 300,
@@ -258,12 +252,19 @@ const WaterCard: React.FC<WaterCardProps> = ({ size = 'medium' }) => {
         </Box>
 
         {/* Quick Add Buttons */}
-        <Box sx={{ mt: 'auto', pb: 0.5 }}>
+        <Box sx={{ 
+          position: 'absolute', 
+          bottom: size === 'small' ? 16 : 20, 
+          left: '50%', 
+          transform: 'translateX(-50%)',
+          width: '90%'
+        }}>
           {/* Preset Buttons Row */}
           <Box sx={{
             display: 'flex',
             gap: 0.5,
             mb: 1,
+            flexWrap: 'wrap',
             '& .MuiButton-root': {
               fontSize: size === 'small' ? '0.7rem' : '0.75rem',
               py: size === 'small' ? 0.5 : 0.75,
@@ -291,7 +292,7 @@ const WaterCard: React.FC<WaterCardProps> = ({ size = 'medium' }) => {
                 }
               }}
             >
-              300ml
+              3010ml
             </Button>
             <Button
               variant={selectedPreset === WATER_PRESETS.MEDIUM ? "contained" : "outlined"}
@@ -337,38 +338,50 @@ const WaterCard: React.FC<WaterCardProps> = ({ size = 'medium' }) => {
             >
               1L
             </Button>
+            {/* Clear Button - Inline */}
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={handleClearWater}
+              disabled={loading}
+              sx={{
+                minWidth: size === 'small' ? 50 : 60,
+                borderRadius: 1.5,
+                fontWeight: 600,
+                fontSize: size === 'small' ? '0.65rem' : '0.7rem',
+                py: size === 'small' ? 0.5 : 0.75,
+                px: size === 'small' ? 0.5 : 1,
+                borderColor: waterData.totalAmount === 0 
+                  ? alpha('#FF5722', 0.3) 
+                  : alpha('#FF5722', 0.5),
+                color: waterData.totalAmount === 0 
+                  ? alpha('#FF5722', 0.5) 
+                  : '#FF5722',
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  backgroundColor: waterData.totalAmount === 0 
+                    ? 'transparent' 
+                    : alpha('#FF5722', 0.1),
+                  borderColor: waterData.totalAmount === 0 
+                    ? alpha('#FF5722', 0.3) 
+                    : '#FF5722',
+                  transform: waterData.totalAmount === 0 
+                    ? 'none' 
+                    : 'translateY(-1px)',
+                  boxShadow: waterData.totalAmount === 0 
+                    ? 'none' 
+                    : `0 2px 6px ${alpha('#FF5722', 0.3)}`
+                },
+                '&:disabled': {
+                  borderColor: alpha('#FF5722', 0.3),
+                  color: alpha('#FF5722', 0.3),
+                  cursor: 'not-allowed'
+                }
+              }}
+            >
+              {waterData.totalAmount > 0 ? 'Clear' : 'None'}
+            </Button>
           </Box>
-
-          {/* Clear Button */}
-          <Button
-            variant="outlined"
-            size="small"
-            onClick={handleClearWater}
-            disabled={loading || waterData.totalAmount === 0}
-            sx={{
-              width: '100%',
-              borderRadius: 1.5,
-              fontWeight: 600,
-              fontSize: size === 'small' ? '0.7rem' : '0.75rem',
-              py: size === 'small' ? 0.5 : 0.75,
-              borderColor: alpha('#FF5722', 0.5),
-              color: '#FF5722',
-              transition: 'all 0.3s ease',
-              '&:hover': {
-                backgroundColor: alpha('#FF5722', 0.1),
-                borderColor: '#FF5722',
-                transform: 'translateY(-1px)',
-                boxShadow: `0 2px 6px ${alpha('#FF5722', 0.3)}`
-              },
-              '&:disabled': {
-                opacity: 0.5,
-                color: 'var(--text-secondary)',
-                borderColor: 'var(--border-color)'
-              }
-            }}
-          >
-            Clear Today
-          </Button>
         </Box>
       </CardContent>
     </Card>

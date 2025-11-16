@@ -7,7 +7,7 @@
  * - Global providers and layout
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import {
   createTheme,
@@ -15,6 +15,10 @@ import {
   CssBaseline,
   useMediaQuery
 } from '@mui/material';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import { queryClient } from './config/queryClient';
+import { useLocalStorage } from './hooks/useLocalStorage';
 
 import Layout from './components/shared/MainLayout';
 import DashboardPage from './pages/DashboardPage';
@@ -24,6 +28,7 @@ import GymPage from './components/workout/GymPage';
 import FinancePage from './modules/finance/pages/FinancePage';
 import ProfilePage from './pages/ProfilePage';
 import WaterTrackerPage from './pages/WaterTrackerPage';
+import AboutPage from './pages/AboutPage';
 import AuthGuard from './components/auth/AuthGuard';
 import { AuthProvider } from './contexts/AuthContext';
 import { FoodProvider } from './contexts/FoodContext';
@@ -46,7 +51,7 @@ import GymSchedulePage from './components/workout/GymSchedulePage';
 
 function FoodTrackerApp() {
   const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
-  const [darkMode, setDarkMode] = useState(prefersDarkMode);
+  const [darkMode, setDarkMode] = useLocalStorage('theme-dark-mode', prefersDarkMode);
 
   // Apply data-theme attribute for CSS variable theming
   useEffect(() => {
@@ -139,11 +144,8 @@ function FoodTrackerApp() {
                 <Route path="/food" element={<Navigate to={getDefaultLocalPath('food')} replace />} />
                 <Route path="/food/plan" element={<TimeslotMealPlanner />} />
                 <Route path="/food/track" element={<FoodTrack />} />
-                <Route path="/food/goals" element={<NutritionGoalsManager />} />
                 <Route path="/food/inventory" element={<FoodInventory />} />
                 <Route path="/food/recipes" element={<RecipeManager />} />
-                <Route path="/food/cost" element={<MealCostDisplay timeslotData={{}} />} />
-                <Route path="/food/shopping" element={<ShoppingList />} />
                 <Route path="/food/manage" element={<AddFoodManager />} />
                 {/* Gym module routes */}
                 <Route path="/gym" element={<Navigate to={getDefaultLocalPath('gym')} replace />} />
@@ -166,6 +168,7 @@ function FoodTrackerApp() {
                 <Route path="/water" element={<WaterTrackerPage />} />
                 {/* Other routes */}
                 <Route path="/profile" element={<ProfilePage />} />
+                <Route path="/about" element={<AboutPage />} />
               </Routes>
             </Layout>
           </AuthGuard>
@@ -176,9 +179,27 @@ function FoodTrackerApp() {
 }
 
 function App() {
+  // Debug logging to catch duplicate localStorage keys
+  useEffect(() => {
+    const originalSetItem = localStorage.setItem;
+    localStorage.setItem = function(key, value) {
+      if (key === 'timeslotData') {
+        console.error('🚨 DUPLICATE KEY CREATED:', key, new Error().stack);
+      }
+      return originalSetItem.call(this, key, value);
+    };
+  }, []);
+
   return (
     <AuthProvider>
-      <FoodTrackerApp />
+      <QueryClientProvider client={queryClient}>
+        <FoodTrackerApp />
+        
+        {/* Dev tools - only in development */}
+        {process.env.NODE_ENV === 'development' && (
+          <ReactQueryDevtools initialIsOpen={false} />
+        )}
+      </QueryClientProvider>
     </AuthProvider>
   );
 }
