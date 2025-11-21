@@ -224,6 +224,11 @@ export const getDefaultLocalPath = (moduleKey: string): string => {
 };
 
 export const getCurrentModule = (pathname: string): string => {
+  // Dashboard and other non-module pages shouldn't have local nav
+  if (pathname === '/' || pathname === '/profile' || pathname === '/about' || pathname === '/water') {
+    return '';
+  }
+
   // Check for exact matches first
   const exactMatch = navConfig.find(item => item.path === pathname);
   if (exactMatch) return exactMatch.key;
@@ -235,5 +240,5 @@ export const getCurrentModule = (pathname: string): string => {
     }
   }
 
-  return 'food';
+  return '';
 };
