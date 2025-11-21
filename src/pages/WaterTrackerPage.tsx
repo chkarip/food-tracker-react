@@ -183,7 +183,10 @@ const WaterTrackerPage: React.FC = () => {
           overflow: 'hidden',
           backgroundColor: 'var(--card-bg)',
           border: '1px solid var(--border-color)',
-          boxShadow: 'var(--elevation-1)'
+          boxShadow: 'var(--elevation-1)',
+          width: { xs: '100%', lg: '80%' },
+          maxWidth: 1200,
+          mx: 'auto'
         }}
       >
         {/* Main Content */}
@@ -192,7 +195,11 @@ const WaterTrackerPage: React.FC = () => {
           backgroundColor: 'var(--surface-bg)',
           minHeight: 'calc(100vh - 200px)'
         }}>
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 4 }}>
+          <Box sx={{ 
+            display: 'grid', 
+            gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, 
+            gap: 4
+          }}>
             {/* Left Column - Water Bottle & Controls */}
             <Box>
               <Card sx={{

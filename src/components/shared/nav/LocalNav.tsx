@@ -8,7 +8,7 @@ interface LocalNavProps {
   currentModule?: string;
 }
 
-const LocalNav: React.FC<LocalNavProps> = ({ currentModule = 'dashboard' }) => {
+const LocalNav: React.FC<LocalNavProps> = ({ currentModule = 'food' }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navigate = useNavigate();

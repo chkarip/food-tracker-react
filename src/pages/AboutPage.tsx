@@ -37,7 +37,7 @@ const AboutPage: React.FC = () => {
   });
 
   return (
-    <Box sx={{ maxWidth: 800, mx: 'auto', p: 2 }}>
+    <Box sx={{ maxWidth: '80%', mx: 'auto', p: 2 }} className="content-container-80">
       {/* Header */}
       <Box sx={{ textAlign: 'center', mb: 4 }}>
         <Typography

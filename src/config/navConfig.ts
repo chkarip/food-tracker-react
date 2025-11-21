@@ -24,13 +24,6 @@ export interface NavItem {
 
 export const navConfig: NavItem[] = [
   {
-    key: 'dashboard',
-    label: 'Dashboard',
-    icon: DashboardIcon,
-    path: '/',
-    permission: () => true,
-  },
-  {
     key: 'food',
     label: 'Food',
     icon: FoodIcon,
@@ -242,5 +235,5 @@ export const getCurrentModule = (pathname: string): string => {
     }
   }
 
-  return 'dashboard';
+  return 'food';
 };

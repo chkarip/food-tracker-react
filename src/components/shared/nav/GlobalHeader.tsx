@@ -103,9 +103,6 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({ darkMode, toggleDarkMode, o
         >
           TE
         </Box>
-        <Typography variant="h6" sx={{ fontWeight: 700 }}>
-          Track Everything
-        </Typography>
       </Box>
 
       {/* Global Navigation Items */}

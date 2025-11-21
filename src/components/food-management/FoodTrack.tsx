@@ -18,8 +18,14 @@ import {
   Paper,
   ToggleButtonGroup,
   ToggleButton,
-  Chip
+  Chip,
+  IconButton,
+  Menu,
+  MenuItem,
+  Checkbox,
+  FormControlLabel
 } from '@mui/material';
+import { MoreVert as MoreVertIcon } from '@mui/icons-material';
 
 import { useAuth } from '../../contexts/AuthContext';
 import { useFoodDatabase } from '../../contexts/FoodContext';
@@ -84,6 +90,14 @@ const FoodTrack: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [timeFilter, setTimeFilter] = useState<'week' | 'month'>('month');
+  const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
+  const [visibleColumns, setVisibleColumns] = useState({
+    quantity: true,
+    totalKg: true,
+    costPerKg: true,
+    costPerQuantity: true,
+    totalCost: true
+  });
 
   /* ------------------------------------------------------------------ */
   /* LOAD HISTORY + GOALS                                              */
@@ -93,12 +107,6 @@ const FoodTrack: React.FC = () => {
     const loadHistory = async () => {
       if (!user) {
         setLoading(false);
-        return;
-      }
-      
-      // Wait for foodDatabase to be loaded
-      if (!foodDatabase || Object.keys(foodDatabase).length === 0) {
-        console.log('FoodTrack: Waiting for foodDatabase to load...');
         return;
       }
 
@@ -126,7 +134,7 @@ const FoodTrack: React.FC = () => {
           // Process timeslots (6pm and 9:30pm)
           Object.entries(plan.timeslots || {}).forEach(([slotId, slot]: [string, any]) => {
             (slot.selectedFoods || []).forEach((sel: any, idx: number) => {
-              const info = foodDatabase[sel.name];
+              const info = foodDatabase?.[sel.name];
               
               const mult = info
                 ? info.isUnitFood
@@ -206,6 +214,8 @@ const FoodTrack: React.FC = () => {
       totalQuantity: number;
       unit: string;
       totalCost: number;
+      costPerKg: number;
+      costPerQuantity: number;
       protein: number;
       fats: number;
       carbs: number;
@@ -218,7 +228,7 @@ const FoodTrack: React.FC = () => {
         const existing = foodMap.get(food.name);
         
         // Get cost from foodDatabase
-        const foodInfo = foodDatabase[food.name];
+        const foodInfo = foodDatabase?.[food.name];
         const costPerKgOrUnit = foodInfo?.cost?.costPerKg || 0;
         const costUnit = foodInfo?.cost?.unit || (foodInfo?.isUnitFood ? 'unit' : 'kg');
         
@@ -248,6 +258,8 @@ const FoodTrack: React.FC = () => {
             totalQuantity: food.quantity,
             unit: food.unit,
             totalCost: foodCost,
+            costPerKg: costUnit === 'kg' ? costPerKgOrUnit : 0,
+            costPerQuantity: costUnit === 'unit' ? costPerKgOrUnit : 0,
             protein: food.protein,
             fats: food.fats,
             carbs: food.carbs,
@@ -319,6 +331,13 @@ const FoodTrack: React.FC = () => {
     );
   }
 
+  const handleToggleColumn = (column: keyof typeof visibleColumns) => {
+    setVisibleColumns(prev => ({
+      ...prev,
+      [column]: !prev[column]
+    }));
+  };
+
   /* ---------- render your full UI below ---------- */
   return (
     <Box 
@@ -326,10 +345,73 @@ const FoodTrack: React.FC = () => {
         p: 2,
         background: 'linear-gradient(135deg, var(--meal-bg-card) 0%, rgba(255,255,255,0.5) 100%)',
         borderRadius: 3,
-        minHeight: 'calc(100vh - 200px)'
+        minHeight: 'calc(100vh - 200px)',
+        maxWidth: '80%',
+        marginLeft: 'auto',
+        marginRight: 'auto'
       }}
     >
-      <Typography variant="h5" sx={{ mb: 3, fontWeight: 700 }}>Food Consumption This Week</Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h5" sx={{ fontWeight: 700 }}>Food Consumption This Week</Typography>
+        
+        {/* Column visibility menu */}
+        <IconButton
+          onClick={(e) => setMenuAnchor(e.currentTarget)}
+          sx={{ 
+            color: 'var(--text-primary)',
+            '&:hover': { backgroundColor: 'var(--nav-hover)' }
+          }}
+        >
+          <MoreVertIcon />
+        </IconButton>
+        
+        <Menu
+          anchorEl={menuAnchor}
+          open={Boolean(menuAnchor)}
+          onClose={() => setMenuAnchor(null)}
+        >
+          <MenuItem disableRipple sx={{ cursor: 'default', '&:hover': { backgroundColor: 'transparent' } }}>
+            <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary' }}>
+              Show/Hide Columns
+            </Typography>
+          </MenuItem>
+          <MenuItem onClick={() => handleToggleColumn('quantity')}>
+            <FormControlLabel
+              control={<Checkbox checked={visibleColumns.quantity} />}
+              label="Quantity"
+              sx={{ pointerEvents: 'none' }}
+            />
+          </MenuItem>
+          <MenuItem onClick={() => handleToggleColumn('totalKg')}>
+            <FormControlLabel
+              control={<Checkbox checked={visibleColumns.totalKg} />}
+              label="Total (kg)"
+              sx={{ pointerEvents: 'none' }}
+            />
+          </MenuItem>
+          <MenuItem onClick={() => handleToggleColumn('costPerKg')}>
+            <FormControlLabel
+              control={<Checkbox checked={visibleColumns.costPerKg} />}
+              label="Cost/kg"
+              sx={{ pointerEvents: 'none' }}
+            />
+          </MenuItem>
+          <MenuItem onClick={() => handleToggleColumn('costPerQuantity')}>
+            <FormControlLabel
+              control={<Checkbox checked={visibleColumns.costPerQuantity} />}
+              label="Cost/Unit"
+              sx={{ pointerEvents: 'none' }}
+            />
+          </MenuItem>
+          <MenuItem onClick={() => handleToggleColumn('totalCost')}>
+            <FormControlLabel
+              control={<Checkbox checked={visibleColumns.totalCost} />}
+              label="Total Cost"
+              sx={{ pointerEvents: 'none' }}
+            />
+          </MenuItem>
+        </Menu>
+      </Box>
 
       {!aggregatedFoods || aggregatedFoods.length === 0 ? (
         <Typography>No foods tracked this week</Typography>
@@ -338,10 +420,22 @@ const FoodTrack: React.FC = () => {
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell sx={{ fontWeight: 700, width: '40%' }}>Food Name</TableCell>
-                <TableCell align="center" sx={{ fontWeight: 700, width: '20%' }}>Quantity</TableCell>
-                <TableCell align="center" sx={{ fontWeight: 700, width: '20%' }}>Total (kg)</TableCell>
-                <TableCell align="center" sx={{ fontWeight: 700, width: '20%' }}>Cost (€)</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Food Name</TableCell>
+                {visibleColumns.quantity && (
+                  <TableCell align="center" sx={{ fontWeight: 700 }}>Quantity</TableCell>
+                )}
+                {visibleColumns.totalKg && (
+                  <TableCell align="center" sx={{ fontWeight: 700 }}>Total (kg)</TableCell>
+                )}
+                {visibleColumns.costPerKg && (
+                  <TableCell align="center" sx={{ fontWeight: 700 }}>Cost/kg (€)</TableCell>
+                )}
+                {visibleColumns.costPerQuantity && (
+                  <TableCell align="center" sx={{ fontWeight: 700 }}>Cost/Unit (€)</TableCell>
+                )}
+                {visibleColumns.totalCost && (
+                  <TableCell align="center" sx={{ fontWeight: 700 }}>Total Cost (€)</TableCell>
+                )}
               </TableRow>
             </TableHead>
             <TableBody>
@@ -352,21 +446,41 @@ const FoodTrack: React.FC = () => {
                 return (
                   <TableRow key={food.name}>
                     <TableCell>{food.name}</TableCell>
-                    <TableCell align="center">
-                      <Box component="span" sx={{ fontFamily: 'monospace', fontWeight: 600 }}>
-                        {food.count}
-                      </Box>
-                    </TableCell>
-                    <TableCell align="center">
-                      <Box component="span" sx={{ fontFamily: 'monospace', fontWeight: 600 }}>
-                        {kgDisplay} kg
-                      </Box>
-                    </TableCell>
-                    <TableCell align="center">
-                      <Box component="span" sx={{ fontFamily: 'monospace', fontWeight: 600 }}>
-                        €{Number(food.totalCost || 0).toFixed(2)}
-                      </Box>
-                    </TableCell>
+                    {visibleColumns.quantity && (
+                      <TableCell align="center">
+                        <Box component="span" sx={{ fontFamily: 'monospace', fontWeight: 600 }}>
+                          {food.count}
+                        </Box>
+                      </TableCell>
+                    )}
+                    {visibleColumns.totalKg && (
+                      <TableCell align="center">
+                        <Box component="span" sx={{ fontFamily: 'monospace', fontWeight: 600 }}>
+                          {kgDisplay} kg
+                        </Box>
+                      </TableCell>
+                    )}
+                    {visibleColumns.costPerKg && (
+                      <TableCell align="center">
+                        <Box component="span" sx={{ fontFamily: 'monospace', fontWeight: 600 }}>
+                          {food.costPerKg > 0 ? `€${food.costPerKg.toFixed(2)}` : '-'}
+                        </Box>
+                      </TableCell>
+                    )}
+                    {visibleColumns.costPerQuantity && (
+                      <TableCell align="center">
+                        <Box component="span" sx={{ fontFamily: 'monospace', fontWeight: 600 }}>
+                          {food.costPerQuantity > 0 ? `€${food.costPerQuantity.toFixed(2)}` : '-'}
+                        </Box>
+                      </TableCell>
+                    )}
+                    {visibleColumns.totalCost && (
+                      <TableCell align="center">
+                        <Box component="span" sx={{ fontFamily: 'monospace', fontWeight: 600 }}>
+                          €{Number(food.totalCost || 0).toFixed(2)}
+                        </Box>
+                      </TableCell>
+                    )}
                   </TableRow>
                 );
               })}

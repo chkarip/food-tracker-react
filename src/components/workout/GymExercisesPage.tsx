@@ -162,7 +162,10 @@ const GymExercisesPage: React.FC = () => {
           overflow: 'hidden',
           backgroundColor: 'var(--card-bg)',
           border: '1px solid var(--border-color)',
-          boxShadow: 'var(--elevation-1)'
+          boxShadow: 'var(--elevation-1)',
+          width: { xs: '100%', lg: '80%' },
+          maxWidth: 1200,
+          mx: 'auto'
         }}
       >
         <Box sx={{ p: 3, backgroundColor: 'var(--surface-bg)' }}>

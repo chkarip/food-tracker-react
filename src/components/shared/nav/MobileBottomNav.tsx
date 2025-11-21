@@ -24,7 +24,7 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = () => {
       location.pathname === item.path ||
       (item.path !== '/' && location.pathname.startsWith(item.path))
     );
-    return currentModule?.key || 'dashboard';
+    return currentModule?.key || 'food';
   };
 
   const handleChange = (event: React.SyntheticEvent, newValue: string) => {
@@ -36,7 +36,7 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = () => {
 
   // Filter to show only primary navigation items on mobile (max 5)
   const primaryNavItems = navConfig.filter(item =>
-    ['dashboard', 'food', 'shopping', 'gym', 'finance'].includes(item.key) &&
+    ['food', 'shopping', 'gym', 'finance', 'water'].includes(item.key) &&
     (item.permission?.() ?? true)
   );
 

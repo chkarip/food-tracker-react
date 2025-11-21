@@ -191,7 +191,15 @@ const WorkoutBuilder: React.FC = () => {
   }
 
   return (
-    <Box component={Paper} p={3}>
+    <Box component={Paper} p={3} sx={{ 
+      width: { xs: '100%', lg: '80%' },
+      maxWidth: 1200,
+      mx: 'auto',
+      borderRadius: 4,
+      backgroundColor: 'var(--card-bg)',
+      border: '1px solid var(--border-color)',
+      boxShadow: 'var(--elevation-1)'
+    }}>
       {/* Header */}
       <Typography variant="h4" gutterBottom>
         My Workouts
@@ -217,17 +225,6 @@ const WorkoutBuilder: React.FC = () => {
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
         Create and manage your workout routines. Each workout can contain multiple exercises with specific weights, sets, reps, and rest periods.
       </Typography>
-
-      {/* Current Workout Info */}
-      {currentWorkout.exercises.length > 0 && (
-        <Alert severity="info" sx={{ mb: 2 }}>
-          Current workout: {currentWorkout.exercises.length} exercises, {' '}
-          {currentWorkout.exercises.reduce((total, ex) => total + ex.sets, 0)} total sets
-          <br />
-          Last modified: {currentWorkout.lastModified.toLocaleDateString()} at {' '}
-          {currentWorkout.lastModified.toLocaleTimeString()}
-        </Alert>
-      )}
 
       {/* Template Controls */}
       <Box sx={{ mb: 3, display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -269,16 +266,6 @@ const WorkoutBuilder: React.FC = () => {
         >
           {selectedTemplate ? `Update "${selectedTemplate.name}"` : 'Save as New Template'}
         </AccentButton>
-
-        {/* Clear Selection Button */}
-        {selectedTemplate && (
-          <AccentButton 
-            onClick={clearSelectedTemplate}
-            variant="secondary"
-          >
-            Clear Selection
-          </AccentButton>
-        )}
       </Box>
 
       {/* Workout Table */}
@@ -288,6 +275,17 @@ const WorkoutBuilder: React.FC = () => {
         availableExercises={availableExercises}
         onExercisesChange={handleExercisesChange}
       />
+
+      {/* Current Workout Info */}
+      {currentWorkout.exercises.length > 0 && (
+        <Alert severity="info" sx={{ mt: 2 }}>
+          Current workout: {currentWorkout.exercises.length} exercises, {' '}
+          {currentWorkout.exercises.reduce((total, ex) => total + ex.sets, 0)} total sets
+          <br />
+          Last modified: {currentWorkout.lastModified.toLocaleDateString()} at {' '}
+          {currentWorkout.lastModified.toLocaleTimeString()}
+        </Alert>
+      )}
 
       {/* Saving Indicator */}
       {saving && (

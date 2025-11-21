@@ -195,12 +195,11 @@ const Layout: React.FC<LayoutProps> = ({
         </Drawer>
       </Box>
 
-      {/* Main content - full width on desktop */}
+      {/* Main content */}
       <Box
         component="main"
         sx={{
           flexGrow: 1,
-          width: '100%', // Full width on all screen sizes
           display: 'flex',
           flexDirection: 'column',
           minHeight: '100vh',

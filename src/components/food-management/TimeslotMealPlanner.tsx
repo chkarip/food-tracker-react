@@ -419,7 +419,10 @@ const TimeslotMealPlanner: React.FC = () => {
         flexDirection: { xs: 'column', md: 'row' },
         background: 'linear-gradient(135deg, var(--meal-bg-card) 0%, rgba(255,255,255,0.5) 100%)',
         borderRadius: 3,
-        minHeight: 'calc(100vh - 200px)'
+        minHeight: 'calc(100vh - 200px)',
+        maxWidth: '80%',
+        marginLeft: 'auto',
+        marginRight: 'auto'
       }}
     >
       {/* ========== LEFT COLUMN: Food Selection & Settings ========== */}

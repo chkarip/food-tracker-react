@@ -1,0 +1,35 @@
+/* ================================
+   LAYOUT SYSTEM
+   ================================ */
+
+/**
+ * Content Width Constraint
+ * 
+ * Limits the maximum width of page content to 80% of the viewport
+ * with centered alignment for better readability and visual balance.
+ * 
+ * Usage: Apply .content-container-80 to the main content wrapper
+ * within Paper/Card components on each page.
+ */
+
+.content-container-80 {
+  max-width: 80%;
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  /* On mobile devices, use 95% width for better space utilization */
+  .content-container-80 {
+    max-width: 95%;
+  }
+}
+
+@media (max-width: 480px) {
+  /* On very small devices, use full width */
+  .content-container-80 {
+    max-width: 100%;
+  }
+}
