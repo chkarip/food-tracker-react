@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Box,
+  Paper,
   Alert,
 } from '@mui/material';
 import { collection, getDocs, addDoc, doc, updateDoc } from 'firebase/firestore';
@@ -154,11 +155,19 @@ const GymExercisesPage: React.FC = () => {
   }, [exercises]);
 
   return (
-    <Box sx={{ width: '100%', minHeight: '100vh', px: 3, py: 2 }}>
-      {/* Content Container */}
-      <Box sx={{ maxWidth: '1400px', mx: 'auto', width: '100%' }}>
-        {/* Search and Filter Controls */}
-        <ExerciseFilters
+    <Box sx={{ minHeight: '100vh', p: 2 }}>
+      <Paper
+        sx={{
+          borderRadius: 4,
+          overflow: 'hidden',
+          backgroundColor: 'var(--card-bg)',
+          border: '1px solid var(--border-color)',
+          boxShadow: 'var(--elevation-1)'
+        }}
+      >
+        <Box sx={{ p: 3, backgroundColor: 'var(--surface-bg)' }}>
+          {/* Search and Filter Controls */}
+          <ExerciseFilters
           searchTerm={searchTerm}
           filterMuscle={filterMuscle}
           filterDifficulty={filterDifficulty}
@@ -219,7 +228,8 @@ const GymExercisesPage: React.FC = () => {
           onSave={handleSaveExercise}
           onFormChange={setExerciseForm}
         />
-      </Box>
+        </Box>
+      </Paper>
     </Box>
   );
 };

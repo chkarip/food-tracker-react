@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box,
+  Paper,
   Container,
   Typography,
   Card,
@@ -177,7 +178,21 @@ const FinancePage: React.FC = () => {
   };
 
   return (
-    <Container maxWidth="lg" sx={{ py: 2 }}>
+    <Box sx={{ minHeight: '100vh', p: 2 }}>
+      <Paper
+        sx={{
+          borderRadius: 4,
+          overflow: 'hidden',
+          backgroundColor: 'var(--card-bg)',
+          border: '1px solid var(--border-color)',
+          boxShadow: 'var(--elevation-1)'
+        }}
+      >
+        <Box sx={{
+          p: 3,
+          backgroundColor: 'var(--surface-bg)',
+          minHeight: 'calc(100vh - 200px)'
+        }}>
       {/* Month Selector */}
       <Card sx={{ mb: 3, borderRadius: 3 }}>
         <CardContent>
@@ -395,6 +410,9 @@ const FinancePage: React.FC = () => {
         </Card>
       </Box>
 
+        </Box>
+      </Paper>
+
       {/* Transaction Dialog */}
       <TransactionDialog
         open={openTransactionDialog}
@@ -407,7 +425,7 @@ const FinancePage: React.FC = () => {
           setCurrentTransaction(null);
         }}
       />
-    </Container>
+    </Box>
   );
 };
 

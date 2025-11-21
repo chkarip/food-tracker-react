@@ -38,6 +38,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Box,
   Container,
+  Paper,
   Typography,
   Button,
   CircularProgress
@@ -529,31 +530,41 @@ const DashboardPage: React.FC = () => {
   };
 
   return (
-    <Container maxWidth="xl" sx={{ pt: 1, pb: 3 }}>
-      {/* Conditional Content */}
-      {isExpandedView ? (
-        /* Full Calendar View */
-        !calendarDataLoaded ? (
-          <Box display="flex" justifyContent="center" py={8}>
-            <Box textAlign="center">
-              <CircularProgress size={48} sx={{ mb: 2 }} />
-              <Typography variant="h6" color="text.secondary">
-                Loading calendar data...
-              </Typography>
-            </Box>
-          </Box>
-        ) : (
-          <Calendar
-            currentDate={currentDate}
-            calendarDays={calendarDays}
-            onNavigateMonth={navigateMonth}
-            onGoToToday={goToToday}
-            onDayClick={handleDayClick}
-          />
-        )
-      ) : (
-        /* Compact Today's Details View */
-        <Box sx={{ maxWidth: 1400, mx: 'auto' }}>
+    <Box sx={{ minHeight: '100vh', p: 2 }}>
+      <Paper
+        sx={{
+          borderRadius: 4,
+          overflow: 'hidden',
+          backgroundColor: 'var(--card-bg)',
+          border: '1px solid var(--border-color)',
+          boxShadow: 'var(--elevation-1)'
+        }}
+      >
+        <Box sx={{ p: 3, backgroundColor: 'var(--surface-bg)' }}>
+          {/* Conditional Content */}
+          {isExpandedView ? (
+            /* Full Calendar View */
+            !calendarDataLoaded ? (
+              <Box display="flex" justifyContent="center" py={8}>
+                <Box textAlign="center">
+                  <CircularProgress size={48} sx={{ mb: 2 }} />
+                  <Typography variant="h6" color="text.secondary">
+                    Loading calendar data...
+                  </Typography>
+                </Box>
+              </Box>
+            ) : (
+              <Calendar
+                currentDate={currentDate}
+                calendarDays={calendarDays}
+                onNavigateMonth={navigateMonth}
+                onGoToToday={goToToday}
+                onDayClick={handleDayClick}
+              />
+            )
+          ) : (
+            /* Compact Today's Details View */
+            <Box>
           {/* Header with Title and Expand Button side by side */}
           <Box
             display="flex"
@@ -666,7 +677,9 @@ const DashboardPage: React.FC = () => {
           />
         )
       )}
-    </Container>
+        </Box>
+      </Paper>
+    </Box>
   );
 };
 

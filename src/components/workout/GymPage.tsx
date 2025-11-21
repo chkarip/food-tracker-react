@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box,
+  Paper,
   Container,
   Typography,
   Tabs,
@@ -173,17 +174,75 @@ const GymPage: React.FC = () => {
   const uniqueMuscles = Array.from(new Set(exercises.map(ex => ex.primaryMuscle))).sort();
 
   return (
-    <Box sx={{ width: '100%', minHeight: '100vh', px: 3, py: 2 }}>
-      {/* Tabs */}
-      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3, maxWidth: '1400px', mx: 'auto' }}>
-        <Tabs value={tabValue} onChange={handleTabChange} aria-label="gym tabs">
-          <Tab label="Exercise Library" />
-          <Tab label="Progress" />
-        </Tabs>
-      </Box>
+    <Box sx={{ minHeight: '100vh' }}>
+      <Paper
+        sx={{
+          borderRadius: 4,
+          overflow: 'hidden',
+          backgroundColor: 'var(--card-bg)',
+          border: '1px solid var(--border-color)',
+          boxShadow: 'var(--elevation-1)'
+        }}
+      >
+        {/* Tabs */}
+        <Box sx={{ 
+          borderBottom: '2px solid var(--meal-border-primary)',
+          backgroundColor: 'var(--meal-bg-card)',
+          px: 2
+        }}>
+          <Tabs 
+            value={tabValue} 
+            onChange={handleTabChange} 
+            aria-label="gym tabs"
+            variant="scrollable"
+            scrollButtons="auto"
+            sx={{
+              '& .MuiTab-root': {
+                color: 'var(--meal-subheading-color)',
+                fontWeight: 600,
+                fontSize: '0.9rem',
+                minHeight: 56,
+                borderRadius: '8px 8px 0 0',
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  backgroundColor: 'var(--meal-bg-hover)',
+                  color: 'var(--meal-primary)',
+                  transform: 'translateY(-2px)'
+                },
+                '&.Mui-selected': {
+                  backgroundColor: 'var(--meal-bg-primary)',
+                  color: 'var(--meal-primary)',
+                  fontWeight: 700,
+                  boxShadow: 'var(--meal-shadow-primary)',
+                  '&::after': {
+                    content: '""',
+                    position: 'absolute',
+                    bottom: 0,
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    width: '60%',
+                    height: '3px',
+                    background: 'var(--button-primary)',
+                    borderRadius: '2px 2px 0 0'
+                  }
+                }
+              },
+              '& .MuiTabs-indicator': {
+                display: 'none'
+              }
+            }}
+          >
+            <Tab label="Exercise Library" sx={{ minWidth: 120 }} />
+            <Tab label="Progress" sx={{ minWidth: 120 }} />
+          </Tabs>
+        </Box>
 
-      {/* Content Container */}
-      <Box sx={{ maxWidth: '1400px', mx: 'auto', width: '100%' }}>
+        {/* Content Container */}
+        <Box sx={{ 
+          backgroundColor: 'var(--surface-bg)',
+          minHeight: 'calc(100vh - 200px)',
+          p: 2
+        }}>
 
       {/* Tab 1: Exercise Library */}
       <TabPanel value={tabValue} index={0}>
@@ -246,6 +305,9 @@ const GymPage: React.FC = () => {
         <ProgressTab />
       </TabPanel>
 
+        </Box>
+      </Paper>
+
       {/* Exercise Dialog */}
       <ExerciseDialog
         open={openExerciseDialog}
@@ -255,7 +317,6 @@ const GymPage: React.FC = () => {
         onSave={handleSaveExercise}
         onFormChange={setExerciseForm}
       />
-      </Box>
     </Box>
   );
 };

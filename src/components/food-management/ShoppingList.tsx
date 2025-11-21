@@ -355,13 +355,27 @@ const ShoppingList: React.FC = () => {
   };
 
   return (
-    <Box sx={{ maxWidth: '1200px', mx: 'auto', p: 2 }}>
-      {/* Header */}
-      <Box sx={{ mb: 3 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="h4" sx={{ color: 'var(--text-primary)', fontWeight: 600 }}>
-            Shopping List
-          </Typography>
+    <Box sx={{ minHeight: '100vh', p: 2 }}>
+      <Paper
+        sx={{
+          borderRadius: 4,
+          overflow: 'hidden',
+          backgroundColor: 'var(--card-bg)',
+          border: '1px solid var(--border-color)',
+          boxShadow: 'var(--elevation-1)'
+        }}
+      >
+        <Box sx={{
+          p: 3,
+          backgroundColor: 'var(--surface-bg)',
+          minHeight: 'calc(100vh - 200px)'
+        }}>
+          {/* Header */}
+          <Box sx={{ mb: 3 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Typography variant="h4" sx={{ color: 'var(--text-primary)', fontWeight: 600 }}>
+                Shopping List
+              </Typography>
           <Button
             variant="contained"
             onClick={finalizeShoppingList}
@@ -871,6 +885,8 @@ const ShoppingList: React.FC = () => {
           {saveError}
         </Alert>
       </Snackbar>
+        </Box>
+      </Paper>
     </Box>
   );
 };
