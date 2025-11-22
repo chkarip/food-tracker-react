@@ -59,6 +59,10 @@ const WorkoutBuilder: React.FC = () => {
   const [customWorkoutTypes, setCustomWorkoutTypes] = useState<WorkoutType[]>([]);
   const [newTemplateDialog, setNewTemplateDialog] = useState(false);
   const [newTemplateName, setNewTemplateName] = useState('');
+  
+  // Track original template state to detect changes
+  const [originalTemplateName, setOriginalTemplateName] = useState('');
+  const [originalExercises, setOriginalExercises] = useState<WorkoutExercise[]>([]);
 
   // New template system hook
   const {
@@ -108,6 +112,10 @@ const WorkoutBuilder: React.FC = () => {
             isActive: true,
           });
           setTemplateName(template.name);
+          
+          // Store original state for change detection
+          setOriginalTemplateName(template.name);
+          setOriginalExercises([...template.exercises]);
         }
       });
     } else if (templates.length === 0 && !selectedTemplate) {
@@ -119,6 +127,10 @@ const WorkoutBuilder: React.FC = () => {
         isActive: true,
       });
       setTemplateName(`${selectedWorkoutType} Template`);
+      
+      // Clear original state
+      setOriginalTemplateName('');
+      setOriginalExercises([]);
     }
   }, [templates, selectedTemplate, loadTemplate, selectedWorkoutType]);
 
@@ -184,6 +196,11 @@ const WorkoutBuilder: React.FC = () => {
       lastModified: new Date(),
       isActive: true,
     });
+    
+    // Clear original state since this is a new template
+    setOriginalTemplateName('');
+    setOriginalExercises([]);
+    
     setNewTemplateDialog(false);
     setNewTemplateName('');
   };
@@ -210,6 +227,10 @@ const WorkoutBuilder: React.FC = () => {
       });
       setTemplateName(`${selectedWorkoutType} Template`);
       
+      // Clear original state
+      setOriginalTemplateName('');
+      setOriginalExercises([]);
+      
       // Reload templates for current workout type
       await loadTemplatesForWorkoutType(selectedWorkoutType);
       
@@ -229,18 +250,46 @@ const WorkoutBuilder: React.FC = () => {
     }));
   };
 
+  // Check if there are unsaved changes
+  const hasChanges = () => {
+    if (!selectedTemplate) return false; // No template selected, so no changes to track
+    
+    const nameChanged = templateName !== originalTemplateName;
+    const exercisesChanged = JSON.stringify(currentWorkout.exercises) !== JSON.stringify(originalExercises);
+    
+    return nameChanged || exercisesChanged;
+  };
+
+  // Reset to original template state
+  const handleReset = () => {
+    if (!selectedTemplate) return;
+    
+    setTemplateName(originalTemplateName);
+    setCurrentWorkout(prev => ({
+      ...prev,
+      exercises: [...originalExercises],
+      lastModified: new Date()
+    }));
+  };
+
   // Handle template loading
   const handleLoadTemplate = async (templateId: string) => {
     const template = await loadTemplate(templateId);
     console.log('Loaded template:', template);
     if (template) {
-      setCurrentWorkout({
+      const workoutState = {
         name: template.name,
         exercises: template.exercises,
         lastModified: new Date(),
         isActive: true,
-      });
+      };
+      
+      setCurrentWorkout(workoutState);
       setTemplateName(template.name);
+      
+      // Store original state for change detection
+      setOriginalTemplateName(template.name);
+      setOriginalExercises([...template.exercises]);
     }
   };
 
@@ -261,6 +310,10 @@ const WorkoutBuilder: React.FC = () => {
       };
 
       await saveTemplate(templateData, selectedTemplate?.id);
+      
+      // Update original state after successful save
+      setOriginalTemplateName(templateName.trim());
+      setOriginalExercises([...currentWorkout.exercises]);
       
       // Success notification
       console.log(selectedTemplate ? 'Template updated!' : 'Template created!');
@@ -387,15 +440,37 @@ const WorkoutBuilder: React.FC = () => {
             helperText={selectedTemplate ? "Editing existing template name" : "Enter a name for your new template"}
           />
 
-        {/* Save/Update Template Button */}
+        {/* Save/Update Template Button - Show conditionally */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, pt: 1 }}>
-          <AccentButton 
-            onClick={handleSaveTemplate}
-            variant="primary"
-            disabled={currentWorkout.exercises.length === 0 || !templateName.trim()}
-          >
-            {selectedTemplate ? `Update Template` : 'Save as New Template'}
-          </AccentButton>
+          {selectedTemplate ? (
+            // Show Update and Reset buttons only when there are changes
+            hasChanges() && (
+              <>
+                <AccentButton 
+                  onClick={handleSaveTemplate}
+                  variant="primary"
+                  disabled={currentWorkout.exercises.length === 0 || !templateName.trim()}
+                >
+                  Update Template
+                </AccentButton>
+                <AccentButton 
+                  onClick={handleReset}
+                  variant="secondary"
+                >
+                  Reset
+                </AccentButton>
+              </>
+            )
+          ) : (
+            // Show Save button for new templates
+            <AccentButton 
+              onClick={handleSaveTemplate}
+              variant="primary"
+              disabled={currentWorkout.exercises.length === 0 || !templateName.trim()}
+            >
+              Save as New Template
+            </AccentButton>
+          )}
         </Box>
       </Box>        {selectedTemplate && templateName !== selectedTemplate.name && (
           <Alert severity="warning" sx={{ mt: 1 }}>

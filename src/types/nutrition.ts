@@ -16,6 +16,7 @@ export interface FoodItem {
 export interface SelectedFood {
   name: string;
   amount: number; // grams for weight foods, number of units for unit foods
+  portionIndex?: number; // Index of selected portion size from fixedAmounts array (0, 1, or 2)
 }
 
 export interface MacroTargets {

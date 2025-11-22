@@ -90,6 +90,7 @@ export const addFood = async (foodData: FoodFormData): Promise<string> => {
       isUnitFood: foodData.isUnitFood,
       useFixedAmount: foodData.useFixedAmount,
       fixedAmount: foodData.fixedAmount,
+      fixedAmounts: foodData.fixedAmounts || [foodData.fixedAmount], // Store array, fallback to single value
       hidden: foodData.hidden,
       favorite: foodData.favorite,
       proteinEfficiency: proteinEfficiency,
@@ -136,6 +137,7 @@ export const updateFood = async (firestoreId: string, foodData: FoodFormData): P
       isUnitFood: foodData.isUnitFood,
       useFixedAmount: foodData.useFixedAmount,
       fixedAmount: foodData.fixedAmount,
+      fixedAmounts: foodData.fixedAmounts || [foodData.fixedAmount], // Store array, fallback to single value
       hidden: foodData.hidden,
       favorite: foodData.favorite,
       proteinEfficiency: proteinEfficiency,
@@ -254,6 +256,7 @@ export const convertToLegacyFoodFormat = (foods: FirestoreFood[]): Record<string
       isUnitFood: food.metadata?.isUnitFood ?? false,
       useFixedAmount: food.metadata?.useFixedAmount ?? false,
       fixedAmount: food.metadata?.fixedAmount ?? 0,
+      fixedAmounts: food.metadata?.fixedAmounts || [food.metadata?.fixedAmount ?? 0], // Include array
       cost: food.cost,
       metadata: { ...food.metadata },
     };

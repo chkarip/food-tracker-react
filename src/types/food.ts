@@ -146,7 +146,8 @@ export interface FirebaseFoodItem {
     addedAt: Date;
     lastUpdated: Date;
     useFixedAmount: boolean;
-    fixedAmount: number;
+    fixedAmount: number; // Deprecated - kept for backward compatibility
+    fixedAmounts?: number[]; // New: Array of up to 3 portion sizes
     hidden: boolean;
     favorite: boolean;
   };
@@ -171,7 +172,8 @@ export interface FoodMetadata {
   category: string;
   isUnitFood: boolean;
   useFixedAmount: boolean;
-  fixedAmount: number;
+  fixedAmount: number; // Deprecated - kept for backward compatibility
+  fixedAmounts?: number[]; // New: Array of up to 3 portion sizes
   hidden: boolean;
   favorite: boolean;
   addedAt?: Date;
@@ -197,7 +199,8 @@ export interface FoodFormData {
   category: string;
   isUnitFood: boolean;
   useFixedAmount: boolean;
-  fixedAmount: number;
+  fixedAmount: number; // Deprecated - kept for backward compatibility
+  fixedAmounts?: number[]; // New: Array of up to 3 portion sizes
   hidden: boolean;
   favorite: boolean;
 }
@@ -217,7 +220,8 @@ export interface LegacyFoodItem {
   nutrition: FoodNutrition;
   isUnitFood: boolean;
   useFixedAmount: boolean;
-  fixedAmount: number;
+  fixedAmount: number; // Deprecated - kept for backward compatibility
+  fixedAmounts?: number[]; // New: Array of up to 3 portion sizes
   cost: FoodCost;
   metadata: Partial<FoodMetadata>;
 }

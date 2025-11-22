@@ -114,8 +114,9 @@ const AddFoodManager: React.FC = () => {
   isUnitFood: false,
   useFixedAmount: false,
   fixedAmount: 100,
-  hidden: false, // ← NEW
-  favorite: false // ← NEW
+  fixedAmounts: [100], // ← NEW: Array of portion sizes
+  hidden: false,
+  favorite: false
   });
 
   /* ---------- ui state ---------- */
@@ -205,8 +206,9 @@ const AddFoodManager: React.FC = () => {
       isUnitFood: false,
       useFixedAmount: false,
       fixedAmount: 100,
-      hidden: false, // ← NEW
-      favorite: false // ← NEW
+      fixedAmounts: [100], // ← NEW
+      hidden: false,
+      favorite: false
     });
     setEditingFood(null);
     setError(null);
@@ -300,6 +302,9 @@ const AddFoodManager: React.FC = () => {
       isUnitFood: food.metadata?.isUnitFood ?? false,
       useFixedAmount: food.metadata?.useFixedAmount ?? false,
       fixedAmount: food.metadata?.fixedAmount ?? 0,
+      fixedAmounts: food.metadata?.fixedAmounts && food.metadata.fixedAmounts.length > 0 
+        ? food.metadata.fixedAmounts 
+        : [food.metadata?.fixedAmount ?? 100], // Migrate single fixedAmount to array
       hidden: typeof food.metadata?.hidden === 'boolean' ? food.metadata.hidden : false,
       favorite: typeof food.metadata?.favorite === 'boolean' ? food.metadata.favorite : false
     });
@@ -685,24 +690,73 @@ const AddFoodManager: React.FC = () => {
 
                   {formData.useFixedAmount && (
                     <Box sx={{ mt: 2 }}>
-                      <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, color: 'var(--text-primary)' }}>
-                        Fixed Amount
-                      </Typography>
-                      <NumberStepper
-                        value={formData.fixedAmount}
-                        onChange={(value) => handleInputChange('fixedAmount', value)}
-                        min={0}
-                        max={formData.isUnitFood ? 100 : 5000}
-                        step={formData.isUnitFood ? 1 : 10}
-                        unit={formData.isUnitFood ? 'units' : 'g'}
-                        size="small"
-                      />
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 500, color: 'var(--text-primary)' }}>
+                          Portion Sizes (up to 3)
+                        </Typography>
+                        {(!formData.fixedAmounts || formData.fixedAmounts.length < 3) && (
+                          <AccentButton
+                            onClick={() => {
+                              const currentAmounts = formData.fixedAmounts || [100];
+                              const lastAmount = currentAmounts[currentAmounts.length - 1];
+                              const newAmount = formData.isUnitFood ? lastAmount + 1 : lastAmount + 50;
+                              handleInputChange('fixedAmounts', [...currentAmounts, newAmount]);
+                            }}
+                            size="small"
+                            variant="success"
+                            style={{ padding: '4px 12px', fontSize: '0.875rem' }}
+                          >
+                            + Add Portion
+                          </AccentButton>
+                        )}
+                      </Box>
+                      
+                      {(formData.fixedAmounts || [100]).map((amount, index) => (
+                        <Box key={index} sx={{ mb: 2, display: 'flex', gap: 2, alignItems: 'center' }}>
+                          <Chip 
+                            label={`Size ${index + 1}`} 
+                            size="small" 
+                            sx={{ 
+                              minWidth: '60px',
+                              backgroundColor: 'var(--accent-blue)',
+                              color: 'white',
+                              fontWeight: 500
+                            }} 
+                          />
+                          <NumberStepper
+                            value={amount}
+                            onChange={(value) => {
+                              const newAmounts = [...(formData.fixedAmounts || [100])];
+                              newAmounts[index] = value;
+                              handleInputChange('fixedAmounts', newAmounts);
+                            }}
+                            min={0}
+                            max={formData.isUnitFood ? 100 : 5000}
+                            step={formData.isUnitFood ? 1 : 10}
+                            unit={formData.isUnitFood ? 'units' : 'g'}
+                            size="small"
+                          />
+                          {(formData.fixedAmounts?.length || 1) > 1 && (
+                            <IconButton
+                              onClick={() => {
+                                const newAmounts = (formData.fixedAmounts || [100]).filter((_, i) => i !== index);
+                                handleInputChange('fixedAmounts', newAmounts.length > 0 ? newAmounts : [100]);
+                              }}
+                              size="small"
+                              sx={{ color: 'var(--error-color)' }}
+                            >
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          )}
+                        </Box>
+                      ))}
+                      
                       <Typography variant="caption" sx={{ 
-                        mt: 1, 
                         display: 'block',
-                        color: 'var(--text-secondary)'
+                        color: 'var(--text-secondary)',
+                        fontStyle: 'italic'
                       }}>
-                        Default amount when selected in Meal Planner ({formData.isUnitFood ? 'units' : 'g'})
+                        Quick-select portion sizes in Meal Planner ({formData.isUnitFood ? 'units' : 'g'})
                       </Typography>
                     </Box>
                   )}

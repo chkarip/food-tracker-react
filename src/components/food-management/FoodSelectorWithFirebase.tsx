@@ -278,7 +278,11 @@ const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = React.
     (n: string) => {
       const f = foodDatabase[n];
       if (!f) return 100;
-      if (f.useFixedAmount && f.fixedAmount) return f.fixedAmount;
+      // Use first portion size from fixedAmounts array if available
+      if (f.useFixedAmount) {
+        if (f.fixedAmounts && f.fixedAmounts.length > 0) return f.fixedAmounts[0];
+        if (f.fixedAmount) return f.fixedAmount;
+      }
       if (f.isUnitFood) return n === 'Eggs' ? 2 : 1;
       return 100;
     },
@@ -413,7 +417,16 @@ const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = React.
 
   const handleAdd = useCallback(() => {
   if (!selectedFoodName) return;
-  onAddFood({ name: selectedFoodName, amount });
+  
+  // Determine which portion size index was selected (if using fixed amounts)
+  const foodItem = foodDatabase[selectedFoodName];
+  const portionIndex = foodItem?.fixedAmounts?.findIndex((size: number) => size === amount) ?? undefined;
+  
+  onAddFood({ 
+    name: selectedFoodName, 
+    amount,
+    portionIndex: portionIndex !== -1 ? portionIndex : undefined
+  });
   setJustAddedName(selectedFoodName);
   setSelectedFoodName('');
   setAmount(100);
@@ -421,7 +434,7 @@ const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = React.
   
   // Clear the badge after 1200ms (extended for better visibility)
   setTimeout(() => setJustAddedName(''), 1200);
-  }, [selectedFoodName, amount, onAddFood]);
+  }, [selectedFoodName, amount, onAddFood, foodDatabase]);
 
   const handleCategoryToggle = (category: string) => {
     console.log('[FSWF] request scroll for category', category);
@@ -635,6 +648,46 @@ const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = React.
                             <Typography variant="subtitle2" sx={{ mb: 1, color: 'var(--text-primary)', fontWeight: 600 }}>
                               Configure {selectedFoodName}
                             </Typography>
+                            
+                            {/* Portion Size Quick Select */}
+                            {(() => {
+                              const foodItem = foodDatabase[selectedFoodName];
+                              const hasMultiplePortions = foodItem?.useFixedAmount && foodItem?.fixedAmounts && foodItem.fixedAmounts.length > 1;
+                              
+                              if (hasMultiplePortions) {
+                                return (
+                                  <Box sx={{ mb: 2 }}>
+                                    <Typography variant="caption" sx={{ color: 'var(--text-secondary)', mb: 0.5, display: 'block' }}>
+                                      Quick Select Portion:
+                                    </Typography>
+                                    <Stack direction="row" spacing={1} flexWrap="wrap" gap={1}>
+                                      {foodItem.fixedAmounts!.map((portionSize: number, index: number) => (
+                                        <Chip
+                                          key={index}
+                                          label={`Size ${index + 1}: ${portionSize}${getFoodUnit(selectedFoodName)}`}
+                                          onClick={() => handleAmountChange(portionSize)}
+                                          variant={amount === portionSize ? 'filled' : 'outlined'}
+                                          size="small"
+                                          sx={{
+                                            backgroundColor: amount === portionSize ? 'var(--accent-blue)' : 'transparent',
+                                            color: amount === portionSize ? 'white' : 'var(--text-primary)',
+                                            borderColor: 'var(--accent-blue)',
+                                            fontWeight: amount === portionSize ? 600 : 500,
+                                            cursor: 'pointer',
+                                            '&:hover': {
+                                              backgroundColor: amount === portionSize ? 'var(--accent-blue)' : 'var(--meal-chip-bg)',
+                                              transform: 'translateY(-1px)'
+                                            },
+                                            transition: 'all 0.2s ease'
+                                          }}
+                                        />
+                                      ))}
+                                    </Stack>
+                                  </Box>
+                                );
+                              }
+                              return null;
+                            })()}
                             
                             <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
                               <Typography variant="body2" sx={{ color: 'var(--text-secondary)' }}>
@@ -864,6 +917,46 @@ const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = React.
                               Configure {selectedFoodName}
                             </Typography>
                             
+                            {/* Portion Size Quick Select */}
+                            {(() => {
+                              const foodItem = foodDatabase[selectedFoodName];
+                              const hasMultiplePortions = foodItem?.useFixedAmount && foodItem?.fixedAmounts && foodItem.fixedAmounts.length > 1;
+                              
+                              if (hasMultiplePortions) {
+                                return (
+                                  <Box sx={{ mb: 2 }}>
+                                    <Typography variant="caption" sx={{ color: 'var(--text-secondary)', mb: 0.5, display: 'block' }}>
+                                      Quick Select Portion:
+                                    </Typography>
+                                    <Stack direction="row" spacing={1} flexWrap="wrap" gap={1}>
+                                      {foodItem.fixedAmounts!.map((portionSize: number, index: number) => (
+                                        <Chip
+                                          key={index}
+                                          label={`Size ${index + 1}: ${portionSize}${getFoodUnit(selectedFoodName)}`}
+                                          onClick={() => handleAmountChange(portionSize)}
+                                          variant={amount === portionSize ? 'filled' : 'outlined'}
+                                          size="small"
+                                          sx={{
+                                            backgroundColor: amount === portionSize ? 'var(--accent-blue)' : 'transparent',
+                                            color: amount === portionSize ? 'white' : 'var(--text-primary)',
+                                            borderColor: 'var(--accent-blue)',
+                                            fontWeight: amount === portionSize ? 600 : 500,
+                                            cursor: 'pointer',
+                                            '&:hover': {
+                                              backgroundColor: amount === portionSize ? 'var(--accent-blue)' : 'var(--meal-chip-bg)',
+                                              transform: 'translateY(-1px)'
+                                            },
+                                            transition: 'all 0.2s ease'
+                                          }}
+                                        />
+                                      ))}
+                                    </Stack>
+                                  </Box>
+                                );
+                              }
+                              return null;
+                            })()}
+                            
                             <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
                               <Typography variant="body2" sx={{ color: 'var(--text-secondary)' }}>
                                 Amount:
@@ -1058,20 +1151,44 @@ const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = React.
                                   justifyContent="space-between"
                                   spacing={1.5}
                                 >
-                                  <Typography 
-                                    sx={{ 
-                                      flex: 1,
-                                      fontWeight: 600,
-                                      color: 'var(--text-primary)',
-                                      fontSize: '0.9rem',
-                                      overflow: 'hidden',
-                                      textOverflow: 'ellipsis',
-                                      whiteSpace: 'nowrap',
-                                      minWidth: 0, // Allows flex shrinking
-                                    }}
-                                  >
-                                    {food.name}
-                                  </Typography>
+                                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                                    <Typography 
+                                      sx={{ 
+                                        fontWeight: 600,
+                                        color: 'var(--text-primary)',
+                                        fontSize: '0.9rem',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        whiteSpace: 'nowrap',
+                                      }}
+                                    >
+                                      {food.name}
+                                      {(() => {
+                                        // Show portion size label if applicable
+                                        const foodItem = foodDatabase[food.name];
+                                        if (food.portionIndex !== undefined && foodItem?.fixedAmounts && foodItem.fixedAmounts[food.portionIndex]) {
+                                          return (
+                                            <Chip
+                                              label={`Size ${food.portionIndex + 1}`}
+                                              size="small"
+                                              sx={{
+                                                ml: 1,
+                                                height: '18px',
+                                                fontSize: '0.65rem',
+                                                backgroundColor: 'var(--accent-blue)',
+                                                color: 'white',
+                                                fontWeight: 600,
+                                                '& .MuiChip-label': {
+                                                  padding: '0 6px'
+                                                }
+                                              }}
+                                            />
+                                          );
+                                        }
+                                        return null;
+                                      })()}
+                                    </Typography>
+                                  </Box>
 
                                   <NumberStepper
                                     value={food.amount}

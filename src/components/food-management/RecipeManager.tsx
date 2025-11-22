@@ -289,6 +289,7 @@ const RecipeManager: React.FC = () => {
         isUnitFood: false,
         useFixedAmount: false,
         fixedAmount: 100,
+        fixedAmounts: [100], // Initialize with default portion
         hidden: false,
         favorite: false
       };
