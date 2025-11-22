@@ -330,30 +330,45 @@ const AddFoodManager: React.FC = () => {
   /* ------------------------------------------------------------------ */
 
   return (
-    <Box 
-      sx={{ 
-        display: 'flex', 
-        gap: 3, 
-        height: '100%', 
-        p: 1.5,
-        flexDirection: { xs: 'column', md: 'row' },
-        background: 'linear-gradient(135deg, var(--meal-bg-card) 0%, rgba(255,255,255,0.5) 100%)',
-        borderRadius: 3,
-        minHeight: 'calc(100vh - 200px)',
-        maxWidth: '80%',
-        marginLeft: 'auto',
-        marginRight: 'auto'
-      }}
-    >
-      {/* ========== LEFT COLUMN: Add/Edit Form ========== */}
+    <Box>
+      {/* Title with separator */}
+      <Box sx={{ 
+        mb: 3, 
+        pb: 2, 
+        borderBottom: '1px solid var(--border-color)' 
+      }}>
+        <Typography variant="h5" sx={{ 
+          fontWeight: 600, 
+          color: 'var(--text-primary)' 
+        }}>
+          Manage Foods
+        </Typography>
+      </Box>
+
       <Box 
         sx={{ 
-          flexBasis: { xs: '100%', md: '50%' },
-          minWidth: 0
+          display: 'flex', 
+          gap: 3, 
+          height: '100%', 
+          p: 1.5,
+          flexDirection: { xs: 'column', md: 'row' },
+          background: 'linear-gradient(135deg, var(--meal-bg-card) 0%, rgba(255,255,255,0.5) 100%)',
+          borderRadius: 3,
+          minHeight: 'calc(100vh - 200px)',
+          maxWidth: '80%',
+          marginLeft: 'auto',
+          marginRight: 'auto'
         }}
       >
-        {/* Food Search */}
-        <Card
+        {/* ========== LEFT COLUMN: Add/Edit Form ========== */}
+        <Box 
+          sx={{ 
+            flexBasis: { xs: '100%', md: '50%' },
+            minWidth: 0
+          }}
+        >
+          {/* Food Search */}
+          <Card
           elevation={1}
           sx={{
             mb: 3,
@@ -1089,6 +1104,7 @@ const AddFoodManager: React.FC = () => {
           </AccentButton>
         </DialogActions>
       </Dialog>
+      </Box>
     </Box>
   );
 };

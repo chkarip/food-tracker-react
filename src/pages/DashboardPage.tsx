@@ -37,8 +37,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box,
-  Container,
-  Paper,
   Typography,
   Button,
   CircularProgress
@@ -58,9 +56,10 @@ import {
 } from '../services/firebase';
 import { getWaterIntakeForMonth } from '../services/firebase/water/waterService';
 import { DailyPlanDocument, ActivityHistoryDocument, ScheduledActivitiesDocument, ScheduledWorkoutDocument } from '../types/firebase';
-import { ExpandMore as ExpandIcon, CalendarToday as CalendarIcon } from '@mui/icons-material';
+import { ExpandMore as ExpandIcon, CalendarToday as CalendarIcon, KeyboardArrowRight as ArrowIcon } from '@mui/icons-material';
 import { GenericCard } from '../components/shared/cards';
 import { TodayScheduleStack } from '../components/shared/TodayScheduleStack';
+import PageCard from '../components/shared/PageCard';
 
 const DashboardPage: React.FC = () => {
   const { user } = useAuth();
@@ -79,17 +78,15 @@ const DashboardPage: React.FC = () => {
   const [dayModalLoading, setDayModalLoading] = useState(false);
 
   // Module stats hooks
-  const { stats: foodStats } = useModuleStats('food', user?.uid);
   const { stats: gymStats } = useModuleStats('gym', user?.uid);
-  const { stats: financeStats } = useModuleStats('finance', user?.uid);
 
   // React Query hooks for calendar data
-  const { data: monthlyScheduledActivities, isLoading: scheduledActivitiesLoading } = useMonthlyScheduledActivities(
+  const { data: monthlyScheduledActivities } = useMonthlyScheduledActivities(
     user?.uid || '', 
     currentDate.getFullYear(), 
     currentDate.getMonth()
   );
-  const { data: monthlyDailyPlans, isLoading: dailyPlansLoading } = useDailyPlansForMonth(
+  const { data: monthlyDailyPlans } = useDailyPlansForMonth(
     user?.uid || '', 
     currentDate.getFullYear(), 
     currentDate.getMonth()
@@ -150,9 +147,7 @@ const DashboardPage: React.FC = () => {
     return activities;
   };
 
-  const foodActivityData = generateActivityData('food');
   const gymActivityData = generateActivityData('gym');
-  const financeActivityData = generateActivityData('finance');
 
   // Load only today's data for initial compact view
   const loadTodayData = async () => {
@@ -238,6 +233,7 @@ const DashboardPage: React.FC = () => {
     return () => {
       window.removeEventListener('storage', handleStorageChange);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]); // Remove currentDate dependency since we start with today's data
 
   // Generate calendar days with comprehensive task tracking
@@ -419,6 +415,7 @@ const DashboardPage: React.FC = () => {
       }
     };
     loadCalendarDays();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentDate, mealPlans, scheduledActivities, scheduledWorkouts, activityHistory, calendarRefresh, user, isExpandedView, calendarDataLoaded, monthlyScheduledActivities, monthlyDailyPlans]);
 
   // Set today's date as default selected day when data is loaded (for compact view)
@@ -530,20 +527,7 @@ const DashboardPage: React.FC = () => {
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', p: 2 }}>
-      <Paper
-        sx={{
-          borderRadius: 4,
-          overflow: 'hidden',
-          backgroundColor: 'var(--card-bg)',
-          border: '1px solid var(--border-color)',
-          boxShadow: 'var(--elevation-1)',
-          width: { xs: '100%', lg: '80%' },
-          maxWidth: 1200,
-          mx: 'auto'
-        }}
-      >
-        <Box sx={{ p: 3, backgroundColor: 'var(--surface-bg)' }}>
+    <PageCard title="Dashboard">
           {/* Conditional Content */}
           {isExpandedView ? (
             /* Full Calendar View */
@@ -563,37 +547,8 @@ const DashboardPage: React.FC = () => {
                 onNavigateMonth={navigateMonth}
                 onGoToToday={goToToday}
                 onDayClick={handleDayClick}
-              />
-            )
-          ) : (
-            /* Compact Today's Details View */
-            <Box>
-          {/* Header with Title and Expand Button side by side */}
-          <Box
-            display="flex"
-            flexDirection={{ xs: 'column', sm: 'row' }}
-            alignItems="center"
-            justifyContent="space-between"
-            sx={{ mb: 2 }}
-          >
-            <Typography variant="h3" sx={{ fontWeight: 700, mb: { xs: 2, sm: 0 } }}>
-              Dashboard
-            </Typography>
-
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={async () => {
-                const newExpandedView = !isExpandedView;
-                setIsExpandedView(newExpandedView);
-
-                if (newExpandedView) {
-                  // Switching to expanded view - load full month data
-                  await loadFullMonthData();
-                  // Clear any selected day from compact view
-                  setSelectedDay(null);
-                } else {
-                  // Switching to compact view - reload today's data and set today's date
+                onBackToToday={async () => {
+                  setIsExpandedView(false);
                   await loadTodayData();
                   const today = new Date();
                   const todayDay = calendarDays.find(day =>
@@ -602,27 +557,46 @@ const DashboardPage: React.FC = () => {
                   if (todayDay) {
                     setSelectedDay(todayDay);
                   }
-                }
-              }}
-              startIcon={isExpandedView ? <CalendarIcon /> : <ExpandIcon />}
-              sx={{
-                borderRadius: 5,
-                px: 4,
-                minWidth: { xs: '100%', sm: 'auto' }
-              }}
-            >
-              {isExpandedView ? "Show Today's Details" : 'Expand to Full Calendar'}
-            </Button>
-          </Box>
-
+                }}
+              />
+            )
+          ) : (
+            /* Compact Today's Details View */
+            <Box>
           <GenericCard
             variant="summary"
             size="lg"
             headerSlot={
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                <Typography variant="h5" sx={{ fontWeight: 600, color: 'var(--text-primary)' }}>
-                  Today's Schedule
-                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Box
+                    onClick={async () => {
+                      setIsExpandedView(true);
+                      await loadFullMonthData();
+                      setSelectedDay(null);
+                    }}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: 32,
+                      height: 32,
+                      borderRadius: '8px',
+                      backgroundColor: 'var(--accent-green)',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      '&:hover': {
+                        backgroundColor: 'var(--accent-green-hover)',
+                        transform: 'scale(1.05)',
+                      }
+                    }}
+                  >
+                    <ArrowIcon sx={{ color: 'white', fontSize: 20 }} />
+                  </Box>
+                  <Typography variant="h5" sx={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                    Today's Schedule
+                  </Typography>
+                </Box>
                 <Typography variant="body2" sx={{ color: 'var(--text-secondary)' }}>
                   {new Date().toLocaleDateString('en-US', {
                     weekday: 'long',
@@ -680,9 +654,7 @@ const DashboardPage: React.FC = () => {
           />
         )
       )}
-        </Box>
-      </Paper>
-    </Box>
+    </PageCard>
   );
 };
 

@@ -22,6 +22,7 @@
 
   /* Accents */
   --accent-green: #3BBA75;
+  --accent-green-hover: #32a665;
   --accent-orange: #FF9800;
   --accent-blue: #2196F3;
   --accent-purple: #9C27B0;
@@ -187,6 +188,7 @@
 
   /* Accents for dark theme */
   --accent-green: #3BBA75;
+  --accent-green-hover: #32a665;
   --accent-orange: #FF9800;
   --accent-blue: #2196F3;
   --accent-purple: #9C27B0;

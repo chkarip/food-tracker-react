@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box,
-  Paper,
-  Container,
   Typography,
   Card,
   CardContent,
@@ -22,15 +20,12 @@ import {
   ListItem,
   ListItemText,
   ListItemSecondaryAction,
-  Fab,
-  Alert,
-  Divider
+  Alert
 } from '@mui/material';
+import PageCard from '../../../components/shared/PageCard';
 import {
-  Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
-  AccountBalance as FinanceIcon,
   TrendingUp as IncomeIcon,
   TrendingDown as ExpenseIcon,
   Savings as SavingsIcon,
@@ -178,24 +173,7 @@ const FinancePage: React.FC = () => {
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', p: 2 }}>
-      <Paper
-        sx={{
-          borderRadius: 4,
-          overflow: 'hidden',
-          backgroundColor: 'var(--card-bg)',
-          border: '1px solid var(--border-color)',
-          boxShadow: 'var(--elevation-1)',
-          width: { xs: '100%', lg: '80%' },
-          maxWidth: 1200,
-          mx: 'auto'
-        }}
-      >
-        <Box sx={{
-          p: 3,
-          backgroundColor: 'var(--surface-bg)',
-          minHeight: 'calc(100vh - 200px)'
-        }}>
+    <PageCard title="Finance">
       {/* Month Selector */}
       <Card sx={{ mb: 3, borderRadius: 3 }}>
         <CardContent>
@@ -413,8 +391,6 @@ const FinancePage: React.FC = () => {
         </Card>
       </Box>
 
-        </Box>
-      </Paper>
 
       {/* Transaction Dialog */}
       <TransactionDialog
@@ -428,7 +404,7 @@ const FinancePage: React.FC = () => {
           setCurrentTransaction(null);
         }}
       />
-    </Box>
+    </PageCard>
   );
 };
 

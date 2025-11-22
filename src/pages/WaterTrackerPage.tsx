@@ -40,7 +40,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box,
-  Paper,
   Typography,
   Button,
   LinearProgress,
@@ -55,7 +54,6 @@ import {
   DialogActions
 } from '@mui/material';
 import {
-  LocalDrink as WaterIcon,
   Add as AddIcon,
   History as HistoryIcon,
   TrendingUp as TrendingIcon,
@@ -72,10 +70,10 @@ import {
 import { WaterActivityData, WATER_PRESETS } from '../types/water';
 import ActivityGrid from '../components/activity/ActivityGrid';
 import { useQueryClient } from '@tanstack/react-query';
+import PageCard from '../components/shared/PageCard';
 
 const WaterTrackerPage: React.FC = () => {
   const { user } = useAuth();
-  const theme = useTheme();
   const queryClient = useQueryClient();
   const [activityData, setActivityData] = useState<WaterActivityData[]>([]);
   const [loading, setLoading] = useState(false);
@@ -84,7 +82,7 @@ const WaterTrackerPage: React.FC = () => {
   const [selectedPreset, setSelectedPreset] = useState<number | null>(null);
 
   // Use React Query hook for water data
-  const { data: waterData, isLoading, error } = useTodayWaterIntake(user?.uid || '');
+  const { data: waterData, isLoading } = useTodayWaterIntake(user?.uid || '');
 
   // Load activity data on mount
   useEffect(() => {
@@ -176,25 +174,8 @@ const WaterTrackerPage: React.FC = () => {
   const bottleFillHeight = getBottleFillHeight(progress);
 
   return (
-    <Box sx={{ minHeight: '100vh', p: 2 }}>
-      <Paper
-        sx={{
-          borderRadius: 4,
-          overflow: 'hidden',
-          backgroundColor: 'var(--card-bg)',
-          border: '1px solid var(--border-color)',
-          boxShadow: 'var(--elevation-1)',
-          width: { xs: '100%', lg: '80%' },
-          maxWidth: 1200,
-          mx: 'auto'
-        }}
-      >
+    <PageCard title="Water Tracker">
         {/* Main Content */}
-        <Box sx={{
-          p: 3,
-          backgroundColor: 'var(--surface-bg)',
-          minHeight: 'calc(100vh - 200px)'
-        }}>
           <Box sx={{ 
             display: 'grid', 
             gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, 
@@ -467,8 +448,6 @@ const WaterTrackerPage: React.FC = () => {
               </Card>
             </Box>
           </Box>
-        </Box>
-      </Paper>
 
       {/* Manual Amount Dialog */}
       <Dialog open={showManualDialog} onClose={() => setShowManualDialog(false)} maxWidth="sm" fullWidth>
@@ -502,7 +481,7 @@ const WaterTrackerPage: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
-    </Box>
+    </PageCard>
   );
 };
 

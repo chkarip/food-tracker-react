@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Box,
-  Paper,
   Alert,
 } from '@mui/material';
+import PageCard from '../shared/PageCard';
 import { collection, getDocs, addDoc, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import AccentButton from '../shared/AccentButton';
@@ -155,22 +155,9 @@ const GymExercisesPage: React.FC = () => {
   }, [exercises]);
 
   return (
-    <Box sx={{ minHeight: '100vh', p: 2 }}>
-      <Paper
-        sx={{
-          borderRadius: 4,
-          overflow: 'hidden',
-          backgroundColor: 'var(--card-bg)',
-          border: '1px solid var(--border-color)',
-          boxShadow: 'var(--elevation-1)',
-          width: { xs: '100%', lg: '80%' },
-          maxWidth: 1200,
-          mx: 'auto'
-        }}
-      >
-        <Box sx={{ p: 3, backgroundColor: 'var(--surface-bg)' }}>
-          {/* Search and Filter Controls */}
-          <ExerciseFilters
+    <PageCard title="Exercise Library">
+      {/* Search and Filter Controls */}
+      <ExerciseFilters
           searchTerm={searchTerm}
           filterMuscle={filterMuscle}
           filterDifficulty={filterDifficulty}
@@ -231,9 +218,7 @@ const GymExercisesPage: React.FC = () => {
           onSave={handleSaveExercise}
           onFormChange={setExerciseForm}
         />
-        </Box>
-      </Paper>
-    </Box>
+    </PageCard>
   );
 };
 

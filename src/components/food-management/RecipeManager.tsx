@@ -600,49 +600,64 @@ const RecipeManager: React.FC = () => {
   };
 
   return (
-    <Box 
-      sx={{ 
-        display: 'flex', 
-        gap: 3, 
-        height: '100%', 
-        p: 1.5,
-        background: 'linear-gradient(135deg, var(--meal-bg-card) 0%, rgba(255,255,255,0.5) 100%)',
-        borderRadius: 3,
-        minHeight: 'calc(100vh - 200px)',
-        maxWidth: '80%',
-        marginLeft: 'auto',
-        marginRight: 'auto'
-      }}
-    >
-      {/* ========== LEFT COLUMN: Recipe Management ========== */}
+    <Box>
+      {/* Title with separator */}
+      <Box sx={{ 
+        mb: 3, 
+        pb: 2, 
+        borderBottom: '1px solid var(--border-color)' 
+      }}>
+        <Typography variant="h5" sx={{ 
+          fontWeight: 600, 
+          color: 'var(--text-primary)' 
+        }}>
+          Recipes
+        </Typography>
+      </Box>
+
       <Box 
         sx={{ 
-          flexBasis: { xs: '100%', md: '70%' },
-          minWidth: 0
+          display: 'flex', 
+          gap: 3, 
+          height: '100%', 
+          p: 1.5,
+          background: 'linear-gradient(135deg, var(--meal-bg-card) 0%, rgba(255,255,255,0.5) 100%)',
+          borderRadius: 3,
+          minHeight: 'calc(100vh - 200px)',
+          maxWidth: '80%',
+          marginLeft: 'auto',
+          marginRight: 'auto'
         }}
       >
-        {/* Header */}
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="h6" sx={{ 
-            mb: 1.5, 
-            color: 'var(--text-primary)', 
-            fontWeight: 600,
-            opacity: 0.94,
-            position: 'relative',
-            '&::before': {
-              content: '""',
-              position: 'absolute',
-              left: 0,
-              top: 0,
-              bottom: 0,
-              width: '3px',
-              backgroundColor: 'var(--accent-green)',
-              borderRadius: '2px'
-            },
-            paddingLeft: '12px'
-          }}>
-            Recipe Manager
-          </Typography>
+        {/* ========== LEFT COLUMN: Recipe Management ========== */}
+        <Box 
+          sx={{ 
+            flexBasis: { xs: '100%', md: '70%' },
+            minWidth: 0
+          }}
+        >
+          {/* Header */}
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="h6" sx={{ 
+              mb: 1.5, 
+              color: 'var(--text-primary)', 
+              fontWeight: 600,
+              opacity: 0.94,
+              position: 'relative',
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                left: 0,
+                top: 0,
+                bottom: 0,
+                width: '3px',
+                backgroundColor: 'var(--accent-green)',
+                borderRadius: '2px'
+              },
+              paddingLeft: '12px'
+            }}>
+              Recipe Manager
+            </Typography>
           <Typography variant="body2" sx={{ 
             color: 'var(--text-secondary)',
             pl: '12px'
@@ -1100,6 +1115,7 @@ const RecipeManager: React.FC = () => {
           </AccentButton>
         </DialogActions>
       </Dialog>
+      </Box>
     </Box>
   );
 };

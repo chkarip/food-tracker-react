@@ -7,7 +7,6 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Paper,
   Alert
 } from '@mui/material';
 
@@ -122,13 +121,6 @@ const WorkoutBuilder: React.FC = () => {
 
   // Removed legacy loadWorkout function
 
-  // New function to fetch templates for the selected workout type
-  // ✅ FIXED VERSION
-  const fetchTemplates = async () => {
-    if (!user) return;
-    await loadTemplatesForWorkoutType(selectedWorkoutType); // Correct function name, no setTemplates needed
-  };
-
   const handleWorkoutTypeChange = (workoutType: WorkoutType) => {
     setSelectedWorkoutType(workoutType);
     clearSelectedTemplate(); // ✅ Clear template when changing workout type
@@ -159,6 +151,7 @@ const WorkoutBuilder: React.FC = () => {
 
   // Handle template saving/updating
   const handleSaveTemplate = async () => {
+    setSaving(true);
     try {
       const templateName = selectedTemplate?.name || 
         `${selectedWorkoutType} - ${new Date().toLocaleDateString()}`;
@@ -177,6 +170,8 @@ const WorkoutBuilder: React.FC = () => {
       
     } catch (error) {
       console.error('Error saving template:', error);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -191,20 +186,7 @@ const WorkoutBuilder: React.FC = () => {
   }
 
   return (
-    <Box component={Paper} p={3} sx={{ 
-      width: { xs: '100%', lg: '80%' },
-      maxWidth: 1200,
-      mx: 'auto',
-      borderRadius: 4,
-      backgroundColor: 'var(--card-bg)',
-      border: '1px solid var(--border-color)',
-      boxShadow: 'var(--elevation-1)'
-    }}>
-      {/* Header */}
-      <Typography variant="h4" gutterBottom>
-        My Workouts
-      </Typography>
-
+    <Box>
       {/* Workout Type Selector */}
       <FormControl fullWidth sx={{ mb: 2 }}>
         <InputLabel id="workout-type-label">Workout Type</InputLabel>
@@ -228,14 +210,6 @@ const WorkoutBuilder: React.FC = () => {
 
       {/* Template Controls */}
       <Box sx={{ mb: 3, display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
-        {/* Load Template Button */}
-        <AccentButton 
-          onClick={fetchTemplates}
-          variant="secondary"
-        >
-          Load Template
-        </AccentButton>
-
         {/* Template Dropdown */}
         {templates.length > 0 && (
           <FormControl sx={{ minWidth: 200 }}>

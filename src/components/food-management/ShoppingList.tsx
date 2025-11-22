@@ -27,7 +27,6 @@ import {
   Box,
   Typography,
   Alert,
-  Paper,
   Chip,
   Stack,
   Button,
@@ -35,8 +34,10 @@ import {
   CardContent,
   Divider,
   Snackbar,
-  CircularProgress
+  CircularProgress,
+  Paper
 } from '@mui/material';
+import PageCard from '../shared/PageCard';
 import { useFoodDatabase } from '../../contexts/FoodContext';
 import { GenericCard } from '../shared/cards/GenericCard';
 import { NumberStepper } from '../shared/inputs';
@@ -262,27 +263,6 @@ const ShoppingList: React.FC = () => {
     return Math.floor(quantity / servingSize);
   };
 
-  const calculateProgress = (current: number, target: number): number => {
-    if (target === 0) return 0;
-    return Math.min(100, (current / target) * 100);
-  };
-
-  const getPeriodMultiplier = (period: 'week' | 'month' | 'year'): number => {
-    switch (period) {
-      case 'week': return 1;
-      case 'month': return 4.33; // Average weeks per month
-      case 'year': return 52; // Weeks per year
-      default: return 1;
-    }
-  };
-
-  // Projected cost only (macros stay constant)
-  const projectedCost = useMemo(() => ({
-    week: totals.cost * periodMultipliers.week,
-    month: totals.cost * periodMultipliers.month,
-    year: totals.cost * periodMultipliers.year,
-  }), [totals.cost]);
-
   // Calculate nutrition goals for all periods
   const periodGoals = useMemo(() => ({
     week: {
@@ -303,11 +283,11 @@ const ShoppingList: React.FC = () => {
       carbs: MACRO_TARGETS.carbs * periodMultipliers.year,
       calories: MACRO_TARGETS.caloriesMax * periodMultipliers.year,
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }), []);
 
   // Helper functions for progress calculations
   type Period = 'week' | 'month' | 'year';
-  type MacroKey = 'protein' | 'fats' | 'carbs' | 'calories';
 
   const getPercent = (value: number, target: number) =>
     target > 0 ? Math.min(100, (value / target) * 100) : 0;
@@ -355,55 +335,40 @@ const ShoppingList: React.FC = () => {
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', p: 2 }}>
-      <Paper
-        sx={{
-          borderRadius: 4,
-          overflow: 'hidden',
-          backgroundColor: 'var(--card-bg)',
-          border: '1px solid var(--border-color)',
-          boxShadow: 'var(--elevation-1)',
-          width: { xs: '100%', lg: '80%' },
-          maxWidth: 1200,
-          mx: 'auto'
-        }}
-      >
-        <Box sx={{
-          p: 3,
-          backgroundColor: 'var(--surface-bg)',
-          minHeight: 'calc(100vh - 200px)'
-        }}>
-          {/* Header */}
-          <Box sx={{ mb: 3 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-              <Typography variant="h4" sx={{ color: 'var(--text-primary)', fontWeight: 600 }}>
-                Shopping List
-              </Typography>
-          <Button
-            variant="contained"
-            onClick={finalizeShoppingList}
-            disabled={saving || shoppingList.length === 0 || !user}
-            startIcon={saving ? <CircularProgress size={16} /> : null}
-            sx={{
-              backgroundColor: 'var(--accent-green)',
-              color: 'white',
-              '&:hover': {
-                backgroundColor: 'var(--accent-green-dark)',
-              },
-              '&:disabled': {
-                backgroundColor: 'var(--text-secondary)',
-                color: 'var(--text-primary)',
-              }
-            }}
-            title={!user ? 'Sign in to save your shopping list' : shoppingList.length === 0 ? 'Add items to your shopping list first' : 'Save shopping list to Firebase'}
-          >
-            {saving ? 'Saving...' : !user ? 'Sign In to Save' : 'Finalize List'}
-          </Button>
+    <PageCard 
+      headerSlot={
+        <Box sx={{ width: '100%' }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Typography variant="h5" sx={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+              Shopping List
+            </Typography>
+            <Button
+              variant="contained"
+              onClick={finalizeShoppingList}
+              disabled={saving || shoppingList.length === 0 || !user}
+              startIcon={saving ? <CircularProgress size={16} /> : null}
+              sx={{
+                backgroundColor: 'var(--accent-green)',
+                color: 'white',
+                '&:hover': {
+                  backgroundColor: 'var(--accent-green-dark)',
+                },
+                '&:disabled': {
+                  backgroundColor: 'var(--text-secondary)',
+                  color: 'var(--text-primary)',
+                }
+              }}
+              title={!user ? 'Sign in to save your shopping list' : shoppingList.length === 0 ? 'Add items to your shopping list first' : 'Save shopping list to Firebase'}
+            >
+              {saving ? 'Saving...' : !user ? 'Sign In to Save' : 'Finalize List'}
+            </Button>
+          </Box>
+          <Typography variant="body2" sx={{ color: 'var(--text-secondary)' }}>
+            Plan your food purchases and track nutrition costs for different time periods. Use "Finalize List" to save your shopping list to the cloud for access across devices.
+          </Typography>
         </Box>
-        <Typography variant="body1" sx={{ color: 'var(--text-secondary)', mb: 3 }}>
-          Plan your food purchases and track nutrition costs for different time periods. Use "Finalize List" to save your shopping list to the cloud for access across devices.
-        </Typography>
-      </Box>
+      }
+    >
 
       {/* Time Period Selector */}
       <GenericCard
@@ -892,9 +857,7 @@ const ShoppingList: React.FC = () => {
           {saveError}
         </Alert>
       </Snackbar>
-        </Box>
-      </Paper>
-    </Box>
+    </PageCard>
   );
 };
 

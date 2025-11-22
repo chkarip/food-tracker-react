@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import {
   Box,
-  Paper,
   Tabs,
   Tab
 } from '@mui/material';
+import PageCard from '../components/shared/PageCard';
 import TimeslotMealPlanner from '../components/food-management/TimeslotMealPlanner';
 import AddFoodManager from '../components/food-management/AddFoodManager';
 import FoodTrack from '../components/food-management/FoodTrack';
@@ -44,19 +44,7 @@ const FoodTrackerPage: React.FC = () => {
   const [currentTab, setCurrentTab] = useState(0);
 
   return (
-    <Box sx={{ minHeight: '100vh', p: 2 }}>
-      <Paper
-        sx={{
-          borderRadius: 4,
-          overflow: 'hidden',
-          backgroundColor: 'var(--card-bg)',
-          border: '1px solid var(--border-color)',
-          boxShadow: 'var(--elevation-1)',
-          width: { xs: '100%', lg: '80%' },
-          maxWidth: 1200,
-          mx: 'auto'
-        }}
-      >
+    <PageCard padding={0}>
         {/* Tabs */}
         <Box sx={{ 
           borderBottom: '2px solid var(--meal-border-primary)',
@@ -162,10 +150,9 @@ const FoodTrackerPage: React.FC = () => {
           <TabPanel value={currentTab} index={4}>
             {/* Manage Foods - Add/edit/delete foods in database */}
             <AddFoodManager />
-          </TabPanel>
-        </Box>
-      </Paper>
-    </Box>
+        </TabPanel>
+      </Box>
+    </PageCard>
   );
 };
 

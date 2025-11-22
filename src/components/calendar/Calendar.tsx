@@ -28,7 +28,8 @@ import  AccentButton  from '../shared/AccentButton';
 import {
   ChevronLeft as ChevronLeftIcon,
   ChevronRight as ChevronRightIcon,
-  Today as TodayIcon
+  Today as TodayIcon,
+  KeyboardArrowLeft as BackIcon
 } from '@mui/icons-material';
 import { CalendarDay } from '../../modules/shared/types';
 import DayCard from './DayCard';
@@ -39,6 +40,7 @@ interface CalendarProps {
   onNavigateMonth: (direction: 'prev' | 'next') => void;
   onGoToToday: () => void;
   onDayClick: (day: CalendarDay) => void;
+  onBackToToday?: () => void;
 }
 
 const Calendar: React.FC<CalendarProps> = ({
@@ -46,7 +48,8 @@ const Calendar: React.FC<CalendarProps> = ({
   calendarDays,
   onNavigateMonth,
   onGoToToday,
-  onDayClick
+  onDayClick,
+  onBackToToday
 }) => {
   const theme = useTheme();
   
@@ -56,21 +59,56 @@ const Calendar: React.FC<CalendarProps> = ({
   // ...existing code...
 
   return (
-    <Card sx={{ borderRadius: 4 }}>
+    <Card sx={{ 
+      background: 'linear-gradient(135deg, var(--card-bg) 0%, rgba(33, 150, 243, 0.05) 100%)',
+      border: '1px solid var(--border-color)',
+      borderLeft: '4px solid var(--accent-blue)',
+      boxShadow: 'var(--elevation-1)',
+      borderRadius: '12px',
+      position: 'relative',
+      '&::before': {
+        content: '""',
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: 'linear-gradient(135deg, rgba(33, 150, 243, 0.03) 0%, rgba(33, 150, 243, 0.02) 50%, rgba(33, 150, 243, 0.01) 100%)',
+        borderRadius: '12px',
+        pointerEvents: 'none',
+      },
+    }}>
       <CardContent sx={{ p: 3 }}>
   {/* Calendar Header: Month, navigation, today button */}
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
-          <Typography variant="h5" sx={{ fontWeight: 600 }}>
-            {monthYear}
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            {onBackToToday && (
+              <Box
+                onClick={onBackToToday}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: 32,
+                  height: 32,
+                  borderRadius: '8px',
+                  backgroundColor: 'var(--accent-green)',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  '&:hover': {
+                    backgroundColor: 'var(--accent-green-hover)',
+                    transform: 'scale(1.05)',
+                  }
+                }}
+              >
+                <BackIcon sx={{ color: 'white', fontSize: 20 }} />
+              </Box>
+            )}
+            <Typography variant="h5" sx={{ fontWeight: 600 }}>
+              {monthYear}
+            </Typography>
+          </Box>
           <Box sx={{ display: 'flex', gap: 1 }}>
-            <AccentButton 
-              onClick={onGoToToday}
-              variant="secondary"
-              size="small"
-            >
-              📅 Today
-            </AccentButton>
             <IconButton onClick={() => onNavigateMonth('prev')}>
               <ChevronLeftIcon />
             </IconButton>

@@ -34,7 +34,7 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { subscribeToNutritionGoal } from '../../services/firebase/nutrition/nutritionGoalService';
 import { useAuth } from '../../contexts/AuthContext';
-import { Box, Typography } from '@mui/material';
+import { Box, Typography, Paper } from '@mui/material';
 import {
   WbSunny as AfternoonIcon,
   Nightlight as EveningIcon,
@@ -42,6 +42,7 @@ import {
 
 import MacroProgress from './MacroProgress';
 import FoodSelectorWithFirebase from './FoodSelectorWithFirebase';
+import { PageCard } from '../shared/PageCard';
 import { calculateMacros } from '../../utils/nutritionCalculations';
 import ExternalNutritionInput from './ExternalNutritionInput';
 import SaveLoadPlan from './SaveLoadPlan';
@@ -204,6 +205,7 @@ const TimeslotMealPlanner: React.FC = () => {
     (id: string, updates: Partial<TimeslotData>) => {
       setTimeslotData((prev) => ({ ...prev, [id]: { ...prev[id], ...updates } }));
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   );
 
@@ -340,6 +342,7 @@ const TimeslotMealPlanner: React.FC = () => {
     setPreviewFood(null);
     setSelectedFoodName('');
     setAmount(100);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Calculate preview macros including tentative selection
@@ -410,30 +413,32 @@ const TimeslotMealPlanner: React.FC = () => {
   }, [getFavoriteFoods, timeslotData]);
 
   return (
-    <Box 
-      sx={{ 
-        display: 'flex', 
-        gap: 3, 
-        height: '100%', 
-        p: 1.5,
-        flexDirection: { xs: 'column', md: 'row' },
-        background: 'linear-gradient(135deg, var(--meal-bg-card) 0%, rgba(255,255,255,0.5) 100%)',
-        borderRadius: 3,
-        minHeight: 'calc(100vh - 200px)',
-        maxWidth: '80%',
-        marginLeft: 'auto',
-        marginRight: 'auto'
-      }}
-    >
-      {/* ========== LEFT COLUMN: Food Selection & Settings ========== */}
+    <PageCard title="Meal Plan">
       <Box 
         sx={{ 
-          flexBasis: { xs: '100%', md: '60%' },
+          display: 'flex', 
+          gap: 3, 
+          height: '100%', 
+          flexDirection: { xs: 'column', md: 'row' },
+          minHeight: 'calc(100vh - 200px)',
+        }}
+      >
+        {/* ========== LEFT COLUMN: Food Selection & Settings ========== */}
+      <Box 
+        sx={{ 
+          flexBasis: { xs: '100%', md: '50%' },
           minWidth: 0
         }}
       >
-        {/* Timeslot picker - Simple section without card wrapper */}
-        <Box sx={{ mb: 3 }}>
+        {/* Timeslot picker - Wrapped in Paper card like other sections */}
+        <Paper sx={{ 
+          mb: 3,
+          p: 2,
+          backgroundColor: 'var(--card-bg)',
+          borderRadius: 2,
+          border: '1px solid var(--border-color)',
+          boxShadow: 'var(--elevation-1)'
+        }}>
           <Typography variant="h6" sx={{ 
             mb: 1.5, 
             color: 'var(--text-primary)', 
@@ -566,7 +571,7 @@ const TimeslotMealPlanner: React.FC = () => {
               </Box>
             ))}
           </Box>
-        </Box>
+        </Paper>
 
         {/* Food selector - your existing component */}
         <Box sx={{ mb: 1.5 }}>
@@ -611,7 +616,7 @@ const TimeslotMealPlanner: React.FC = () => {
       {/* ========== RIGHT COLUMN: Progress & Costs (Sticky) ========== */}
       <Box 
         sx={{ 
-          flexBasis: { xs: '100%', md: '40%' },
+          flexBasis: { xs: '100%', md: '50%' },
           position: { md: 'sticky' },
           top: { md: 16 },
           alignSelf: { md: 'flex-start' },
@@ -663,6 +668,7 @@ const TimeslotMealPlanner: React.FC = () => {
         </Box>
       </Box>
     </Box>
+    </PageCard>
   );
 };
 

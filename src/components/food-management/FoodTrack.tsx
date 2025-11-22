@@ -340,19 +340,34 @@ const FoodTrack: React.FC = () => {
 
   /* ---------- render your full UI below ---------- */
   return (
-    <Box 
-      sx={{ 
-        p: 2,
-        background: 'linear-gradient(135deg, var(--meal-bg-card) 0%, rgba(255,255,255,0.5) 100%)',
-        borderRadius: 3,
-        minHeight: 'calc(100vh - 200px)',
-        maxWidth: '80%',
-        marginLeft: 'auto',
-        marginRight: 'auto'
-      }}
-    >
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h5" sx={{ fontWeight: 700 }}>Food Consumption This Week</Typography>
+    <Box>
+      {/* Title with separator */}
+      <Box sx={{ 
+        mb: 3, 
+        pb: 2, 
+        borderBottom: '1px solid var(--border-color)' 
+      }}>
+        <Typography variant="h5" sx={{ 
+          fontWeight: 600, 
+          color: 'var(--text-primary)' 
+        }}>
+          Food Track
+        </Typography>
+      </Box>
+
+      <Box 
+        sx={{ 
+          p: 2,
+          background: 'linear-gradient(135deg, var(--meal-bg-card) 0%, rgba(255,255,255,0.5) 100%)',
+          borderRadius: 3,
+          minHeight: 'calc(100vh - 200px)',
+          maxWidth: '80%',
+          marginLeft: 'auto',
+          marginRight: 'auto'
+        }}
+      >
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+          <Typography variant="h5" sx={{ fontWeight: 700 }}>Food Consumption This Week</Typography>
         
         {/* Column visibility menu */}
         <IconButton
@@ -488,6 +503,7 @@ const FoodTrack: React.FC = () => {
           </Table>
         </TableContainer>
       )}
+      </Box>
     </Box>
   );
 };

@@ -13,9 +13,12 @@ export const useLocalStorage = <T>(key: string, initialValue: T) => {
 
   const setValue = (value: T | ((val: T) => T)) => {
     try {
-      const valueToStore = value instanceof Function ? value(storedValue) : value;
-      setStoredValue(valueToStore);
-      window.localStorage.setItem(key, JSON.stringify(valueToStore));
+      // Use setState's functional form to get the latest value
+      setStoredValue((currentValue) => {
+        const valueToStore = value instanceof Function ? value(currentValue) : value;
+        window.localStorage.setItem(key, JSON.stringify(valueToStore));
+        return valueToStore;
+      });
     } catch (error) {
       console.warn(`Error setting localStorage key "${key}":`, error);
     }
@@ -74,16 +77,19 @@ export const useLocalStorageWithExpiry = <T>(
 
   const setValue = (value: T | ((val: T) => T)) => {
     try {
-      const valueToStore = value instanceof Function ? value(storedValue) : value;
-      const expiryTime = getExpiryTime();
+      // Use setState's functional form to get the latest value
+      setStoredValue((currentValue) => {
+        const valueToStore = value instanceof Function ? value(currentValue) : value;
+        const expiryTime = getExpiryTime();
 
-      const dataToStore: StoredValueWithExpiry<T> = {
-        value: valueToStore,
-        expiry: expiryTime || 0
-      };
+        const dataToStore: StoredValueWithExpiry<T> = {
+          value: valueToStore,
+          expiry: expiryTime || 0
+        };
 
-      setStoredValue(valueToStore);
-      window.localStorage.setItem(key, JSON.stringify(dataToStore));
+        window.localStorage.setItem(key, JSON.stringify(dataToStore));
+        return valueToStore;
+      });
     } catch (error) {
       console.warn(`Error setting localStorage key "${key}":`, error);
     }

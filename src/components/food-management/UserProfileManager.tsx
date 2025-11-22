@@ -138,14 +138,7 @@ const UserProfileManager: React.FC = () => {
   }
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom>
-        User Profile
-      </Typography>
-      <Typography variant="body1" sx={{ color: 'var(--text-secondary)', mb: 3 }}>
-        Manage your personal information for accurate macro calculations
-      </Typography>
-
+    <Box>
       {!user && (
         <Alert severity="warning" sx={{ mb: 3 }}>
           You must be logged in to save your profile.

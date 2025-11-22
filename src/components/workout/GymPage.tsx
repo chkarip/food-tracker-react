@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box,
-  Paper,
-  Container,
   Typography,
   Tabs,
   Tab,
   Alert,
 } from '@mui/material';
+import PageCard from '../shared/PageCard';
 import  AccentButton  from '../shared/AccentButton';
 import {
   FitnessCenter as GymIcon
@@ -174,21 +173,9 @@ const GymPage: React.FC = () => {
   const uniqueMuscles = Array.from(new Set(exercises.map(ex => ex.primaryMuscle))).sort();
 
   return (
-    <Box sx={{ minHeight: '100vh', p: 2 }}>
-      <Paper
-        sx={{
-          borderRadius: 4,
-          overflow: 'hidden',
-          backgroundColor: 'var(--card-bg)',
-          border: '1px solid var(--border-color)',
-          boxShadow: 'var(--elevation-1)',
-          width: { xs: '100%', lg: '80%' },
-          maxWidth: 1200,
-          mx: 'auto'
-        }}
-      >
-        {/* Tabs */}
-        <Box sx={{ 
+    <PageCard padding={0}>
+      {/* Tabs */}
+      <Box sx={{ 
           borderBottom: '2px solid var(--meal-border-primary)',
           backgroundColor: 'var(--meal-bg-card)',
           px: 2
@@ -309,7 +296,6 @@ const GymPage: React.FC = () => {
       </TabPanel>
 
         </Box>
-      </Paper>
 
       {/* Exercise Dialog */}
       <ExerciseDialog
@@ -320,7 +306,7 @@ const GymPage: React.FC = () => {
         onSave={handleSaveExercise}
         onFormChange={setExerciseForm}
       />
-    </Box>
+    </PageCard>
   );
 };
 

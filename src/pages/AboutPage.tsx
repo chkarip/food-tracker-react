@@ -28,6 +28,7 @@ import {
   Update as UpdateIcon,
   Attribution as AttributionIcon
 } from '@mui/icons-material';
+import PageCard from '../components/shared/PageCard';
 
 const AboutPage: React.FC = () => {
   const currentDate = new Date().toLocaleDateString('en-US', {
@@ -37,24 +38,8 @@ const AboutPage: React.FC = () => {
   });
 
   return (
-    <Box sx={{ maxWidth: '80%', mx: 'auto', p: 2 }} className="content-container-80">
-      {/* Header */}
+    <PageCard title="About Track Everything">
       <Box sx={{ textAlign: 'center', mb: 4 }}>
-        <Typography
-          variant="h3"
-          component="h1"
-          sx={{
-            fontWeight: 700,
-            color: 'var(--text-primary)',
-            mb: 2,
-            background: 'linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-green) 100%)',
-            backgroundClip: 'text',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent'
-          }}
-        >
-          About Track Everything
-        </Typography>
         <Typography
           variant="h6"
           sx={{
@@ -359,7 +344,7 @@ const AboutPage: React.FC = () => {
           © 2025 Track Everything. Made with ❤️ for better health and wealth tracking.
         </Typography>
       </Box>
-    </Box>
+    </PageCard>
   );
 };
 

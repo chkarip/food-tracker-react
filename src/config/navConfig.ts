@@ -1,5 +1,4 @@
 import {
-  Dashboard as DashboardIcon,
   Restaurant as FoodIcon,
   ShoppingCart as ShoppingIcon,
   FitnessCenter as GymIcon,
@@ -10,7 +9,6 @@ import {
 } from '@mui/icons-material';
 import { SvgIconTypeMap } from '@mui/material';
 import { OverridableComponent } from '@mui/material/OverridableComponent';
-import { getLastUsedTab } from '../utils/lastTab';
 
 export type MuiIconType = OverridableComponent<SvgIconTypeMap<{}, "svg">>;
 
