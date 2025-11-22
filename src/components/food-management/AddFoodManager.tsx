@@ -34,8 +34,8 @@ import { NumberStepper } from '../shared/inputs';
 import { CustomSelect, SelectOption } from '../shared/inputs';
 
 import  AccentButton  from '../shared/AccentButton';
+import { PageCard } from '../shared/PageCard';
 import {
-  Restaurant as FoodIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
 } from '@mui/icons-material';
@@ -330,34 +330,13 @@ const AddFoodManager: React.FC = () => {
   /* ------------------------------------------------------------------ */
 
   return (
-    <Box>
-      {/* Title with separator */}
-      <Box sx={{ 
-        mb: 3, 
-        pb: 2, 
-        borderBottom: '1px solid var(--border-color)' 
-      }}>
-        <Typography variant="h5" sx={{ 
-          fontWeight: 600, 
-          color: 'var(--text-primary)' 
-        }}>
-          Manage Foods
-        </Typography>
-      </Box>
-
+    <PageCard title="Manage Foods">
       <Box 
         sx={{ 
           display: 'flex', 
           gap: 3, 
           height: '100%', 
-          p: 1.5,
-          flexDirection: { xs: 'column', md: 'row' },
-          background: 'linear-gradient(135deg, var(--meal-bg-card) 0%, rgba(255,255,255,0.5) 100%)',
-          borderRadius: 3,
-          minHeight: 'calc(100vh - 200px)',
-          maxWidth: '80%',
-          marginLeft: 'auto',
-          marginRight: 'auto'
+          flexDirection: { xs: 'column', md: 'row' }
         }}
       >
         {/* ========== LEFT COLUMN: Add/Edit Form ========== */}
@@ -378,10 +357,26 @@ const AddFoodManager: React.FC = () => {
           }}
         >
           <CardHeader
-            title="🔍 Search Open Food Facts Database"
+            title="Search Open Food Facts Database"
             titleTypographyProps={{
               variant: 'h6',
-              sx: { color: 'var(--text-primary)', fontWeight: 600 }
+              sx: { 
+                color: 'var(--text-primary)', 
+                fontWeight: 600,
+                opacity: 0.94,
+                position: 'relative',
+                '&::before': {
+                  content: '""',
+                  position: 'absolute',
+                  left: 0,
+                  top: 0,
+                  bottom: 0,
+                  width: '3px',
+                  backgroundColor: 'var(--accent-green)',
+                  borderRadius: '2px'
+                },
+                paddingLeft: '12px'
+              }
             }}
           />
           <CardContent>
@@ -486,7 +481,23 @@ const AddFoodManager: React.FC = () => {
             title={editingFood ? 'Edit Food' : 'Add New Food'}
             titleTypographyProps={{
               variant: 'h6',
-              sx: { color: 'var(--text-primary)', fontWeight: 600 }
+              sx: { 
+                color: 'var(--text-primary)', 
+                fontWeight: 600,
+                opacity: 0.94,
+                position: 'relative',
+                '&::before': {
+                  content: '""',
+                  position: 'absolute',
+                  left: 0,
+                  top: 0,
+                  bottom: 0,
+                  width: '3px',
+                  backgroundColor: 'var(--accent-green)',
+                  borderRadius: '2px'
+                },
+                paddingLeft: '12px'
+              }
             }}
           />
           <CardContent>
@@ -863,7 +874,23 @@ const AddFoodManager: React.FC = () => {
             title={`Saved Foods (${filteredFoods.length}${searchTerm ? ` of ${foods.length}` : ''})`}
             titleTypographyProps={{
               variant: 'h6',
-              sx: { color: 'var(--text-primary)', fontWeight: 600 }
+              sx: { 
+                color: 'var(--text-primary)', 
+                fontWeight: 600,
+                opacity: 0.94,
+                position: 'relative',
+                '&::before': {
+                  content: '""',
+                  position: 'absolute',
+                  left: 0,
+                  top: 0,
+                  bottom: 0,
+                  width: '3px',
+                  backgroundColor: 'var(--accent-green)',
+                  borderRadius: '2px'
+                },
+                paddingLeft: '12px'
+              }
             }}
           />
           <CardContent>
@@ -875,12 +902,6 @@ const AddFoodManager: React.FC = () => {
                 borderRadius: 3,
                 border: '2px dashed var(--border-color)'
               }}>
-                <FoodIcon sx={{ 
-                  fontSize: 64, 
-                  color: 'var(--text-secondary)', 
-                  mb: 2,
-                  opacity: 0.6
-                }} />
                 <Typography variant="h6" sx={{ color: 'var(--text-secondary)', mb: 1 }}>
                   No Foods Yet
                 </Typography>
@@ -1045,27 +1066,18 @@ const AddFoodManager: React.FC = () => {
           }}>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-                <Typography variant="body2" sx={{ color: 'var(--accent-green)', fontWeight: 600, minWidth: '20px' }}>
-                  💡
-                </Typography>
                 <Typography variant="body2" sx={{ color: 'var(--text-secondary)', lineHeight: 1.4 }}>
                   Use favorites for quick access to commonly used foods
                 </Typography>
               </Box>
               
               <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-                <Typography variant="body2" sx={{ color: 'var(--accent-blue)', fontWeight: 600, minWidth: '20px' }}>
-                  📊
-                </Typography>
                 <Typography variant="body2" sx={{ color: 'var(--text-secondary)', lineHeight: 1.4 }}>
                   Unit foods (eggs, tortillas) are measured per individual item
                 </Typography>
               </Box>
               
               <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-                <Typography variant="body2" sx={{ color: 'var(--warning-color)', fontWeight: 600, minWidth: '20px' }}>
-                  ⚠️
-                </Typography>
                 <Typography variant="body2" sx={{ color: 'var(--text-secondary)', lineHeight: 1.4 }}>
                   Hidden foods won't appear in meal planning but can still be used in recipes
                 </Typography>
@@ -1105,7 +1117,7 @@ const AddFoodManager: React.FC = () => {
         </DialogActions>
       </Dialog>
       </Box>
-    </Box>
+    </PageCard>
   );
 };
 

@@ -55,6 +55,7 @@ import {
   Divider,
   CircularProgress
 } from '@mui/material';
+import { PageCard } from '../shared/PageCard';
 import {
   Add as AddIcon,
   Edit as EditIcon,
@@ -70,18 +71,6 @@ import {
 import { useFoodDatabase } from '../../contexts/FoodContext';
 import { useAuth } from '../../contexts/AuthContext';
 import foodInventoryService, { FoodInventoryItem } from '../../services/firebase/nutrition/foodInventoryService';
-
-interface InventoryItem {
-  id: string;
-  foodName: string;
-  quantity: number;
-  unit: string;
-  expiryDate?: string;
-  location: string; // 'fridge', 'freezer', 'pantry', 'counter'
-  status: 'fresh' | 'low' | 'empty';
-  lastUpdated: string;
-  notes?: string;
-}
 
 const STORAGE_LOCATIONS = [
   { value: 'fridge', label: '🧊 Fridge', color: '#2196f3' },
@@ -398,34 +387,13 @@ const FoodInventory: React.FC = () => {
   }, {} as Record<string, FoodInventoryItem[]>);
 
   return (
-    <Box>
-      {/* Title with separator */}
-      <Box sx={{ 
-        mb: 3, 
-        pb: 2, 
-        borderBottom: '1px solid var(--border-color)' 
-      }}>
-        <Typography variant="h5" sx={{ 
-          fontWeight: 600, 
-          color: 'var(--text-primary)' 
-        }}>
-          Food Inventory
-        </Typography>
-      </Box>
-
+    <PageCard title="Inventory">
       <Box 
         sx={{ 
           display: 'flex', 
           gap: 3, 
           height: '100%', 
-          p: 1.5,
-          flexDirection: { xs: 'column', md: 'row' },
-          background: 'linear-gradient(135deg, var(--meal-bg-card) 0%, rgba(255,255,255,0.5) 100%)',
-          borderRadius: 3,
-          minHeight: 'calc(100vh - 200px)',
-          maxWidth: '80%',
-          marginLeft: 'auto',
-          marginRight: 'auto'
+          flexDirection: { xs: 'column', md: 'row' }
         }}
       >
         {/* ========== LEFT COLUMN: Inventory Management ========== */}
@@ -504,6 +472,23 @@ const FoodInventory: React.FC = () => {
             Add Item
           </Button>
         </Box>
+
+        {/* Success Message */}
+        {success && (
+          <Alert 
+            severity="success" 
+            sx={{ 
+              mb: 3,
+              borderRadius: 2,
+              backgroundColor: 'var(--surface-bg)',
+              border: '1px solid var(--accent-green)',
+              color: 'var(--text-primary)'
+            }}
+            onClose={() => setSuccess(null)}
+          >
+            {success}
+          </Alert>
+        )}
 
         {/* Error Message */}
         {error && (
@@ -1385,7 +1370,7 @@ const FoodInventory: React.FC = () => {
         </DialogActions>
       </Dialog>
       </Box>
-    </Box>
+    </PageCard>
   );
 };
 

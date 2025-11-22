@@ -23,8 +23,10 @@ import {
   Edit as EditIcon,
   SwapHoriz as SwapIcon,
   Check as CheckIcon,
-  Close as CloseIcon
+  Close as CloseIcon,
+  FitnessCenter as WorkoutIcon
 } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
 import { ScheduledWorkoutDocument } from '../../../types/firebase';
 import { ModuleStats, ActivityData } from '../../../modules/shared/types';
 import ActivityGridSection from '../../activity/ActivityGridSection';
@@ -50,6 +52,7 @@ export const WorkoutCardContent: React.FC<WorkoutCardContentProps> = ({
   onUpdateExercise,
   onSwapExercise
 }) => {
+  const navigate = useNavigate();
   const [editingExerciseId, setEditingExerciseId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({ kg: 0, reps: 0, rest: 0 });
   const [swapDialogOpen, setSwapDialogOpen] = useState(false);
@@ -139,6 +142,56 @@ export const WorkoutCardContent: React.FC<WorkoutCardContentProps> = ({
           Loading workout...
         </Typography>
       </Box>
+    );
+  }
+
+  // Show empty state if no workout data
+  if (!workout) {
+    return (
+      <>
+        <Typography variant="h6" gutterBottom sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1,
+          fontWeight: 600,
+          color: 'var(--accent-orange)',
+          mb: 2
+        }}>
+          🏋️ Gym Workout
+        </Typography>
+        <Box sx={{
+          p: 4,
+          bgcolor: 'var(--surface-bg)',
+          borderRadius: 2,
+          border: '1px solid var(--border-color)',
+          textAlign: 'center',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 2
+        }}>
+          <WorkoutIcon sx={{ fontSize: 48, color: 'var(--text-secondary)', opacity: 0.5 }} />
+          <Typography variant="h6" sx={{ color: 'var(--text-primary)', fontWeight: 500 }}>
+            Nothing has been scheduled yet
+          </Typography>
+          <Typography variant="body2" sx={{ color: 'var(--text-secondary)', mb: 1 }}>
+            Schedule your workouts to stay consistent with your fitness routine
+          </Typography>
+          <Button
+            variant="contained"
+            startIcon={<WorkoutIcon />}
+            onClick={() => navigate('/gym/schedule')}
+            sx={{
+              bgcolor: 'var(--accent-orange)',
+              '&:hover': {
+                bgcolor: 'var(--accent-orange-dark)'
+              }
+            }}
+          >
+            Schedule Workout
+          </Button>
+        </Box>
+      </>
     );
   }
 

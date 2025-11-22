@@ -37,8 +37,6 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
-  Card,
-  CardContent,
   Typography,
   TextField,
   Divider,
@@ -48,31 +46,20 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Autocomplete,
   Alert,
-  CardActions,
   FormControlLabel,
   Switch,
   Paper
 } from '@mui/material';
 import {
   Remove as RemoveIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  Timer as TimerIcon,
-  People as ServingsIcon,
-  LocalDining as DifficultyIcon,
-  AttachMoney as CostIcon,
-  Fastfood as NutritionIcon,
   RestaurantMenu as RecipeIcon,
   Person as PersonIcon
 } from '@mui/icons-material';
-import { CustomSelect, SelectOption } from '../shared/inputs';
+import { CustomSelect } from '../shared/inputs';
 import AccentButton from '../shared/AccentButton';
+import { PageCard } from '../shared/PageCard';
 import NumberStepper from '../shared/inputs/NumberStepper';
 import {
   collection,
@@ -144,7 +131,6 @@ const RecipeManager: React.FC = () => {
   const navigate = useNavigate();
   // Firestore collections
   const recipesCollection = collection(db, 'recipes');
-  const foodsCollection = collection(db, 'foods');
 
   // State for recipes
   const [recipes, setRecipes] = useState<Recipe[]>([]);
@@ -220,11 +206,12 @@ const RecipeManager: React.FC = () => {
   };
 
   // Load recipes from Firestore
-  const loadRecipes = async () => {
+  const loadRecipes = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      const q = query(recipesCollection, orderBy('updatedAt', 'desc'));
+      const recipesCol = collection(db, 'recipes');
+      const q = query(recipesCol, orderBy('updatedAt', 'desc'));
       const querySnapshot = await getDocs(q);
       const loadedRecipes: Recipe[] = [];
       querySnapshot.forEach((doc) => {
@@ -247,7 +234,7 @@ const RecipeManager: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []); // Empty dependency array - collection ref is stable
 
   // Save recipe to both recipes and foods collections using foodService
   const saveRecipeWithFood = async (recipeData: Recipe) => {
@@ -318,10 +305,11 @@ const RecipeManager: React.FC = () => {
     }
   };
 
-  // Load recipes on mount
+  // Load recipes on mount - only once
   useEffect(() => {
     loadRecipes();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty deps - only run once on mount
 
   // Convert foods to legacy format for compatibility
   const foodDatabase = useMemo(() => cachedFoodDatabase, [cachedFoodDatabase]);
@@ -600,35 +588,8 @@ const RecipeManager: React.FC = () => {
   };
 
   return (
-    <Box>
-      {/* Title with separator */}
-      <Box sx={{ 
-        mb: 3, 
-        pb: 2, 
-        borderBottom: '1px solid var(--border-color)' 
-      }}>
-        <Typography variant="h5" sx={{ 
-          fontWeight: 600, 
-          color: 'var(--text-primary)' 
-        }}>
-          Recipes
-        </Typography>
-      </Box>
-
-      <Box 
-        sx={{ 
-          display: 'flex', 
-          gap: 3, 
-          height: '100%', 
-          p: 1.5,
-          background: 'linear-gradient(135deg, var(--meal-bg-card) 0%, rgba(255,255,255,0.5) 100%)',
-          borderRadius: 3,
-          minHeight: 'calc(100vh - 200px)',
-          maxWidth: '80%',
-          marginLeft: 'auto',
-          marginRight: 'auto'
-        }}
-      >
+    <PageCard title="Recipes">
+      <Box sx={{ display: 'flex', gap: 3, height: '100%' }}>
         {/* ========== LEFT COLUMN: Recipe Management ========== */}
         <Box 
           sx={{ 
@@ -929,8 +890,13 @@ const RecipeManager: React.FC = () => {
                 </AccentButton>
               </Box>
 
-              {formData.ingredients.map((ingredient, index) => (
-                <Paper key={ingredient.id} sx={{ p: 2, mb: 2 }}>
+              {formData.ingredients.map((ingredient, index) => {
+                const key = ingredient.id || `ingredient-${index}-${ingredient.foodName}`;
+                if (!ingredient.id || ingredient.id.trim() === '') {
+                  console.warn('⚠️ Ingredient with empty ID:', { index, foodName: ingredient.foodName, id: ingredient.id });
+                }
+                return (
+                <Paper key={key} sx={{ p: 2, mb: 2 }}>
                   <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start', mb: 2 }}>
                     <Autocomplete
                       value={ingredient.foodName}
@@ -967,7 +933,8 @@ const RecipeManager: React.FC = () => {
                     Cost: {formatCost(ingredient.cost || 0)}
                   </Typography>
                 </Paper>
-              ))}
+                );
+              })}
             </Box>
 
             {/* Instructions */}
@@ -1116,7 +1083,7 @@ const RecipeManager: React.FC = () => {
         </DialogActions>
       </Dialog>
       </Box>
-    </Box>
+    </PageCard>
   );
 };
 

@@ -16,7 +16,6 @@ import { MealCardContent } from './content/MealCardContent';
 import { WorkoutCardContent } from './content/WorkoutCardContent';
 import { useAuth } from '../../contexts/AuthContext';
 import {
-  getTodayWaterIntake,
   addWaterIntake,
   useTodayWaterIntake,
   clearTodayWaterIntake
@@ -63,7 +62,7 @@ export const TodayScheduleStack: React.FC<TodayScheduleStackProps> = ({
   const [workoutStatusLoading, setWorkoutStatusLoading] = useState(false);
 
   // Use React Query for water data instead of real-time listeners
-  const { data: waterQueryData, isLoading: waterQueryLoading } = useTodayWaterIntake(user?.uid || '');
+  const { data: waterQueryData } = useTodayWaterIntake(user?.uid || '');
 
   // Sync React Query data to local state for compatibility
   useEffect(() => {
@@ -79,13 +78,13 @@ export const TodayScheduleStack: React.FC<TodayScheduleStackProps> = ({
   const hasMeals = scheduledTasks.some(task => task.startsWith('meal-'));
   const hasWorkout = scheduledTasks.includes('gym-workout');
 
-  // Auto-select the first available view
+  // Auto-select meal plan first, then workout if no meals
   React.useEffect(() => {
     if (!loading) {
-      if (hasWorkout) {
-        setCurrentView('workout');
-      } else if (hasMeals) {
+      if (hasMeals) {
         setCurrentView('meal');
+      } else if (hasWorkout) {
+        setCurrentView('workout');
       }
     }
   }, [hasMeals, hasWorkout, loading]);

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, Button, useTheme, useMediaQuery } from '@mui/material';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { getLocalItems, getCurrentModule } from '../../../config/navConfig';
+import { getLocalItems } from '../../../config/navConfig';
 import { setLastUsedTab } from '../../../utils/lastTab';
 
 interface LocalNavProps {

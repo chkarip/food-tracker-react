@@ -1,8 +1,11 @@
 import React from 'react';
 import {
   Box,
-  Typography
+  Typography,
+  Button
 } from '@mui/material';
+import { Restaurant as MealIcon } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
 import { MealPlanDocument } from '../../../types/firebase';
 
 interface MealCardContentProps {
@@ -16,6 +19,8 @@ export const MealCardContent: React.FC<MealCardContentProps> = ({
   scheduledTasks,
   loading = false
 }) => {
+  const navigate = useNavigate();
+
   if (loading) {
     return (
       <Box sx={{ p: 2, bgcolor: 'var(--surface-bg)', borderRadius: 1, border: '1px solid var(--border-color)' }}>
@@ -23,6 +28,57 @@ export const MealCardContent: React.FC<MealCardContentProps> = ({
           Loading meal plan...
         </Typography>
       </Box>
+    );
+  }
+
+  // Check if there's no meal data scheduled
+  const hasMealTasks = scheduledTasks.some(task => task.startsWith('meal-'));
+  if (!hasMealTasks || (!mealPlan?.timeslots?.['6pm'] && !mealPlan?.timeslots?.['9:30pm'])) {
+    return (
+      <>
+        <Typography variant="h6" gutterBottom sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1,
+          fontWeight: 600,
+          color: 'var(--accent-green)',
+          mb: 2
+        }}>
+          🍽️ Food Program
+        </Typography>
+        <Box sx={{
+          p: 4,
+          bgcolor: 'var(--surface-bg)',
+          borderRadius: 2,
+          border: '1px solid var(--border-color)',
+          textAlign: 'center',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 2
+        }}>
+          <MealIcon sx={{ fontSize: 48, color: 'var(--text-secondary)', opacity: 0.5 }} />
+          <Typography variant="h6" sx={{ color: 'var(--text-primary)', fontWeight: 500 }}>
+            Nothing has been scheduled yet
+          </Typography>
+          <Typography variant="body2" sx={{ color: 'var(--text-secondary)', mb: 1 }}>
+            Plan your meals to stay on track with your nutrition goals
+          </Typography>
+          <Button
+            variant="contained"
+            startIcon={<MealIcon />}
+            onClick={() => navigate('/food/plan')}
+            sx={{
+              bgcolor: 'var(--accent-green)',
+              '&:hover': {
+                bgcolor: 'var(--accent-green-dark)'
+              }
+            }}
+          >
+            Create Meal Plan
+          </Button>
+        </Box>
+      </>
     );
   }
 

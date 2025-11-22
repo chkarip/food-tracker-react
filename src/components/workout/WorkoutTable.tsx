@@ -291,6 +291,9 @@ const WorkoutTable: React.FC<WorkoutTableProps> = ({
                   onStopEditing={handleStopEditing}
                   onUpdateExercise={handleUpdateExercise}
                   onDeleteExercise={handleDeleteExercise}
+                  onMoveExercise={handleMoveExercise}
+                  canMoveUp={index > 0}
+                  canMoveDown={index < exercises.length - 1}
                 />
                 {/* ✅ Only show after the LAST exercise */}
                 {index === exercises.length - 1 && (

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   TableCell,
   TableRow,
@@ -9,8 +9,9 @@ import {
   Chip
 } from '@mui/material';
 import {
-  DragIndicator as DragIndicatorIcon,
-  Delete as DeleteIcon
+  Delete as DeleteIcon,
+  ArrowUpward as ArrowUpIcon,
+  ArrowDownward as ArrowDownIcon
 } from '@mui/icons-material';
 import { WorkoutExercise } from '../../types/workout';
 import NumericInput from '../shared/NumericInput';
@@ -24,6 +25,9 @@ interface WorkoutTableRowProps {
   onStopEditing: () => void;
   onUpdateExercise: (field: keyof WorkoutExercise, value: string | number) => void;
   onDeleteExercise: (exerciseId: string) => void;
+  onMoveExercise: (exerciseId: string, direction: 'up' | 'down') => void;
+  canMoveUp: boolean;
+  canMoveDown: boolean;
 }
 
 const WorkoutTableRow: React.FC<WorkoutTableRowProps> = ({
@@ -34,7 +38,10 @@ const WorkoutTableRow: React.FC<WorkoutTableRowProps> = ({
   onEditExercise,
   onStopEditing,
   onUpdateExercise,
-  onDeleteExercise
+  onDeleteExercise,
+  onMoveExercise,
+  canMoveUp,
+  canMoveDown
 }) => {
   const formatRestTime = (seconds: number): string => {
     const mins = Math.ceil(seconds / 60);
@@ -74,19 +81,37 @@ const WorkoutTableRow: React.FC<WorkoutTableRowProps> = ({
       }}
     >
       <TableCell>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <IconButton 
-            size="small"
-            sx={{ 
-              cursor: 'grab',
-              '&:active': { cursor: 'grabbing' },
-              color: 'text.secondary',
-              '&:hover': { color: 'primary.main', backgroundColor: 'action.hover' },
-              p: 0.5
-            }}
-          >
-            <DragIndicatorIcon fontSize="small" />
-          </IconButton>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+            <IconButton 
+              size="small"
+              onClick={() => onMoveExercise(exercise.id, 'up')}
+              disabled={!canMoveUp}
+              sx={{ 
+                p: 0.25,
+                color: 'text.secondary',
+                '&:hover': { color: 'primary.main', backgroundColor: 'action.hover' },
+                '&:disabled': { opacity: 0.3 }
+              }}
+              title="Move up"
+            >
+              <ArrowUpIcon sx={{ fontSize: 16 }} />
+            </IconButton>
+            <IconButton 
+              size="small"
+              onClick={() => onMoveExercise(exercise.id, 'down')}
+              disabled={!canMoveDown}
+              sx={{ 
+                p: 0.25,
+                color: 'text.secondary',
+                '&:hover': { color: 'primary.main', backgroundColor: 'action.hover' },
+                '&:disabled': { opacity: 0.3 }
+              }}
+              title="Move down"
+            >
+              <ArrowDownIcon sx={{ fontSize: 16 }} />
+            </IconButton>
+          </Box>
           <Typography variant="body1" sx={{ fontWeight: 600, minWidth: 15, fontSize: '0.9rem' }}>
             {index + 1}
           </Typography>

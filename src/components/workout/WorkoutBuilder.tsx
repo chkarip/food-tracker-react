@@ -7,8 +7,17 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Alert
+  Alert,
+  TextField,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  IconButton,
+  Tooltip
 } from '@mui/material';
+import { Delete as DeleteIcon } from '@mui/icons-material';
 
 import  AccentButton  from '../shared/AccentButton';
 import { collection, getDocs } from 'firebase/firestore';
@@ -44,6 +53,12 @@ const WorkoutBuilder: React.FC = () => {
   const [availableExercises, setAvailableExercises] = useState<Exercise[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [templateName, setTemplateName] = useState('');
+  const [newWorkoutTypeDialog, setNewWorkoutTypeDialog] = useState(false);
+  const [newWorkoutTypeName, setNewWorkoutTypeName] = useState('');
+  const [customWorkoutTypes, setCustomWorkoutTypes] = useState<WorkoutType[]>([]);
+  const [newTemplateDialog, setNewTemplateDialog] = useState(false);
+  const [newTemplateName, setNewTemplateName] = useState('');
 
   // New template system hook
   const {
@@ -52,10 +67,12 @@ const WorkoutBuilder: React.FC = () => {
     loadTemplatesForWorkoutType,
     loadTemplate,
     saveTemplate,
-    clearSelectedTemplate
+    clearSelectedTemplate,
+    deleteTemplate
   } = useTemplates();
 
-  const workoutTypes: WorkoutType[] = ['Lower A', 'Lower B', 'Upper A', 'Upper B'];
+  const defaultWorkoutTypes: WorkoutType[] = ['Lower A', 'Lower B', 'Upper A', 'Upper B'];
+  const workoutTypes: WorkoutType[] = [...defaultWorkoutTypes, ...customWorkoutTypes];
 
   // Load available exercises from Firebase
   useEffect(() => {
@@ -90,6 +107,7 @@ const WorkoutBuilder: React.FC = () => {
             lastModified: new Date(),
             isActive: true,
           });
+          setTemplateName(template.name);
         }
       });
     } else if (templates.length === 0 && !selectedTemplate) {
@@ -100,6 +118,7 @@ const WorkoutBuilder: React.FC = () => {
         lastModified: new Date(),
         isActive: true,
       });
+      setTemplateName(`${selectedWorkoutType} Template`);
     }
   }, [templates, selectedTemplate, loadTemplate, selectedWorkoutType]);
 
@@ -121,9 +140,84 @@ const WorkoutBuilder: React.FC = () => {
 
   // Removed legacy loadWorkout function
 
-  const handleWorkoutTypeChange = (workoutType: WorkoutType) => {
-    setSelectedWorkoutType(workoutType);
+  const handleWorkoutTypeChange = (value: string) => {
+    if (value === '__new__') {
+      setNewWorkoutTypeDialog(true);
+      return;
+    }
+    setSelectedWorkoutType(value as WorkoutType);
     clearSelectedTemplate(); // ✅ Clear template when changing workout type
+  };
+
+  const handleCreateNewWorkoutType = () => {
+    if (!newWorkoutTypeName.trim()) {
+      alert('Please enter a workout type name');
+      return;
+    }
+
+    const newType = newWorkoutTypeName.trim() as WorkoutType;
+    setCustomWorkoutTypes(prev => [...prev, newType]);
+    setSelectedWorkoutType(newType);
+    setNewWorkoutTypeDialog(false);
+    setNewWorkoutTypeName('');
+    setTemplateName(`${newType} Template`);
+  };
+
+  const handleCreateNewTemplate = () => {
+    // Open dialog to enter template name
+    setNewTemplateDialog(true);
+    setNewTemplateName('');
+  };
+
+  const handleConfirmNewTemplate = () => {
+    if (!newTemplateName.trim()) {
+      alert('Please enter a template name');
+      return;
+    }
+
+    // Clear current template selection and set up for new template
+    clearSelectedTemplate();
+    setTemplateName(newTemplateName.trim());
+    setCurrentWorkout({
+      name: newTemplateName.trim(),
+      exercises: [],
+      lastModified: new Date(),
+      isActive: true,
+    });
+    setNewTemplateDialog(false);
+    setNewTemplateName('');
+  };
+
+  const handleDeleteTemplate = async () => {
+    if (!selectedTemplate?.id) return;
+
+    const confirmDelete = window.confirm(
+      `Are you sure you want to delete the template "${selectedTemplate.name}"? This action cannot be undone.`
+    );
+
+    if (!confirmDelete) return;
+
+    try {
+      await deleteTemplate(selectedTemplate.id);
+      
+      // Clear current state and reload templates
+      clearSelectedTemplate();
+      setCurrentWorkout({
+        name: selectedWorkoutType,
+        exercises: [],
+        lastModified: new Date(),
+        isActive: true,
+      });
+      setTemplateName(`${selectedWorkoutType} Template`);
+      
+      // Reload templates for current workout type
+      await loadTemplatesForWorkoutType(selectedWorkoutType);
+      
+      console.log('Template deleted successfully');
+    } catch (error) {
+      console.error('Error deleting template:', error);
+      alert('Failed to delete template. Please try again.');
+    }
   };
 
   const handleExercisesChange = (exercises: WorkoutExercise[]) => {
@@ -146,18 +240,21 @@ const WorkoutBuilder: React.FC = () => {
         lastModified: new Date(),
         isActive: true,
       });
+      setTemplateName(template.name);
     }
   };
 
   // Handle template saving/updating
   const handleSaveTemplate = async () => {
+    if (!templateName.trim()) {
+      alert('Please enter a template name');
+      return;
+    }
+
     setSaving(true);
     try {
-      const templateName = selectedTemplate?.name || 
-        `${selectedWorkoutType} - ${new Date().toLocaleDateString()}`;
-      
       const templateData: SaveTemplateInput = {
-        name: templateName,
+        name: templateName.trim(),
         workoutType: selectedWorkoutType,
         exercises: currentWorkout.exercises,
         description: selectedTemplate ? 'Updated template' : 'New template'
@@ -194,13 +291,25 @@ const WorkoutBuilder: React.FC = () => {
           labelId="workout-type-label"
           value={selectedWorkoutType}
           label="Workout Type"
-          onChange={(e) => handleWorkoutTypeChange(e.target.value as WorkoutType)}
+          onChange={(e) => handleWorkoutTypeChange(e.target.value)}
         >
           {workoutTypes.map((type) => (
             <MenuItem key={type} value={type}>
               {type}
             </MenuItem>
           ))}
+          <MenuItem 
+            value="__new__" 
+            sx={{ 
+              color: 'primary.main', 
+              fontWeight: 600,
+              borderTop: '1px solid',
+              borderColor: 'divider',
+              mt: 1
+            }}
+          >
+            + Create New Workout Type
+          </MenuItem>
         </Select>
       </FormControl>
 
@@ -209,16 +318,23 @@ const WorkoutBuilder: React.FC = () => {
       </Typography>
 
       {/* Template Controls */}
-      <Box sx={{ mb: 3, display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
-        {/* Template Dropdown */}
-        {templates.length > 0 && (
+      <Box sx={{ mb: 3 }}>
+        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'flex-start', mb: 2 }}>
+        {/* Template Dropdown with Delete Button */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <FormControl sx={{ minWidth: 200 }}>
             <InputLabel id="template-select-label">Select Template</InputLabel>
             <Select
               labelId="template-select-label"
               value={selectedTemplate?.id || ''}
               label="Select Template"
-              onChange={(e) => e.target.value && handleLoadTemplate(e.target.value as string)}
+              onChange={(e) => {
+                if (e.target.value === '__new__') {
+                  handleCreateNewTemplate();
+                } else if (e.target.value) {
+                  handleLoadTemplate(e.target.value as string);
+                }
+              }}
             >
               <MenuItem value="">
                 <em>Select a template...</em>
@@ -228,18 +344,64 @@ const WorkoutBuilder: React.FC = () => {
                   {template.name}
                 </MenuItem>
               ))}
+              <MenuItem 
+                value="__new__" 
+                sx={{ 
+                  color: 'primary.main', 
+                  fontWeight: 600,
+                  borderTop: '1px solid',
+                  borderColor: 'divider',
+                  mt: 1
+                }}
+              >
+                + Create New Template
+              </MenuItem>
             </Select>
           </FormControl>
-        )}
+          
+          {/* Delete Template Icon Button */}
+          {selectedTemplate && (
+            <Tooltip title="Delete Template">
+              <IconButton 
+                onClick={handleDeleteTemplate}
+                color="error"
+                sx={{ 
+                  mt: 1,
+                  '&:hover': { 
+                    backgroundColor: 'rgba(211, 47, 47, 0.1)' 
+                  }
+                }}
+              >
+                <DeleteIcon />
+              </IconButton>
+            </Tooltip>
+          )}
+        </Box>          {/* Template Name Input */}
+          <TextField
+            label="Template Name"
+            value={templateName}
+            onChange={(e) => setTemplateName(e.target.value)}
+            placeholder={`e.g., "${selectedWorkoutType} - Monday"`}
+            sx={{ minWidth: 300, flex: 1 }}
+            size="medium"
+            helperText={selectedTemplate ? "Editing existing template name" : "Enter a name for your new template"}
+          />
 
         {/* Save/Update Template Button */}
-        <AccentButton 
-          onClick={handleSaveTemplate}
-          variant="primary"
-          disabled={currentWorkout.exercises.length === 0}
-        >
-          {selectedTemplate ? `Update "${selectedTemplate.name}"` : 'Save as New Template'}
-        </AccentButton>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, pt: 1 }}>
+          <AccentButton 
+            onClick={handleSaveTemplate}
+            variant="primary"
+            disabled={currentWorkout.exercises.length === 0 || !templateName.trim()}
+          >
+            {selectedTemplate ? `Update Template` : 'Save as New Template'}
+          </AccentButton>
+        </Box>
+      </Box>        {selectedTemplate && templateName !== selectedTemplate.name && (
+          <Alert severity="warning" sx={{ mt: 1 }}>
+            You're changing the template name from "<strong>{selectedTemplate.name}</strong>" to "<strong>{templateName}</strong>"
+          </Alert>
+        )}
       </Box>
 
       {/* Workout Table */}
@@ -267,6 +429,101 @@ const WorkoutBuilder: React.FC = () => {
           Saving {selectedWorkoutType} workout...
         </Alert>
       )}
+
+      {/* Create New Workout Type Dialog */}
+      <Dialog 
+        open={newWorkoutTypeDialog} 
+        onClose={() => {
+          setNewWorkoutTypeDialog(false);
+          setNewWorkoutTypeName('');
+        }}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Create New Workout Type</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Workout Type Name"
+            fullWidth
+            value={newWorkoutTypeName}
+            onChange={(e) => setNewWorkoutTypeName(e.target.value)}
+            placeholder="e.g., Full Body, Push/Pull, Cardio"
+            helperText="Enter a custom name for your workout type"
+            sx={{ mt: 2 }}
+            onKeyPress={(e) => {
+              if (e.key === 'Enter') {
+                handleCreateNewWorkoutType();
+              }
+            }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => {
+            setNewWorkoutTypeDialog(false);
+            setNewWorkoutTypeName('');
+          }}>
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleCreateNewWorkoutType}
+            variant="contained"
+            disabled={!newWorkoutTypeName.trim()}
+          >
+            Create
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Create New Template Dialog */}
+      <Dialog 
+        open={newTemplateDialog} 
+        onClose={() => {
+          setNewTemplateDialog(false);
+          setNewTemplateName('');
+        }}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Create New Template</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Enter a name for your new {selectedWorkoutType} template. You'll be able to add exercises after creating it.
+          </Typography>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Template Name"
+            fullWidth
+            value={newTemplateName}
+            onChange={(e) => setNewTemplateName(e.target.value)}
+            placeholder={`e.g., ${selectedWorkoutType} - Monday, Heavy Day, Volume Focus`}
+            helperText="Give your template a descriptive name"
+            sx={{ mt: 1 }}
+            onKeyPress={(e) => {
+              if (e.key === 'Enter') {
+                handleConfirmNewTemplate();
+              }
+            }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => {
+            setNewTemplateDialog(false);
+            setNewTemplateName('');
+          }}>
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleConfirmNewTemplate}
+            variant="contained"
+            disabled={!newTemplateName.trim()}
+          >
+            Create & Add Exercises
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

@@ -6,26 +6,12 @@ import {
   List,
   Typography,
   Divider,
-  IconButton,
   ListItem,
   ListItemButton,
   ListItemText,
-  Button,
-  Menu,
-  MenuItem,
-  Avatar,
   useMediaQuery,
   useTheme
 } from '@mui/material';
-import {
-  Menu as MenuIcon,
-  Brightness4 as DarkModeIcon,
-  Brightness7 as LightModeIcon,
-  Login as LoginIcon,
-  Logout as LogoutIcon
-} from '@mui/icons-material';
-import { useAuth } from '../../contexts/AuthContext';
-import { signOutUser } from '../../services/firebase/authService';
 import AuthDialog from '../auth/AuthDialog';
 import GlobalHeader from './nav/GlobalHeader';
 import LocalNav from './nav/LocalNav';
@@ -49,7 +35,7 @@ const Layout: React.FC<LayoutProps> = ({
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, isAuthenticated } = useAuth();
+  // const { user, isAuthenticated } = useAuth();
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [authDialogOpen, setAuthDialogOpen] = useState(false);
@@ -216,7 +202,7 @@ const Layout: React.FC<LayoutProps> = ({
           />
         )}
 
-        {/* Content area with local nav positioned at top-right */}
+        {/* Content area with local nav positioned at top-center */}
         <Box
           sx={{
             flexGrow: 1,

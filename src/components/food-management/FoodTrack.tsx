@@ -16,9 +16,6 @@ import {
   TableHead,
   TableRow,
   Paper,
-  ToggleButtonGroup,
-  ToggleButton,
-  Chip,
   IconButton,
   Menu,
   MenuItem,
@@ -31,6 +28,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useFoodDatabase } from '../../contexts/FoodContext';
 import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { db } from '../../config/firebase';
+import { PageCard } from '../shared/PageCard';
 
 /* ------------------------------------------------------------------ */
 /*  LOCAL TYPES                                                        */
@@ -74,13 +72,6 @@ interface DayProgram {
 /*  COMPONENT                                                          */
 /* ------------------------------------------------------------------ */
 
-const DEFAULT_GOALS = {
-  protein: 127,
-  fats: 65,
-  carbs: 300,
-  calories: 2300
-};
-
 const FoodTrack: React.FC = () => {
   const { user } = useAuth();
   const { foodDatabase } = useFoodDatabase();
@@ -89,7 +80,6 @@ const FoodTrack: React.FC = () => {
   const [history, setHistory] = useState<DayProgram[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [timeFilter, setTimeFilter] = useState<'week' | 'month'>('month');
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const [visibleColumns, setVisibleColumns] = useState({
     quantity: true,
@@ -113,7 +103,6 @@ const FoodTrack: React.FC = () => {
       try {
         setLoading(true);
         setError(null);
-        console.log('FoodTrack: Loading meal plans for user:', user.uid);
         
         // Query mealPlans collection directly
         const q = query(
@@ -123,7 +112,6 @@ const FoodTrack: React.FC = () => {
         );
         
         const querySnapshot = await getDocs(q);
-        console.log('FoodTrack: Loaded', querySnapshot.docs.length, 'meal plans');
 
         /* Convert Firebase → DayProgram */
         const conv: DayProgram[] = querySnapshot.docs.map(docSnapshot => {
@@ -173,7 +161,6 @@ const FoodTrack: React.FC = () => {
           };
         });
 
-        console.log('FoodTrack: Converted to', conv.length, 'day programs with', conv.reduce((sum, day) => sum + day.foods.length, 0), 'total foods');
         setHistory(conv);
       } catch (err) {
         console.error('FoodTrack: Error loading history:', err);
@@ -191,19 +178,7 @@ const FoodTrack: React.FC = () => {
   /* ------------------------------------------------------------------ */
 
   const getFilteredHistory = () => {
-    const now = new Date();
-    const cutoffDate = new Date();
-    
-    if (timeFilter === 'week') {
-      cutoffDate.setDate(now.getDate() - 7);
-    } else {
-      cutoffDate.setDate(1); // Start of current month
-    }
-
-    return history.filter(day => {
-      const dayDate = new Date(day.date);
-      return dayDate >= cutoffDate;
-    });
+    return history; // Show all history
   };
 
   const aggregateFoodData = () => {
@@ -274,7 +249,6 @@ const FoodTrack: React.FC = () => {
   };
 
   const aggregatedFoods = aggregateFoodData();
-  const totalCost = aggregatedFoods.reduce((sum, food) => sum + food.totalCost, 0);
 
   /* ------------------------------------------------------------------ */
   /* RENDER                                                            */
@@ -340,32 +314,7 @@ const FoodTrack: React.FC = () => {
 
   /* ---------- render your full UI below ---------- */
   return (
-    <Box>
-      {/* Title with separator */}
-      <Box sx={{ 
-        mb: 3, 
-        pb: 2, 
-        borderBottom: '1px solid var(--border-color)' 
-      }}>
-        <Typography variant="h5" sx={{ 
-          fontWeight: 600, 
-          color: 'var(--text-primary)' 
-        }}>
-          Food Track
-        </Typography>
-      </Box>
-
-      <Box 
-        sx={{ 
-          p: 2,
-          background: 'linear-gradient(135deg, var(--meal-bg-card) 0%, rgba(255,255,255,0.5) 100%)',
-          borderRadius: 3,
-          minHeight: 'calc(100vh - 200px)',
-          maxWidth: '80%',
-          marginLeft: 'auto',
-          marginRight: 'auto'
-        }}
-      >
+    <PageCard title="Food Track">
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
           <Typography variant="h5" sx={{ fontWeight: 700 }}>Food Consumption This Week</Typography>
         
@@ -503,8 +452,7 @@ const FoodTrack: React.FC = () => {
           </Table>
         </TableContainer>
       )}
-      </Box>
-    </Box>
+    </PageCard>
   );
 };
 
