@@ -315,7 +315,7 @@ const AboutPage: React.FC = () => {
                 Version:
               </Typography>
               <Chip
-                label="1.0.0"
+                label={process.env.REACT_APP_VERSION || "1.0.1"}
                 size="small"
                 sx={{
                   backgroundColor: 'var(--accent-green)',
@@ -323,6 +323,26 @@ const AboutPage: React.FC = () => {
                   fontWeight: 600
                 }}
               />
+            </Box>
+            
+            <Divider sx={{ my: 1, borderColor: 'var(--border-color)' }} />
+            
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Typography variant="body1" sx={{ color: 'var(--text-secondary)' }}>
+                Cache Status:
+              </Typography>
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  color: 'var(--text-primary)', 
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  '&:hover': { textDecoration: 'underline' }
+                }}
+                onClick={() => window.location.href = '/clear-cache.html'}
+              >
+                Clear Cache 🧹
+              </Typography>
             </Box>
 
             <Divider sx={{ my: 1, borderColor: 'var(--border-color)' }} />

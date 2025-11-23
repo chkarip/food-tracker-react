@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clear Cache - Food Tracker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        h1 {
+            color: #333;
+            margin-top: 0;
+        }
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px 5px;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #764ba2;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .steps {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .steps ol {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .steps li {
+            margin: 8px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧹 Clear Cache & Fix White Screen</h1>
+        
+        <div class="info">
+            If you're seeing a white screen or outdated version, this tool will clear all cached data and service workers.
+        </div>
+
+        <div id="status"></div>
+
+        <button onclick="clearAllCache()" id="clearBtn">Clear Cache Now</button>
+        <button onclick="goToApp()" id="appBtn" style="display:none;">Go to App</button>
+
+        <div class="steps">
+            <h3>What this does:</h3>
+            <ol>
+                <li>Deletes all cached files</li>
+                <li>Unregisters service workers</li>
+                <li>Forces fresh download of app files</li>
+                <li>Redirects to the app</li>
+            </ol>
+        </div>
+
+        <div class="steps">
+            <h3>If problems persist:</h3>
+            <ol>
+                <li>Close all tabs with the app</li>
+                <li>Clear browser history (Ctrl+Shift+Delete)</li>
+                <li>Restart your browser</li>
+                <li>Visit the app again</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        async function clearAllCache() {
+            const statusDiv = document.getElementById('status');
+            const clearBtn = document.getElementById('clearBtn');
+            const appBtn = document.getElementById('appBtn');
+            
+            clearBtn.disabled = true;
+            statusDiv.innerHTML = '<div class="info">⏳ Clearing cache...</div>';
+
+            let steps = [];
+
+            try {
+                // Clear all caches
+                if ('caches' in window) {
+                    const cacheNames = await caches.keys();
+                    await Promise.all(cacheNames.map(name => caches.delete(name)));
+                    steps.push(`✓ Deleted ${cacheNames.length} cache(s)`);
+                }
+
+                // Unregister all service workers
+                if ('serviceWorker' in navigator) {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    await Promise.all(registrations.map(reg => reg.unregister()));
+                    steps.push(`✓ Unregistered ${registrations.length} service worker(s)`);
+                }
+
+                // Clear localStorage (optional - comment out if you want to keep user data)
+                // localStorage.clear();
+                // steps.push('✓ Cleared localStorage');
+
+                // Clear sessionStorage
+                sessionStorage.clear();
+                steps.push('✓ Cleared sessionStorage');
+
+                statusDiv.innerHTML = `
+                    <div class="success">
+                        <strong>✅ Cache cleared successfully!</strong><br><br>
+                        ${steps.join('<br>')}
+                    </div>
+                `;
+
+                appBtn.style.display = 'inline-block';
+                
+                // Auto-redirect after 3 seconds
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 3000);
+
+            } catch (error) {
+                statusDiv.innerHTML = `
+                    <div class="status" style="background:#f8d7da;color:#721c24;border-color:#f5c6cb;">
+                        <strong>❌ Error:</strong> ${error.message}<br><br>
+                        Try clearing cache manually using browser settings.
+                    </div>
+                `;
+                clearBtn.disabled = false;
+            }
+        }
+
+        function goToApp() {
+            window.location.href = '/';
+        }
+    </script>
+</body>
+</html>
