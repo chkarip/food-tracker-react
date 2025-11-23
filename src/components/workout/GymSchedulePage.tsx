@@ -263,13 +263,19 @@ const GymSchedulePage: React.FC = () => {
 
   return (
     <PageCard title="Workout Schedule">
-      <Box sx={{ display: 'flex', gap: 3, minHeight: '600px' }}>
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: { xs: 'column', md: 'row' },
+        gap: { xs: 2, md: 3 }, 
+        minHeight: { xs: 'auto', md: '600px' }
+      }}>
         {/* Left Side: Workout Templates */}
         <Box sx={{ 
-          flex: '0 0 300px',
+          flex: { xs: '1', md: '0 0 300px' },
           display: 'flex',
           flexDirection: 'column',
-          gap: 2
+          gap: 2,
+          maxHeight: { xs: '400px', md: 'none' }
         }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <Typography variant="h6" sx={{ fontWeight: 600, color: 'var(--text-primary)' }}>
@@ -328,7 +334,7 @@ const GymSchedulePage: React.FC = () => {
               flexDirection: 'column',
               gap: 1.5,
               overflowY: 'auto',
-              maxHeight: 'calc(100vh - 300px)'
+              maxHeight: { xs: '300px', md: 'calc(100vh - 300px)' }
             }}>
               {templates.map((template) => (
                 <Paper

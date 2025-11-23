@@ -11,7 +11,9 @@ import {
   MenuItem,
   Box,
   Autocomplete,
-  Chip
+  Chip,
+  useMediaQuery,
+  useTheme
 } from '@mui/material';
 
 import  AccentButton  from '../shared/AccentButton';
@@ -59,8 +61,17 @@ const ExerciseDialog: React.FC<ExerciseDialogProps> = ({
     onFormChange({ ...exerciseForm, [field]: value });
   };
 
+  const theme = useTheme();
+  const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
+
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+    <Dialog 
+      open={open} 
+      onClose={onClose} 
+      maxWidth="md" 
+      fullWidth
+      fullScreen={fullScreen}
+    >
       <DialogTitle>
         {exercise ? 'Edit Exercise' : 'Add New Exercise'}
       </DialogTitle>

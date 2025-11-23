@@ -182,8 +182,8 @@ const GymExercisesPage: React.FC = () => {
         ) : (
           <Box sx={{
             display: 'grid',
-            gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' },
-            gap: 3
+            gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)' },
+            gap: { xs: 2, sm: 3 }
           }}>
             {filteredExercises.map((exercise) => (
               <ExerciseCard

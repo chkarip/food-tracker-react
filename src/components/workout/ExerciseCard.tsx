@@ -114,7 +114,12 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
         )}
       </CardContent>
 
-      <CardActions sx={{ justifyContent: 'space-between', pt: 0 }}>
+      <CardActions sx={{ 
+        justifyContent: 'space-between', 
+        pt: 0,
+        flexDirection: { xs: 'column', sm: 'row' },
+        gap: { xs: 1, sm: 0 }
+      }}>
         <AccentButton
           onClick={() => {
             if (onAddToWorkout) {
@@ -122,11 +127,16 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
             }
           }}
           variant="primary"
+          style={{ width: '100%', minWidth: 'initial' }}
         >
           💪 Add to Workout
         </AccentButton>
         
-        <Box>
+        <Box sx={{ 
+          display: 'flex',
+          width: { xs: '100%', sm: 'auto' },
+          justifyContent: { xs: 'flex-end', sm: 'flex-start' }
+        }}>
           <Tooltip title="Edit Exercise">
             <IconButton 
               size="small" 

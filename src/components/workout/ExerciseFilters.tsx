@@ -35,7 +35,14 @@ const ExerciseFilters: React.FC<ExerciseFiltersProps> = ({
   onClearFilters
 }) => {
   return (
-    <Box sx={{ mb: 3, display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+    <Box sx={{ 
+      mb: 3, 
+      display: 'flex', 
+      gap: 2, 
+      flexWrap: 'wrap', 
+      alignItems: 'center',
+      flexDirection: { xs: 'column', sm: 'row' }
+    }}>
       <TextField
         placeholder="Search exercises..."
         value={searchTerm}
@@ -47,10 +54,10 @@ const ExerciseFilters: React.FC<ExerciseFiltersProps> = ({
             </InputAdornment>
           ),
         }}
-        sx={{ minWidth: 250 }}
+        sx={{ minWidth: { xs: '100%', sm: 250 }, flex: { xs: 1, sm: 'initial' } }}
       />
       
-      <FormControl sx={{ minWidth: 150 }}>
+      <FormControl sx={{ minWidth: { xs: '100%', sm: 150 }, flex: { xs: 1, sm: 'initial' } }}>
         <InputLabel>Muscle Group</InputLabel>
         <Select
           value={filterMuscle}
@@ -64,7 +71,7 @@ const ExerciseFilters: React.FC<ExerciseFiltersProps> = ({
         </Select>
       </FormControl>
 
-      <FormControl sx={{ minWidth: 130 }}>
+      <FormControl sx={{ minWidth: { xs: '100%', sm: 130 }, flex: { xs: 1, sm: 'initial' } }}>
         <InputLabel>Tier</InputLabel>
         <Select
           value={filterDifficulty}
@@ -83,6 +90,7 @@ const ExerciseFilters: React.FC<ExerciseFiltersProps> = ({
       <AccentButton
         onClick={onClearFilters}
         variant="secondary"
+        style={{ width: '100%', minWidth: 'initial' }}
       >
         🧹 Clear Filters
       </AccentButton>

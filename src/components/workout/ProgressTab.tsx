@@ -161,9 +161,15 @@ const ProgressTab: React.FC = () => {
     <Box>
       {/* Controls */}
       <Paper sx={{ p: 3, mb: 3, bgcolor: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
-        <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap', alignItems: 'center' }}>
+        <Box sx={{ 
+          display: 'flex', 
+          gap: { xs: 2, sm: 3 }, 
+          flexWrap: 'wrap', 
+          alignItems: 'center',
+          flexDirection: { xs: 'column', sm: 'row' }
+        }}>
           {/* Exercise Selector */}
-          <FormControl sx={{ minWidth: 200 }}>
+          <FormControl sx={{ minWidth: { xs: '100%', sm: 200 } }}>
             <InputLabel>Exercise</InputLabel>
             <Select
               value={selectedExercise}
@@ -182,6 +188,7 @@ const ProgressTab: React.FC = () => {
             exclusive
             onChange={(e, newValue) => newValue && setTimeframe(newValue)}
             size="small"
+            sx={{ width: { xs: '100%', sm: 'auto' } }}
           >
             <ToggleButton value={7}>7 Days</ToggleButton>
             <ToggleButton value={30}>30 Days</ToggleButton>
@@ -189,7 +196,11 @@ const ProgressTab: React.FC = () => {
           </ToggleButtonGroup>
 
           {/* Metric Toggles */}
-          <FormGroup row sx={{ ml: 'auto' }}>
+          <FormGroup row sx={{ 
+            ml: { xs: 0, sm: 'auto' },
+            width: { xs: '100%', sm: 'auto' },
+            justifyContent: { xs: 'space-between', sm: 'flex-start' }
+          }}>
             <FormControlLabel
               control={<Checkbox checked={showReps} onChange={(e) => setShowReps(e.target.checked)} />}
               label="Reps"
@@ -216,7 +227,7 @@ const ProgressTab: React.FC = () => {
           <Typography variant="h6" gutterBottom sx={{ color: 'var(--text-primary)' }}>
             Progress: {selectedExercise}
           </Typography>
-          <ResponsiveContainer width="100%" height={400}>
+          <ResponsiveContainer width="100%" height={300}>
             <LineChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
               <XAxis 
@@ -249,7 +260,11 @@ const ProgressTab: React.FC = () => {
         <Typography variant="h6" gutterBottom sx={{ color: 'var(--text-primary)' }}>
           Summary
         </Typography>
-        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 2 }}>
+        <Box sx={{ 
+          display: 'grid', 
+          gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(auto-fit, minmax(150px, 1fr))' }, 
+          gap: 2 
+        }}>
           <Box>
             <Typography variant="caption" sx={{ color: 'var(--text-secondary)' }}>Total Sessions</Typography>
             <Typography variant="h5" sx={{ color: 'var(--text-primary)' }}>{chartData.length}</Typography>

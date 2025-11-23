@@ -117,8 +117,9 @@ const SaveWorkoutModal: React.FC<SaveWorkoutModalProps> = ({
       onClose={onClose} 
       maxWidth="md" 
       fullWidth
+      fullScreen={window.innerWidth < 600}
       PaperProps={{
-        sx: { borderRadius: 3, maxHeight: '90vh' }
+        sx: { borderRadius: { xs: 0, sm: 3 }, maxHeight: '90vh' }
       }}
     >
       <DialogTitle sx={{ pb: 1 }}>
@@ -144,23 +145,32 @@ const SaveWorkoutModal: React.FC<SaveWorkoutModalProps> = ({
               Workout Preview
             </Typography>
             
-            <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap' }}>
+            <Box sx={{ 
+              display: 'flex', 
+              gap: { xs: 1, sm: 2 }, 
+              mb: 2, 
+              flexWrap: 'wrap',
+              justifyContent: { xs: 'center', sm: 'flex-start' }
+            }}>
               <Chip 
                 icon={<GymIcon />}
                 label={`${exercises.length} exercises`} 
                 color="primary" 
                 variant="outlined"
+                size="small"
               />
               <Chip 
                 icon={<TimerIcon />}
                 label={`${totalSets} total sets`} 
                 color="secondary" 
                 variant="outlined"
+                size="small"
               />
               <Chip 
                 label={`${totalVolume} kg volume`} 
                 color="info" 
                 variant="outlined"
+                size="small"
               />
             </Box>
 

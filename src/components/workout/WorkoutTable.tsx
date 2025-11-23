@@ -249,8 +249,23 @@ const WorkoutTable: React.FC<WorkoutTableProps> = ({
   return (
     <Box>
       {/* ✅ IMPROVED: Button group with consistent spacing (Add Exercise button removed as requested) */}
-      <Box style={{ marginBottom: 24, display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
-        <Typography variant="h6" component="h2" style={{ marginRight: 'auto' }}>
+      <Box sx={{ 
+        mb: 3, 
+        display: 'flex', 
+        gap: 2, 
+        alignItems: 'center', 
+        flexWrap: 'wrap',
+        flexDirection: { xs: 'column', sm: 'row' }
+      }}>
+        <Typography 
+          variant="h6" 
+          component="h2" 
+          sx={{ 
+            mr: { xs: 0, sm: 'auto' },
+            width: { xs: '100%', sm: 'auto' },
+            textAlign: { xs: 'center', sm: 'left' }
+          }}
+        >
           {workoutType} Workout
         </Typography>
         <AccentButton
@@ -263,7 +278,16 @@ const WorkoutTable: React.FC<WorkoutTableProps> = ({
         </AccentButton>
       </Box>
 
-      <TableContainer component={Paper}>
+      <TableContainer 
+        component={Paper}
+        sx={{ 
+          overflowX: 'auto',
+          width: '100%',
+          '& table': {
+            minWidth: { xs: '800px', md: 'auto' }
+          }
+        }}
+      >
         <Table size="small">
           <TableHead>
             <TableRow>
@@ -385,7 +409,13 @@ const WorkoutTable: React.FC<WorkoutTableProps> = ({
       </Snackbar>
 
       {/* Add Exercise Dialog */}
-      <Dialog open={openAddDialog} onClose={() => setOpenAddDialog(false)} maxWidth="sm" fullWidth>
+      <Dialog 
+        open={openAddDialog} 
+        onClose={() => setOpenAddDialog(false)} 
+        maxWidth="sm" 
+        fullWidth
+        fullScreen={window.innerWidth < 600}
+      >
         <DialogTitle>
           {insertAtIndex !== null ? `Add Exercise After Position ${insertAtIndex}` : `Add Exercise to ${workoutType}`}
         </DialogTitle>

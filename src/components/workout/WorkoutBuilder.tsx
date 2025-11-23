@@ -372,10 +372,22 @@ const WorkoutBuilder: React.FC = () => {
 
       {/* Template Controls */}
       <Box sx={{ mb: 3 }}>
-        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'flex-start', mb: 2 }}>
+        <Box sx={{ 
+          display: 'flex', 
+          gap: 2, 
+          flexWrap: 'wrap', 
+          alignItems: 'flex-start', 
+          mb: 2,
+          flexDirection: { xs: 'column', sm: 'row' }
+        }}>
         {/* Template Dropdown with Delete Button */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <FormControl sx={{ minWidth: 200 }}>
+        <Box sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: 1,
+          width: { xs: '100%', sm: 'auto' }
+        }}>
+          <FormControl sx={{ minWidth: { xs: '100%', sm: 200 }, flex: 1 }}>
             <InputLabel id="template-select-label">Select Template</InputLabel>
             <Select
               labelId="template-select-label"
@@ -435,13 +447,24 @@ const WorkoutBuilder: React.FC = () => {
             value={templateName}
             onChange={(e) => setTemplateName(e.target.value)}
             placeholder={`e.g., "${selectedWorkoutType} - Monday"`}
-            sx={{ minWidth: 300, flex: 1 }}
+            sx={{ 
+              minWidth: { xs: '100%', sm: 300 }, 
+              flex: 1,
+              width: { xs: '100%', sm: 'auto' }
+            }}
             size="medium"
             helperText={selectedTemplate ? "Editing existing template name" : "Enter a name for your new template"}
           />
 
         {/* Save/Update Template Button - Show conditionally */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, pt: 1 }}>
+        <Box sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: 1, 
+          pt: 1,
+          width: { xs: '100%', sm: 'auto' },
+          flexDirection: { xs: 'column', sm: 'row' }
+        }}>
           {selectedTemplate ? (
             // Show Update and Reset buttons only when there are changes
             hasChanges() && (
