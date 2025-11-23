@@ -52,11 +52,26 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = () => {
   const getCurrentValue = () => {
     if (location.pathname === '/') return 'home';
     
-    const currentModule = navConfig.find(item =>
+    // Check primary items first
+    for (const item of primaryItems) {
+      if (item.path !== '/' && location.pathname.startsWith(item.path)) {
+        return item.key;
+      }
+    }
+    
+    // Check if current path is in "more" items
+    const moreItem = moreItems.find(item =>
       location.pathname === item.path ||
       (item.path !== '/' && location.pathname.startsWith(item.path))
     );
-    return currentModule?.key || 'food';
+    
+    // Don't return a value if we're on a "more" page - this prevents selection highlight
+    if (moreItem) {
+      return '';
+    }
+    
+    // Default fallback
+    return '';
   };
 
   const handleChange = (event: React.SyntheticEvent, newValue: string) => {
@@ -70,6 +85,14 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = () => {
       return;
     }
 
+    // For primary items, use their path directly
+    const primaryItem = primaryItems.find(item => item.key === newValue);
+    if (primaryItem) {
+      navigate(primaryItem.path);
+      return;
+    }
+
+    // Fallback to navConfig
     const item = navConfig.find(item => item.key === newValue);
     if (item) {
       navigate(item.path);
