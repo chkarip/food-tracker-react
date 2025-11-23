@@ -78,9 +78,6 @@ export const MacroSettings: React.FC<MacroSettingsProps> = ({ onSave }) => {
 
   // Trigger resize when calculator visibility changes
   useEffect(() => {
-    // Update renderKey to force re-render
-    setRenderKey(prev => prev + 1);
-    
     // Give React time to render the new content
     setTimeout(() => {
       // Dispatch custom event that CollapsiblePanel can listen to
@@ -194,6 +191,14 @@ export const MacroSettings: React.FC<MacroSettingsProps> = ({ onSave }) => {
 
   const calculatedCalories = calculateCaloriesFromMacros(macros.protein, macros.fats, macros.carbs);
   const calorieValidation = validateCalorieInput(macros.calories, macros.protein, macros.fats, macros.carbs);
+
+  // Check if macros have been manually changed
+  const hasMacroChanges = () => {
+    return macros.protein !== initialMacros.protein ||
+           macros.fats !== initialMacros.fats ||
+           macros.carbs !== initialMacros.carbs ||
+           macros.calories !== initialMacros.calories;
+  };
 
   if (loading) {
     return (
@@ -434,6 +439,19 @@ export const MacroSettings: React.FC<MacroSettingsProps> = ({ onSave }) => {
         </Box>
       </Paper>
 
+      {/* Save Button - Always shown when there are changes */}
+      {hasMacroChanges() && (
+        <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
+          <AccentButton
+            onClick={handleSave}
+            variant="primary"
+            disabled={saving}
+          >
+            {saving ? 'Saving...' : 'Save Macro Targets'}
+          </AccentButton>
+        </Box>
+      )}
+
       {/* Calculator Toggle */}
       <Box sx={{ mt: 3 }}>
         <FormControlLabel
@@ -555,17 +573,6 @@ export const MacroSettings: React.FC<MacroSettingsProps> = ({ onSave }) => {
 
           {/* Macro Calculator */}
           <MacroCalculator onCalculatedMacros={handleCalculatedMacros} />
-          
-          {/* Save Button - Only shown when calculator is active */}
-          <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
-            <AccentButton
-              onClick={handleSave}
-              variant="primary"
-              disabled={saving}
-            >
-              {saving ? 'Saving...' : 'Save Macro Targets'}
-            </AccentButton>
-          </Box>
         </Box>
       )}
     </Box>
