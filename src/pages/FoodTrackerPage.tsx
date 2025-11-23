@@ -44,12 +44,20 @@ const FoodTrackerPage: React.FC = () => {
   const [currentTab, setCurrentTab] = useState(0);
 
   return (
-    <PageCard padding={0}>
-        {/* Tabs */}
+    <Box sx={{ minHeight: '100vh', pt: 1, px: 2, pb: 2 }}>
+      {/* Tabs */}
+      <Box sx={{ 
+        width: { xs: '100%', lg: '80%' },
+        maxWidth: 1200,
+        mx: 'auto',
+        mt: 2, // Match PageCard top margin (16px)
+        mb: 2
+      }}>
         <Box sx={{ 
           borderBottom: '2px solid var(--meal-border-primary)',
           backgroundColor: 'var(--meal-bg-card)',
-          px: 2
+          px: 2,
+          borderRadius: '16px 16px 0 0'
         }}>
           <Tabs 
             value={currentTab} 
@@ -120,39 +128,34 @@ const FoodTrackerPage: React.FC = () => {
             />
           </Tabs>
         </Box>
-
-        {/* Tab Content */}
-        <Box sx={{ 
-          backgroundColor: 'var(--surface-bg)',
-          minHeight: 'calc(100vh - 200px)',
-          p: 2
-        }}>
-          <TabPanel value={currentTab} index={0}>
-            {/* Meal Plan - Timeslot-based meal planning */}
-            <TimeslotMealPlanner />
-          </TabPanel>
-
-          <TabPanel value={currentTab} index={1}>
-            {/* Food Track - History of daily programs */}
-            <FoodTrack />
-          </TabPanel>
-
-          <TabPanel value={currentTab} index={2}>
-            {/* Food Inventory - What you have at home */}
-            <FoodInventory />
-          </TabPanel>
-
-          <TabPanel value={currentTab} index={3}>
-            {/* Recipes - Recipe management with ingredients and nutrition */}
-            <RecipeManager />
-          </TabPanel>
-
-          <TabPanel value={currentTab} index={4}>
-            {/* Manage Foods - Add/edit/delete foods in database */}
-            <AddFoodManager />
-        </TabPanel>
       </Box>
-    </PageCard>
+
+      {/* Tab Content */}
+      <TabPanel value={currentTab} index={0}>
+        {/* Meal Plan - Timeslot-based meal planning */}
+        <TimeslotMealPlanner />
+      </TabPanel>
+
+      <TabPanel value={currentTab} index={1}>
+        {/* Food Track - History of daily programs */}
+        <FoodTrack />
+      </TabPanel>
+
+      <TabPanel value={currentTab} index={2}>
+        {/* Food Inventory - What you have at home */}
+        <FoodInventory />
+      </TabPanel>
+
+      <TabPanel value={currentTab} index={3}>
+        {/* Recipes - Recipe management with ingredients and nutrition */}
+        <RecipeManager />
+      </TabPanel>
+
+      <TabPanel value={currentTab} index={4}>
+        {/* Manage Foods - Add/edit/delete foods in database */}
+        <AddFoodManager />
+      </TabPanel>
+    </Box>
   );
 };
 

@@ -38,8 +38,20 @@ const AboutPage: React.FC = () => {
   });
 
   return (
-    <PageCard title="About Track Everything">
-      <Box sx={{ textAlign: 'center', mb: 4 }}>
+    <Box sx={{ minHeight: '100vh', pt: 1, px: 2, pb: 2 }}>
+      {/* Placeholder for tab navigation to match Food pages */}
+      <Box sx={{ 
+        width: { xs: '100%', lg: '80%' },
+        maxWidth: 1200,
+        mx: 'auto',
+        mt: 2,
+        mb: 2,
+        height: 20,
+        visibility: 'hidden'
+      }} />
+
+      <PageCard title="About Track Everything">
+        <Box sx={{ textAlign: 'center', mb: 4 }}>
         <Typography
           variant="h6"
           sx={{
@@ -344,7 +356,8 @@ const AboutPage: React.FC = () => {
           © 2025 Track Everything. Made with ❤️ for better health and wealth tracking.
         </Typography>
       </Box>
-    </PageCard>
+      </PageCard>
+    </Box>
   );
 };
 

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Box, Paper, Typography } from '@mui/material';
+import { PageCardSkeleton } from './PageCardSkeleton';
 
 interface PageCardProps {
   children: React.ReactNode;
@@ -25,6 +26,16 @@ interface PageCardProps {
    * Optional header slot for custom header content (overrides title)
    */
   headerSlot?: React.ReactNode;
+  /**
+   * Loading state - shows skeleton while content loads
+   * @default false
+   */
+  loading?: boolean;
+  /**
+   * Number of skeleton sections to show when loading
+   * @default 3
+   */
+  skeletonSections?: number;
 }
 
 /**
@@ -45,12 +56,14 @@ export const PageCard: React.FC<PageCardProps> = ({
   minHeight = 'calc(100vh - 200px)',
   padding = 3,
   backgroundColor = 'var(--surface-bg)',
-  headerSlot
+  headerSlot,
+  loading = false,
+  skeletonSections = 3
 }) => {
   const hasHeader = title || headerSlot;
 
   return (
-    <Box sx={{ minHeight: '100vh', p: 2 }}>
+    <Box sx={{ minHeight: '100vh', pt: 1, px: 2, pb: 2 }}>
       <Paper
         sx={{
           borderRadius: 4,
@@ -60,10 +73,11 @@ export const PageCard: React.FC<PageCardProps> = ({
           boxShadow: 'var(--elevation-1)',
           width: { xs: '100%', lg: '80%' },
           maxWidth: 1200,
-          mx: 'auto'
+          mx: 'auto',
+          mt: 2 // Closer to header (16px)
         }}
       >
-        {/* Optional Header */}
+        {/* Optional Header - Always visible */}
         {hasHeader && (
           <Box sx={{
             p: 2,
@@ -78,13 +92,31 @@ export const PageCard: React.FC<PageCardProps> = ({
           </Box>
         )}
 
-        {/* Content */}
+        {/* Content - Show skeleton or actual content */}
         <Box sx={{
           p: padding,
           backgroundColor,
-          minHeight
+          minHeight,
+          position: 'relative',
+          transition: 'opacity 0.3s ease-in-out'
         }}>
-          {children}
+          {loading ? (
+            <PageCardSkeleton 
+              showTitle={false} 
+              sections={skeletonSections} 
+              minHeight={minHeight}
+            />
+          ) : (
+            <Box sx={{
+              animation: 'contentFadeIn 0.3s ease-in',
+              '@keyframes contentFadeIn': {
+                from: { opacity: 0, transform: 'translateY(10px)' },
+                to: { opacity: 1, transform: 'translateY(0)' }
+              }
+            }}>
+              {children}
+            </Box>
+          )}
         </Box>
       </Paper>
     </Box>

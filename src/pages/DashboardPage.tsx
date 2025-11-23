@@ -527,7 +527,23 @@ const DashboardPage: React.FC = () => {
   };
 
   return (
-    <PageCard title="Dashboard">
+    <Box sx={{ minHeight: '100vh', pt: 1, px: 2, pb: 2 }}>
+      {/* Placeholder for tab navigation to match Food pages */}
+      <Box sx={{ 
+        width: { xs: '100%', lg: '80%' },
+        maxWidth: 1200,
+        mx: 'auto',
+        mt: 2,
+        mb: 2,
+        height: 20,
+        visibility: 'hidden' // Invisible but takes up space
+      }} />
+
+      <PageCard 
+        title="Dashboard" 
+        loading={!isExpandedView && !selectedDay}
+        skeletonSections={2}
+      >
           {/* Conditional Content */}
           {isExpandedView ? (
             /* Full Calendar View */
@@ -655,6 +671,7 @@ const DashboardPage: React.FC = () => {
         )
       )}
     </PageCard>
+    </Box>
   );
 };
 

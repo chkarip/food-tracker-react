@@ -174,7 +174,19 @@ const WaterTrackerPage: React.FC = () => {
   const bottleFillHeight = getBottleFillHeight(progress);
 
   return (
-    <PageCard title="Water Tracker">
+    <Box sx={{ minHeight: '100vh', pt: 1, px: 2, pb: 2 }}>
+      {/* Placeholder for tab navigation to match Food pages */}
+      <Box sx={{ 
+        width: { xs: '100%', lg: '80%' },
+        maxWidth: 1200,
+        mx: 'auto',
+        mt: 2,
+        mb: 2,
+        height: 20, // Tab height (56px) + border (2px)
+        visibility: 'hidden'
+      }} />
+
+      <PageCard title="Water Tracker" loading={isLoading} skeletonSections={2}>
         {/* Main Content */}
           <Box sx={{ 
             display: 'grid', 
@@ -482,6 +494,7 @@ const WaterTrackerPage: React.FC = () => {
         </DialogActions>
       </Dialog>
     </PageCard>
+    </Box>
   );
 };
 

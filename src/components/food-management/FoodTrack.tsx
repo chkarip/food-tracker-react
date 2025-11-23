@@ -254,27 +254,6 @@ const FoodTrack: React.FC = () => {
   /* RENDER                                                            */
   /* ------------------------------------------------------------------ */
 
-  if (loading) {
-    return (
-      <Box sx={{ 
-        display: 'flex', 
-        flexDirection: 'column',
-        justifyContent: 'center', 
-        alignItems: 'center',
-        p: 4,
-        background: 'linear-gradient(135deg, var(--meal-bg-card) 0%, rgba(255,255,255,0.5) 100%)',
-        borderRadius: 3,
-        minHeight: '200px',
-        gap: 2
-      }}>
-        <CircularProgress sx={{ color: 'var(--accent-green)' }} />
-        <Typography variant="body2" color="text.secondary">
-          Loading food tracking history...
-        </Typography>
-      </Box>
-    );
-  }
-
   if (error) {
     return (
       <Box sx={{ 
@@ -314,9 +293,9 @@ const FoodTrack: React.FC = () => {
 
   /* ---------- render your full UI below ---------- */
   return (
-    <PageCard title="Food Track">
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-          <Typography variant="h5" sx={{ fontWeight: 700 }}>Food Consumption This Week</Typography>
+    <PageCard title="Food Track" loading={loading}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h5" sx={{ fontWeight: 700 }}>Food Consumption This Week</Typography>
         
         {/* Column visibility menu */}
         <IconButton

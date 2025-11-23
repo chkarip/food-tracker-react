@@ -667,9 +667,7 @@ const TimeslotMealPlanner: React.FC = () => {
           />
         </Box>
       </Box>
-    </Box>
+      </Box>
     </PageCard>
   );
-};
-
-export default TimeslotMealPlanner;
+};export default TimeslotMealPlanner;
