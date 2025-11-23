@@ -31,3 +31,66 @@
   --line-height-lg: 1.75;
   --line-height-xl: 2;
 }
+
+/* ================================
+   MOBILE TYPOGRAPHY OPTIMIZATIONS
+   ================================ */
+
+/* Mobile devices only (xs) - max-width: 599px */
+@media (max-width: 599px) {
+  :root {
+    /* Slightly smaller font sizes for mobile readability */
+    --font-size-xs: 0.6875rem;  /* 11px */
+    --font-size-sm: 0.8125rem;  /* 13px */
+    --font-size-md: 0.9375rem;  /* 15px */
+    --font-size-lg: 1.125rem;   /* 18px */
+    --font-size-xl: 1.375rem;   /* 22px */
+    --font-size-2xl: 1.75rem;   /* 28px */
+    --font-size-3xl: 2.125rem;  /* 34px */
+    --font-size-4xl: 2.5rem;    /* 40px */
+  }
+
+  /* Reduce font weights on mobile for better readability */
+  body, p, span, div {
+    font-weight: 400 !important;
+  }
+
+  /* Headings should be medium weight on mobile */
+  h1, h2, h3, h4, h5, h6,
+  .MuiTypography-h1,
+  .MuiTypography-h2,
+  .MuiTypography-h3,
+  .MuiTypography-h4,
+  .MuiTypography-h5,
+  .MuiTypography-h6 {
+    font-weight: 500 !important;
+  }
+
+  /* Button text should be medium weight */
+  button, .MuiButton-root {
+    font-weight: 500 !important;
+  }
+
+  /* Subtitle and captions slightly lighter */
+  .MuiTypography-subtitle1,
+  .MuiTypography-subtitle2 {
+    font-weight: 500 !important;
+  }
+
+  .MuiTypography-caption,
+  .MuiTypography-body2 {
+    font-weight: 400 !important;
+  }
+}
+
+/* Very small mobile devices - max-width: 374px */
+@media (max-width: 374px) {
+  :root {
+    /* Even more compact for very small screens */
+    --font-size-xs: 0.625rem;   /* 10px */
+    --font-size-sm: 0.75rem;    /* 12px */
+    --font-size-md: 0.875rem;   /* 14px */
+    --font-size-lg: 1rem;       /* 16px */
+    --font-size-xl: 1.25rem;    /* 20px */
+  }
+}

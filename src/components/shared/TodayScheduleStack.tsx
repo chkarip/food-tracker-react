@@ -299,7 +299,7 @@ export const TodayScheduleStack: React.FC<TodayScheduleStackProps> = ({
     <Box sx={{ width: '100%' }}>
       {/* Toggle Buttons */}
       {showToggle && (
-        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', mb: { xs: 2, sm: 3 } }}>
           <ButtonGroup variant="outlined" sx={{ borderRadius: 2 }}>
             <Button
               startIcon={<MealIcon />}
@@ -342,12 +342,12 @@ export const TodayScheduleStack: React.FC<TodayScheduleStackProps> = ({
       )}
 
       {/* Card Content */}
-      <Box sx={{ position: 'relative', minHeight: 400 }}>
+      <Box sx={{ position: 'relative', minHeight: { xs: 300, sm: 400 } }}>
         {/* Meal Plan Card */}
         {hasMeals && currentView === 'meal' && (
           <Paper
             sx={{
-              p: 3,
+              p: { xs: 2, md: 3 },
               borderRadius: 2,
               border: '1px solid var(--border-color)',
               bgcolor: 'var(--card-bg)',
@@ -358,9 +358,13 @@ export const TodayScheduleStack: React.FC<TodayScheduleStackProps> = ({
               }
             }}
           >
-            <Box sx={{ display: 'flex', gap: 3, alignItems: 'stretch' }}>
-              {/* Meal Plan Content - 70% */}
-              <Box sx={{ flex: '0 0 70%', minWidth: 0 }}>
+            <Box sx={{ 
+              display: 'flex', 
+              gap: { xs: 2, sm: 3 }, 
+              flexDirection: 'column' // Always stack vertically
+            }}>
+              {/* Meal Plan Content - Full width */}
+              <Box sx={{ width: '100%', minWidth: 0 }}>
                 <MealCardContent
                   mealPlan={mealPlan}
                   scheduledTasks={scheduledTasks}
@@ -368,41 +372,41 @@ export const TodayScheduleStack: React.FC<TodayScheduleStackProps> = ({
                 />
               </Box>
 
-              {/* Water Tracker - 30% */}
-              <Box sx={{ flex: '0 0 30%', minWidth: 0 }}>
+              {/* Water Tracker - Below food program */}
+              <Box sx={{ width: '100%', minWidth: 0 }}>
                 {waterData ? (
                   <Box sx={{
-                    height: '100%',
-                    p: 2,
+                    height: 'auto',
+                    p: { xs: 1.5, sm: 2 },
                     borderRadius: 2,
                     border: '1px solid var(--border-color)',
                     bgcolor: 'var(--surface-bg)',
                     display: 'flex',
-                    flexDirection: 'column'
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: { xs: 1, sm: 2 },
+                    flexWrap: 'wrap'
                   }}>
-                    {/* Water Header */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                      <WaterIcon sx={{ color: 'var(--accent-blue)', fontSize: 20 }} />
-                      <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'var(--text-primary)' }}>
-                        Water
-                      </Typography>
-                    </Box>
-
-                    {/* Progress */}
-                    <Box sx={{ mb: 2 }}>
-                      <Typography variant="body2" sx={{ color: 'var(--text-secondary)', mb: 1, fontSize: '0.75rem' }}>
+                    {/* Water Header & Progress Section */}
+                    <Box sx={{ flex: '1 1 250px', minWidth: { xs: 150, sm: 200 } }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.5, sm: 1 }, mb: { xs: 1, sm: 1.5 } }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                          Water
+                        </Typography>
+                      </Box>
+                      <Typography variant="body2" sx={{ color: 'var(--text-secondary)', mb: 1, fontSize: '0.875rem' }}>
                         {Math.round(waterData.totalAmount)}ml / {waterData.targetAmount}ml
                       </Typography>
                       <LinearProgress
                         variant="determinate"
                         value={Math.min((waterData.totalAmount / waterData.targetAmount) * 100, 100)}
                         sx={{
-                          height: 6,
-                          borderRadius: 3,
+                          height: 8,
+                          borderRadius: 4,
                           backgroundColor: alpha(theme.palette.primary.main, 0.1),
                           '& .MuiLinearProgress-bar': {
                             backgroundColor: theme.palette.primary.main,
-                            borderRadius: 3
+                            borderRadius: 4
                           }
                         }}
                       />
@@ -412,16 +416,15 @@ export const TodayScheduleStack: React.FC<TodayScheduleStackProps> = ({
                     <Box sx={{
                       display: 'flex',
                       justifyContent: 'center',
-                      mb: 0.5,
-                      flex: 0.6
+                      alignItems: 'center'
                     }}>
                       <Box sx={{
                         position: 'relative',
-                        width: 40,
-                        height: 60,
+                        width: 50,
+                        height: 70,
                         background: `linear-gradient(135deg, ${alpha('#E3F2FD', 0.8)} 0%, ${alpha('#BBDEFB', 0.6)} 100%)`,
-                        borderRadius: '15px 15px 5px 5px',
-                        border: `1px solid ${alpha(theme.palette.primary.main, 0.3)}`,
+                        borderRadius: '18px 18px 6px 6px',
+                        border: `2px solid ${alpha(theme.palette.primary.main, 0.3)}`,
                         overflow: 'hidden'
                       }}>
                         <Box sx={{
@@ -437,18 +440,19 @@ export const TodayScheduleStack: React.FC<TodayScheduleStackProps> = ({
                     </Box>
 
                     {/* Quick Add Buttons */}
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.3, mb: 0.5 }}>
+                    <Box sx={{ display: 'flex', gap: { xs: 0.5, sm: 1 }, flexWrap: 'wrap', alignItems: 'center' }}>
                       <Button
                         variant={selectedPreset === WATER_PRESETS.SMALL ? "contained" : "outlined"}
                         size="small"
                         onClick={() => handleAddWater(WATER_PRESETS.SMALL, 'preset-300ml')}
                         disabled={waterLoading}
                         sx={{
-                          fontSize: '0.7rem',
-                          py: 0.5,
-                          borderRadius: 1,
+                          fontSize: '0.875rem',
+                          py: 0.75,
+                          px: 2,
+                          borderRadius: 1.5,
                           fontWeight: 600,
-                          minWidth: 'auto'
+                          minWidth: 90
                         }}
                       >
                         +300ml
@@ -459,11 +463,12 @@ export const TodayScheduleStack: React.FC<TodayScheduleStackProps> = ({
                         onClick={() => handleAddWater(WATER_PRESETS.MEDIUM, 'preset-700ml')}
                         disabled={waterLoading}
                         sx={{
-                          fontSize: '0.7rem',
-                          py: 0.5,
-                          borderRadius: 1,
+                          fontSize: '0.875rem',
+                          py: 0.75,
+                          px: 2,
+                          borderRadius: 1.5,
                           fontWeight: 600,
-                          minWidth: 'auto'
+                          minWidth: 90
                         }}
                       >
                         +700ml
@@ -474,31 +479,30 @@ export const TodayScheduleStack: React.FC<TodayScheduleStackProps> = ({
                         onClick={() => handleAddWater(WATER_PRESETS.LARGE, 'preset-1L')}
                         disabled={waterLoading}
                         sx={{
-                          fontSize: '0.7rem',
-                          py: 0.5,
-                          borderRadius: 1,
+                          fontSize: '0.875rem',
+                          py: 0.75,
+                          px: 2,
+                          borderRadius: 1.5,
                           fontWeight: 600,
-                          minWidth: 'auto'
+                          minWidth: 90
                         }}
                       >
                         +1L
                       </Button>
-                    </Box>
-
-                    {/* Clear Button */}
-                    <Box sx={{ display: 'flex', justifyContent: 'center', mt: 0.5 }}>
+                    
+                      {/* Clear Button inline with add buttons */}
                       <Button
                         variant="outlined"
                         size="small"
-                        startIcon={<ClearIcon sx={{ fontSize: 14 }} />}
+                        startIcon={<ClearIcon sx={{ fontSize: 16 }} />}
                         onClick={handleClearWater}
                         disabled={waterLoading}
                         sx={{
-                          minWidth: 70,
-                          fontSize: '0.7rem',
-                          py: 0.5,
-                          px: 1.5,
-                          borderRadius: 1,
+                          minWidth: 90,
+                          fontSize: '0.875rem',
+                          py: 0.75,
+                          px: 2,
+                          borderRadius: 1.5,
                           fontWeight: 600,
                           borderColor: waterData.totalAmount === 0
                             ? alpha('#FF5722', 0.3)
@@ -556,7 +560,7 @@ export const TodayScheduleStack: React.FC<TodayScheduleStackProps> = ({
         {hasWorkout && currentView === 'workout' && (
           <Paper
             sx={{
-              p: 3,
+              p: { xs: 2, md: 3 },
               borderRadius: 2,
               border: '1px solid var(--border-color)',
               bgcolor: 'var(--card-bg)',

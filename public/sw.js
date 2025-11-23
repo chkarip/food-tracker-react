@@ -1,5 +1,5 @@
 // Update this version number when deploying new changes to force cache refresh
-const CACHE_VERSION = 'v2024-11-23-001';
+const CACHE_VERSION = 'v2025-11-23-1752';
 const CACHE_NAME = `fitness-app-${CACHE_VERSION}`;
 
 // Assets that should be cached (static assets only)

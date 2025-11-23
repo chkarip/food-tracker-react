@@ -51,7 +51,7 @@ import {
 import  AccentButton  from '../shared/AccentButton';
 
 import { WorkoutExercise, WorkoutType } from '../../types/workout';
-import WorkoutTableRow from './WorkoutTableRow';
+import WorkoutTableRow, { WorkoutTableRowMobile } from './WorkoutTableRow';
 import SaveWorkoutModal, { ScheduledWorkout } from './SaveWorkoutModal';
 import { saveScheduledWorkout } from '../../services/firebase/workout/workoutService';
 import { addTaskToUnifiedSchedule } from '../../services/firebase';
@@ -278,14 +278,13 @@ const WorkoutTable: React.FC<WorkoutTableProps> = ({
         </AccentButton>
       </Box>
 
+      {/* Desktop table view */}
       <TableContainer 
         component={Paper}
         sx={{ 
+          display: { xs: 'none', md: 'block' },
           overflowX: 'auto',
-          width: '100%',
-          '& table': {
-            minWidth: { xs: '800px', md: 'auto' }
-          }
+          width: '100%'
         }}
       >
         <Table size="small">
@@ -293,8 +292,6 @@ const WorkoutTable: React.FC<WorkoutTableProps> = ({
             <TableRow>
               <TableCell>Order</TableCell>
               <TableCell>Exercise</TableCell>
-              <TableCell>Muscle</TableCell>
-              <TableCell>Equipment</TableCell>
               <TableCell align="right">KG</TableCell>
               <TableCell align="right">Sets</TableCell>
               <TableCell align="right">Reps</TableCell>
@@ -319,10 +316,11 @@ const WorkoutTable: React.FC<WorkoutTableProps> = ({
                   canMoveUp={index > 0}
                   canMoveDown={index < exercises.length - 1}
                 />
-                {/* ✅ Only show after the LAST exercise */}
+                
+                {/* Desktop add button - only after last exercise */}
                 {index === exercises.length - 1 && (
                   <TableRow>
-                    <TableCell colSpan={10} sx={{ py: 1, borderBottom: 'none' }}>
+                    <TableCell colSpan={8} sx={{ py: 1, borderBottom: 'none' }}>
                       <Box sx={{ display: 'flex', justifyContent: 'center' }}>
                         <AccentButton
                           size="small"
@@ -363,6 +361,71 @@ const WorkoutTable: React.FC<WorkoutTableProps> = ({
           </Box>
         )}
       </TableContainer>
+
+      {/* Mobile card view */}
+      <Box sx={{ display: { xs: 'block', md: 'none' } }}>
+        {exercises.map((exercise, index) => (
+          <React.Fragment key={exercise.id}>
+            <WorkoutTableRowMobile
+              exercise={exercise}
+              index={index}
+              editingExercise={editingExercise}
+              editingField={editingField}
+              onEditExercise={handleEditExercise}
+              onStopEditing={handleStopEditing}
+              onUpdateExercise={handleUpdateExercise}
+              onDeleteExercise={handleDeleteExercise}
+              onMoveExercise={handleMoveExercise}
+              canMoveUp={index > 0}
+              canMoveDown={index < exercises.length - 1}
+            />
+            
+            {/* Mobile add button - only after last exercise */}
+            {index === exercises.length - 1 && (
+              <Box 
+                sx={{ 
+                  display: 'flex',
+                  justifyContent: 'center',
+                  py: 2,
+                  px: 2
+                }}
+              >
+                <AccentButton
+                  size="small"
+                  variant="primary"
+                  onClick={() => handleAddExerciseAtIndex(index + 1)}
+                  className="add-exercise-hover"
+                  style={{ width: '100%', maxWidth: '300px' }}
+                >
+                  Add Exercise Here
+                </AccentButton>
+              </Box>
+            )}
+          </React.Fragment>
+        ))}
+
+        {exercises.length === 0 && (
+          <Box style={{ padding: 24, textAlign: 'center' }}>
+            <Typography variant="h6" color="text.secondary" gutterBottom>
+              Ready to build your workout?
+            </Typography>
+            <Typography variant="body2" color="text.secondary" style={{ marginBottom: 24 }}>
+              Start by adding exercises to create your {workoutType} routine
+            </Typography>
+            <AccentButton
+              variant="primary"
+              size="large"
+              onClick={() => {
+                setInsertAtIndex(null);
+                setOpenAddDialog(true);
+              }}
+              style={{ fontWeight: 600 }}
+            >
+              Add First Exercise
+            </AccentButton>
+          </Box>
+        )}
+      </Box>
 
       {/* Undo Snackbar */}
       <Snackbar

@@ -214,12 +214,14 @@ const Layout: React.FC<LayoutProps> = ({
           }}
         >
           {/* Local Navigation positioned at top-center if it exists */}
-          {hasLocalNav && !isMobile && (
+          {hasLocalNav && (
             <Box
               sx={{
-                alignSelf: 'center', // Position to the center
+                alignSelf: isMobile ? 'stretch' : 'center', // Full width on mobile, centered on desktop
                 mb: 2, // Margin bottom to separate from content
-                maxWidth: 'fit-content', // Don't take full width
+                maxWidth: isMobile ? '100%' : 'fit-content', // Full width on mobile
+                mx: isMobile ? -3 : 0, // Negative margin to extend to edges on mobile
+                px: isMobile ? 0 : 0, // Remove padding on mobile
               }}
             >
               <LocalNav currentModule={currentModule} />

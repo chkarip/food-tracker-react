@@ -527,14 +527,14 @@ const DashboardPage: React.FC = () => {
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', pt: 1, px: 2, pb: 2 }}>
+    <Box sx={{ minHeight: '100vh', pt: { xs: 0.5, md: 1 }, px: { xs: 1, md: 2 }, pb: 2 }}>
       {/* Placeholder for tab navigation to match Food pages */}
       <Box sx={{ 
         width: { xs: '100%', lg: '80%' },
         maxWidth: 1200,
         mx: 'auto',
-        mt: 2,
-        mb: 2,
+        mt: { xs: 1, md: 2 },
+        mb: { xs: 1, md: 2 },
         height: 20,
         visibility: 'hidden' // Invisible but takes up space
       }} />

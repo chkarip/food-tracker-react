@@ -3,6 +3,7 @@
    ================================ */
 
 :root {
+  /* Base spacing units */
   --spacing-xxs: 2px;
   --spacing-xs: 4px;
   --spacing-sm: 8px;
@@ -13,8 +14,100 @@
   --spacing-3xl: 48px;
   --spacing-4xl: 64px;
   --spacing-5xl: 80px;
+  
+  /* Contextual spacing */
   --spacing-section: 96px;
   --spacing-gutter: 16px;
   --spacing-card-padding: 20px;
   --spacing-input-padding: 12px;
+  --spacing-gap-sm: 8px;
+  --spacing-gap-md: 16px;
+  --spacing-gap-lg: 24px;
+}
+
+/* ================================
+   MOBILE SPACING OPTIMIZATIONS
+   ================================ */
+
+/* Tablet and below (sm and xs) - max-width: 959px */
+@media (max-width: 959px) {
+  :root {
+    /* Reduce spacing for tablets */
+    --spacing-md: 12px;
+    --spacing-lg: 16px;
+    --spacing-xl: 24px;
+    --spacing-2xl: 32px;
+    --spacing-3xl: 40px;
+    --spacing-4xl: 48px;
+    --spacing-5xl: 64px;
+    --spacing-section: 64px;
+    --spacing-gutter: 12px;
+    --spacing-card-padding: 16px;
+    --spacing-gap-md: 12px;
+    --spacing-gap-lg: 16px;
+  }
+}
+
+/* Mobile devices only (xs) - max-width: 599px */
+@media (max-width: 599px) {
+  :root {
+    /* Compact spacing for mobile */
+    --spacing-sm: 6px;
+    --spacing-md: 8px;
+    --spacing-lg: 12px;
+    --spacing-xl: 16px;
+    --spacing-2xl: 24px;
+    --spacing-3xl: 32px;
+    --spacing-4xl: 40px;
+    --spacing-5xl: 48px;
+    --spacing-section: 40px;
+    --spacing-gutter: 8px;
+    --spacing-card-padding: 12px;
+    --spacing-input-padding: 10px;
+    --spacing-gap-sm: 6px;
+    --spacing-gap-md: 8px;
+    --spacing-gap-lg: 12px;
+  }
+
+  /* Global mobile spacing adjustments */
+  .MuiBox-root {
+    /* Reduce gaps in flex/grid layouts */
+  }
+
+  /* Card content padding */
+  .MuiCardContent-root {
+    padding: 12px !important;
+  }
+
+  /* Stack spacing */
+  .MuiStack-root {
+    gap: 8px !important;
+  }
+}
+
+/* Very small mobile devices - max-width: 374px */
+@media (max-width: 374px) {
+  :root {
+    /* Extra compact for very small screens */
+    --spacing-sm: 4px;
+    --spacing-md: 6px;
+    --spacing-lg: 8px;
+    --spacing-xl: 12px;
+    --spacing-2xl: 16px;
+    --spacing-3xl: 24px;
+    --spacing-4xl: 32px;
+    --spacing-5xl: 40px;
+    --spacing-section: 32px;
+    --spacing-gutter: 6px;
+    --spacing-card-padding: 8px;
+    --spacing-input-padding: 8px;
+    --spacing-gap-sm: 4px;
+    --spacing-gap-md: 6px;
+    --spacing-gap-lg: 8px;
+  }
+
+  /* Ultra compact card spacing */
+  .MuiCardContent-root {
+    padding: 8px !important;
+  }
 }

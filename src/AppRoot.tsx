@@ -60,6 +60,15 @@ function FoodTrackerApp() {
   }, [darkMode]);
 
   const theme = createTheme({
+    breakpoints: {
+      values: {
+        xs: 0,      // Mobile: 0-599px
+        sm: 600,    // Tablet portrait: 600-959px
+        md: 960,    // Tablet landscape / Small desktop: 960-1279px
+        lg: 1280,   // Desktop: 1280-1919px
+        xl: 1920,   // Large desktop: 1920px+
+      },
+    },
     palette: {
       mode: darkMode ? 'dark' : 'light',
       ...(darkMode ? {

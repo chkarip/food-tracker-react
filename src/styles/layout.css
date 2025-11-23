@@ -19,17 +19,21 @@
   width: 100%;
 }
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  /* On mobile devices, use 95% width for better space utilization */
+/* Responsive adjustments - Material-UI Standard Breakpoints */
+/* sm: 600px, md: 960px, lg: 1280px, xl: 1920px */
+
+@media (max-width: 959px) {
+  /* Tablet and mobile: use 95% width for better space utilization */
   .content-container-80 {
     max-width: 95%;
   }
 }
 
-@media (max-width: 480px) {
-  /* On very small devices, use full width */
+@media (max-width: 599px) {
+  /* Mobile devices: use full width */
   .content-container-80 {
     max-width: 100%;
+    padding-left: 8px;
+    padding-right: 8px;
   }
 }

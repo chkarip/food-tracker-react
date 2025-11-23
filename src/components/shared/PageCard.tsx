@@ -63,23 +63,24 @@ export const PageCard: React.FC<PageCardProps> = ({
   const hasHeader = title || headerSlot;
 
   return (
-    <Box sx={{ minHeight: '100vh', pt: 1, px: 2, pb: 2 }}>
+    <Box sx={{ minHeight: '100vh', pt: { xs: 0, md: 1 }, px: { xs: 0, md: 2 }, pb: { xs: 0, md: 2 } }}>
       <Paper
         sx={{
-          borderRadius: 4,
+          borderRadius: { xs: 0, md: 4 },
           overflow: 'hidden',
           backgroundColor: 'var(--card-bg)',
-          border: '1px solid var(--border-color)',
-          boxShadow: 'var(--elevation-1)',
+          border: { xs: 'none', md: '1px solid var(--border-color)' },
+          boxShadow: { xs: 'none', md: 'var(--elevation-1)' },
           width: { xs: '100%', lg: '80%' },
           maxWidth: 1200,
           mx: 'auto',
-          mt: 2 // Closer to header (16px)
+          mt: { xs: 0, md: 2 }
         }}
       >
-        {/* Optional Header - Always visible */}
+        {/* Optional Header - Hidden on mobile */}
         {hasHeader && (
           <Box sx={{
+            display: { xs: 'none', md: 'block' },
             p: 2,
             borderBottom: '1px solid var(--border-color)',
             backgroundColor: 'var(--card-bg)'
@@ -94,9 +95,9 @@ export const PageCard: React.FC<PageCardProps> = ({
 
         {/* Content - Show skeleton or actual content */}
         <Box sx={{
-          p: padding,
+          p: { xs: 1, md: padding },
           backgroundColor,
-          minHeight,
+          minHeight: { xs: 'auto', md: minHeight },
           position: 'relative',
           transition: 'opacity 0.3s ease-in-out'
         }}>
