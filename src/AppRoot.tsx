@@ -32,6 +32,7 @@ import AboutPage from './pages/AboutPage';
 import AuthGuard from './components/auth/AuthGuard';
 import { AuthProvider } from './contexts/AuthContext';
 import { FoodProvider } from './contexts/FoodContext';
+import { ToastProvider } from './contexts/ToastContext';
 import { getDefaultLocalPath } from './config/navConfig';
 
 // Food module components
@@ -134,10 +135,11 @@ function FoodTrackerApp() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <FoodProvider>
-        <Router>
-          <AuthGuard>
-            <Layout darkMode={darkMode} toggleDarkMode={toggleDarkMode}>
+      <ToastProvider>
+        <FoodProvider>
+          <Router>
+            <AuthGuard>
+              <Layout darkMode={darkMode} toggleDarkMode={toggleDarkMode}>
               <Routes>
                 <Route path="/" element={<DashboardPage />} />
                 {/* Food module routes */}
@@ -174,6 +176,7 @@ function FoodTrackerApp() {
           </AuthGuard>
         </Router>
       </FoodProvider>
+      </ToastProvider>
     </ThemeProvider>
   );
 }

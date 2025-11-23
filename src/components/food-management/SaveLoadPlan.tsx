@@ -8,7 +8,6 @@ import React, { useState, useEffect } from 'react';
 import {
   Typography,
   Box,
-  Alert,
   CircularProgress,
   Chip,
   TextField,
@@ -17,7 +16,9 @@ import {
   DialogContent,
   DialogActions,
   Slider,
-  Stack
+  Stack,
+  Snackbar,
+  Alert
 } from '@mui/material';
 import { GenericCard } from '../shared/cards/GenericCard';
 import  AccentButton  from '../shared/AccentButton';
@@ -25,6 +26,7 @@ import {  History as HistoryIcon } from '@mui/icons-material';
 import { Clear as ClearIcon } from '@mui/icons-material';
 
 import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../contexts/ToastContext';
 import {
   saveScheduledActivities,
   loadScheduledActivities,
@@ -52,8 +54,8 @@ interface SaveLoadPlanProps {
 
 const SaveLoadPlan: React.FC<SaveLoadPlanProps> = ({ timeslotData, onLoad, favoriteFoods = [], onSelectFavorite, onClear, size = 'default' }) => {  // ✅ CHANGED prop name
   const { user, isAuthenticated } = useAuth();
+  const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [message, setMessageState] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [showMultiDayDialog, setShowMultiDayDialog] = useState(false);
   const [numberOfDays, setNumberOfDays] = useState(1);
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
@@ -65,6 +67,7 @@ const SaveLoadPlan: React.FC<SaveLoadPlanProps> = ({ timeslotData, onLoad, favor
   const [foodDatabaseLoading, setFoodDatabaseLoading] = useState(true);
   const [selectedFavoriteFood, setSelectedFavoriteFood] = useState<string | null>(null);
   const [favoriteAmount, setFavoriteAmount] = useState(100);
+  const [hasSavedPlan, setHasSavedPlan] = useState(false);
 
   // Load food database from Firebase
   useEffect(() => {
@@ -76,14 +79,41 @@ const SaveLoadPlan: React.FC<SaveLoadPlanProps> = ({ timeslotData, onLoad, favor
         setFoodDatabase(converted);
       } catch (error) {
         console.error('❌ Error loading food database:', error);
-        setMessageState({ type: 'error', text: 'Failed to load food database' });
+        showToast('Failed to load food database', 'error');
       } finally {
         setFoodDatabaseLoading(false);
       }
     };
 
     loadFoodDB();
-  }, []);
+  }, [showToast]);
+
+  // Check if there's a saved plan for today
+  useEffect(() => {
+    const checkForSavedPlan = async () => {
+      if (!user) {
+        setHasSavedPlan(false);
+        return;
+      }
+
+      try {
+        const today = new Date();
+        const localDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        const loadedPlan = await loadDailyPlan(user.uid, localDate);
+        
+        // Check if there's actually food in the saved plan
+        const hasFood = loadedPlan?.timeslots && 
+          (loadedPlan.timeslots['6pm']?.selectedFoods?.length > 0 || 
+           loadedPlan.timeslots['9:30pm']?.selectedFoods?.length > 0);
+        
+        setHasSavedPlan(!!hasFood);
+      } catch (error) {
+        setHasSavedPlan(false);
+      }
+    };
+
+    checkForSavedPlan();
+  }, [user]);
 
   const getTotalSelectedFoods = () =>
     Object.values(timeslotData || {}).reduce((total, data) => total + (data?.selectedFoods?.length || 0), 0);
@@ -104,20 +134,19 @@ const SaveLoadPlan: React.FC<SaveLoadPlanProps> = ({ timeslotData, onLoad, favor
 
   const handleSingleDaySave = async () => {
     if (!user) {
-      setMessageState({ type: 'error', text: 'Please log in to save your plan.' });
+      showToast('Please log in to save your plan.', 'error');
       return;
     }
     if (Object.keys(foodDatabase).length === 0) {
-      setMessageState({ type: 'error', text: 'Loading foods… try again in a moment.' });
+      showToast('Loading foods… try again in a moment.', 'error');
       return;
     }
     if (!hasAnySelectedFoods) {
-      setMessageState({ type: 'error', text: 'Add at least one food before saving.' });
+      showToast('Add at least one food before saving.', 'error');
       return;
     }
 
     setLoading(true);
-    setMessageState(null);
 
     try {
       const today = new Date();
@@ -138,10 +167,13 @@ const SaveLoadPlan: React.FC<SaveLoadPlanProps> = ({ timeslotData, onLoad, favor
       await saveScheduledActivities(user.uid, finalTasks, localDate);
       setCurrentScheduledActivities({ status: 'active', tasks: finalTasks });
 
-      setMessageState({ type: 'success', text: 'Daily plan saved. Inventory updated automatically.' });
+      showToast('Daily plan saved. Inventory updated automatically.', 'success');
       setShowMultiDayDialog(false);
+      
+      // Update hasSavedPlan state after saving
+      setHasSavedPlan(true);
     } catch (error: any) {
-      setMessageState({ type: 'error', text: error.message });
+      showToast(error.message, 'error');
     } finally {
       setLoading(false);
     }
@@ -149,20 +181,19 @@ const SaveLoadPlan: React.FC<SaveLoadPlanProps> = ({ timeslotData, onLoad, favor
 
   const handleMultiDaySave = async () => {
     if (!user) {
-      setMessageState({ type: 'error', text: 'Please log in to save your plan.' });
+      showToast('Please log in to save your plan.', 'error');
       return;
     }
     if (Object.keys(foodDatabase).length === 0) {
-      setMessageState({ type: 'error', text: 'Loading foods… try again in a moment.' });
+      showToast('Loading foods… try again in a moment.', 'error');
       return;
     }
     if (!hasAnySelectedFoods) {
-      setMessageState({ type: 'error', text: 'Add at least one food before saving.' });
+      showToast('Add at least one food before saving.', 'error');
       return;
     }
 
     setLoading(true);
-    setMessageState(null);
 
     try {
       const startObj = new Date(startDate);
@@ -188,10 +219,10 @@ const SaveLoadPlan: React.FC<SaveLoadPlanProps> = ({ timeslotData, onLoad, favor
         savedDates.push(currentDate.toLocaleDateString());
       }
 
-      setMessageState({ type: 'success', text: `Saved meal plan for: ${savedDates.join(', ')}. Inventory updated automatically.` });
+      showToast(`Saved meal plan for: ${savedDates.join(', ')}. Inventory updated automatically.`, 'success');
       setShowMultiDayDialog(false);
     } catch (error: any) {
-      setMessageState({ type: 'error', text: error.message });
+      showToast(error.message, 'error');
     } finally {
       setLoading(false);
     }
@@ -201,7 +232,6 @@ const SaveLoadPlan: React.FC<SaveLoadPlanProps> = ({ timeslotData, onLoad, favor
     if (!user) return;
 
     setLoading(true);
-    setMessageState(null);
 
     try {
       const today = new Date();
@@ -226,15 +256,16 @@ const SaveLoadPlan: React.FC<SaveLoadPlanProps> = ({ timeslotData, onLoad, favor
         // ✅ Use onLoad callback to update parent state with loaded data
         onLoad(loadedTimeslotData);
 
-        setMessageState({
-          type: 'success',
-          text: `Loaded plan for ${localDate.toLocaleDateString()}`
-        });
+        showToast(`Loaded plan for ${localDate.toLocaleDateString()}`, 'success');
+        
+        // Update hasSavedPlan state after loading
+        setHasSavedPlan(true);
       } else {
-        setMessageState({ type: 'error', text: 'No saved plan for today' });
+        showToast('No saved plan for today', 'error');
+        setHasSavedPlan(false);
       }
     } catch (error: any) {
-      setMessageState({ type: 'error', text: error.message });
+      showToast(error.message, 'error');
     } finally {
       setLoading(false);
     }
@@ -260,61 +291,55 @@ const SaveLoadPlan: React.FC<SaveLoadPlanProps> = ({ timeslotData, onLoad, favor
         variant="default"
         content={
           <Box sx={{ p: 1 }}>
-            {message && (
-              <Alert 
-                severity={message.type} 
-                onClose={() => setMessageState(null)}
-                sx={{ 
-                  mb: 2,
-                  backgroundColor: message.type === 'success' ? 'var(--status-info)' : 'var(--status-error)',
-                  color: 'var(--text-primary)',
-                  border: `1px solid ${message.type === 'success' ? 'var(--accent-green)' : 'var(--status-error)'}`
-                }}
-              >
-                {message.text}
-              </Alert>
-            )}
-
             <Box sx={{ 
               display: 'flex', 
               gap: 0.75, 
               flexWrap: 'wrap',
               alignItems: 'center'
             }}>
-              <AccentButton
-                onClick={() => {
-                  console.log('[SAVE] opening dialog', { readyToSave });
-                  setShowMultiDayDialog(true);
-                }}
-                disabled={!readyToSave}
-                variant="primary"
-                size="compact"
-              >
-                Save Plan
-              </AccentButton>
+              {/* Save Plan - Only show if there are foods to save */}
+              {hasAnySelectedFoods && (
+                <AccentButton
+                  onClick={() => {
+                    console.log('[SAVE] opening dialog', { readyToSave });
+                    setShowMultiDayDialog(true);
+                  }}
+                  disabled={!readyToSave}
+                  variant="primary"
+                  size="compact"
+                >
+                  Save Plan
+                </AccentButton>
+              )}
 
-              <AccentButton
-                onClick={handleLoadPlan}
-                disabled={loading || !isAuthenticated}
-                size="compact"
-                variant="secondary"
-              >
-                Load Today
-              </AccentButton>
+              {/* Load Today - Only show if there's a saved plan */}
+              {hasSavedPlan && (
+                <AccentButton
+                  onClick={handleLoadPlan}
+                  disabled={loading || !isAuthenticated}
+                  size="compact"
+                  variant="secondary"
+                >
+                  Load Today
+                </AccentButton>
+              )}
 
-              <AccentButton
-                onClick={() => {
-                  if (onClear) {
-                    onClear();
-                    setMessageState({ type: 'success', text: 'Meal plan cleared successfully!' });
-                  }
-                }}
-                disabled={loading || !hasAnySelectedFoods}
-                size="compact"
-                variant="danger"
-              >
-                Clear Plan
-              </AccentButton>
+              {/* Clear Plan - Only show if there are foods to clear */}
+              {hasAnySelectedFoods && (
+                <AccentButton
+                  onClick={() => {
+                    if (onClear) {
+                      onClear();
+                      showToast('Meal plan cleared successfully!', 'success');
+                    }
+                  }}
+                  disabled={loading}
+                  size="compact"
+                  variant="danger"
+                >
+                  Clear Plan
+                </AccentButton>
+              )}
 
               {currentScheduledActivities && (
                 <Chip 
