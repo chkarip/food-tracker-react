@@ -39,6 +39,7 @@ import {
 } from '@mui/material';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
+import RestaurantIcon from '@mui/icons-material/Restaurant';
 
 import  AccentButton  from '../shared/AccentButton';
 import { NumberStepper } from '../shared/inputs';
@@ -53,6 +54,8 @@ import { SelectedFood } from '../../types/nutrition';
 import ExternalNutritionInput from './ExternalNutritionInput';
 import { ViewToggle } from '../shared';
 import { scrollIntoViewSafe } from '../../utils/scrollIntoViewSafe';
+import { RecipeTooltip } from './RecipeTooltip';
+import { useRecipeDetails } from '../../hooks/useRecipeDetails';
 
 /* ---------- props ---------- */
 interface FoodSelectorWithFirebaseProps {
@@ -106,6 +109,11 @@ const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = React.
   const { data: firestoreFoods = [], isLoading: foodsLoading } = useFoodDatabase();
   const [searchQuery, setSearchQuery] = useState('');
   const { data: apiResults = [] } = useFoodSearch(searchQuery);
+  
+  // Recipe tooltip state
+  const { recipe: recipeDetails, loading: recipeLoading, fetchRecipe, clearRecipe } = useRecipeDetails();
+  const [tooltipAnchorEl, setTooltipAnchorEl] = useState<HTMLElement | null>(null);
+  const [tooltipOpen, setTooltipOpen] = useState(false);
 
   // Convert Firestore foods to legacy format
   const foodDatabase = useMemo(() => {
@@ -292,6 +300,47 @@ const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = React.
     },
     [foodDatabase],
   );
+
+  // Check if a food is a recipe
+  const isRecipe = useCallback((foodName: string) => {
+    const food = foodDatabase[foodName];
+    const result = food?.metadata?.isRecipe === true;
+    if (food) {
+      console.log(`🔍 Checking isRecipe for "${foodName}":`, {
+        isRecipe: food?.metadata?.isRecipe,
+        result,
+        metadata: food?.metadata
+      });
+    }
+    return result;
+  }, [foodDatabase]);
+
+  // Handle recipe icon click
+  const handleRecipeIconClick = useCallback((e: React.MouseEvent<HTMLDivElement>, foodName: string) => {
+    e.stopPropagation(); // Prevent chip selection
+    
+    setTooltipAnchorEl(e.currentTarget);
+    setTooltipOpen(true);
+    fetchRecipe(foodName);
+  }, [fetchRecipe]);
+
+  // Handle recipe icon hover (desktop)
+  const handleRecipeIconHover = useCallback((e: React.MouseEvent<HTMLDivElement>, foodName: string) => {
+    if (window.innerWidth >= 768) { // Only on desktop
+      setTooltipAnchorEl(e.currentTarget);
+      setTooltipOpen(true);
+      fetchRecipe(foodName);
+    }
+  }, [fetchRecipe]);
+
+  // Handle tooltip close
+  const handleTooltipClose = useCallback(() => {
+    setTooltipOpen(false);
+    setTimeout(() => {
+      setTooltipAnchorEl(null);
+      clearRecipe();
+    }, 200);
+  }, [clearRecipe]);
 
   // Group selected foods by timeslot
   const groupedSelectedFoods = useMemo(() => {
@@ -649,9 +698,41 @@ const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = React.
                                 }
                               `}
                             </style>
-                            <Typography variant="subtitle2" sx={{ mb: 1, color: 'var(--text-primary)', fontWeight: 600 }}>
-                              Configure {selectedFoodName}
-                            </Typography>
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                              <Typography variant="subtitle2" sx={{ color: 'var(--text-primary)', fontWeight: 600 }}>
+                                Configure {selectedFoodName}
+                              </Typography>
+                              {/* Chef Hat Icon for Recipes */}
+                              {(() => {
+                                const shouldShowIcon = isRecipe(selectedFoodName);
+                                console.log(`🍳 [FAVORITES] Should show chef hat for "${selectedFoodName}":`, shouldShowIcon);
+                                return shouldShowIcon;
+                              })() && (
+                                <Box
+                                  onMouseEnter={(e) => handleRecipeIconHover(e, selectedFoodName)}
+                                  onMouseLeave={handleTooltipClose}
+                                  onClick={(e) => handleRecipeIconClick(e, selectedFoodName)}
+                                  sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    width: 28,
+                                    height: 28,
+                                    borderRadius: '50%',
+                                    backgroundColor: 'var(--accent-green)',
+                                    color: 'white',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s ease',
+                                    '&:hover': {
+                                      transform: 'scale(1.15)',
+                                      boxShadow: '0 2px 8px rgba(16, 185, 129, 0.4)',
+                                    },
+                                  }}
+                                >
+                                  <RestaurantIcon sx={{ fontSize: 16 }} />
+                                </Box>
+                              )}
+                            </Box>
                             
                             {/* Portion Size Quick Select */}
                             {(() => {
@@ -917,9 +998,37 @@ const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = React.
                                 }
                               `}
                             </style>
-                            <Typography variant="subtitle2" sx={{ mb: 1, color: 'var(--text-primary)', fontWeight: 600 }}>
-                              Configure {selectedFoodName}
-                            </Typography>
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                              <Typography variant="subtitle2" sx={{ color: 'var(--text-primary)', fontWeight: 600 }}>
+                                Configure {selectedFoodName}
+                              </Typography>
+                              {/* Chef Hat Icon for Recipes */}
+                              {isRecipe(selectedFoodName) && (
+                                <Box
+                                  onMouseEnter={(e) => handleRecipeIconHover(e, selectedFoodName)}
+                                  onMouseLeave={handleTooltipClose}
+                                  onClick={(e) => handleRecipeIconClick(e, selectedFoodName)}
+                                  sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    width: 28,
+                                    height: 28,
+                                    borderRadius: '50%',
+                                    backgroundColor: 'var(--accent-green)',
+                                    color: 'white',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s ease',
+                                    '&:hover': {
+                                      transform: 'scale(1.15)',
+                                      boxShadow: '0 2px 8px rgba(16, 185, 129, 0.4)',
+                                    },
+                                  }}
+                                >
+                                  <RestaurantIcon sx={{ fontSize: 16 }} />
+                                </Box>
+                              )}
+                            </Box>
                             
                             {/* Portion Size Quick Select */}
                             {(() => {
@@ -1264,6 +1373,15 @@ const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = React.
             )}
           </Box>
         }
+      />
+      
+      {/* Recipe Tooltip */}
+      <RecipeTooltip
+        recipe={recipeDetails}
+        loading={recipeLoading}
+        anchorEl={tooltipAnchorEl}
+        open={tooltipOpen}
+        onClose={handleTooltipClose}
       />
     </Box>
   );

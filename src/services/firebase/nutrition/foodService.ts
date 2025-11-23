@@ -72,6 +72,29 @@ export const addFood = async (foodData: FoodFormData): Promise<string> => {
     ? foodData.nutrition.protein / foodData.nutrition.calories
     : 0;
 
+  // Build metadata object, excluding undefined values (Firestore doesn't allow undefined)
+  const metadata: Record<string, any> = {
+    category: foodData.category,
+    isUnitFood: foodData.isUnitFood,
+    useFixedAmount: foodData.useFixedAmount,
+    fixedAmount: foodData.fixedAmount,
+    fixedAmounts: foodData.fixedAmounts || [foodData.fixedAmount], // Store array, fallback to single value
+    hidden: foodData.hidden,
+    favorite: foodData.favorite,
+    proteinEfficiency: proteinEfficiency,
+    addedAt: timestamp,
+    lastUpdated: timestamp,
+  };
+
+  // Add recipe fields if they have actual values (true/false for isRecipe, string for recipeId)
+  if (foodData.isRecipe !== undefined) {
+    metadata.isRecipe = foodData.isRecipe;
+  }
+  
+  if (foodData.recipeId !== undefined && foodData.recipeId !== null && foodData.recipeId !== '') {
+    metadata.recipeId = foodData.recipeId;
+  }
+
   const firebaseFood: FirebaseFoodItem = {
     id: documentId,
     name: foodData.name,
@@ -85,18 +108,7 @@ export const addFood = async (foodData: FoodFormData): Promise<string> => {
       unit: 'kg',
       costEfficiency: null,
     },
-    metadata: {
-      category: foodData.category,
-      isUnitFood: foodData.isUnitFood,
-      useFixedAmount: foodData.useFixedAmount,
-      fixedAmount: foodData.fixedAmount,
-      fixedAmounts: foodData.fixedAmounts || [foodData.fixedAmount], // Store array, fallback to single value
-      hidden: foodData.hidden,
-      favorite: foodData.favorite,
-      proteinEfficiency: proteinEfficiency,
-      addedAt: timestamp,
-      lastUpdated: timestamp,
-    },
+    metadata: metadata as any,
   };
 
   const foodRef = doc(db, 'foods', documentId);
@@ -120,6 +132,28 @@ export const updateFood = async (firestoreId: string, foodData: FoodFormData): P
     ? foodData.nutrition.protein / foodData.nutrition.calories
     : 0;
 
+  // Build metadata updates - only include fields that should be updated
+  const metadataUpdates: Record<string, any> = {
+    'metadata.category': foodData.category,
+    'metadata.isUnitFood': foodData.isUnitFood,
+    'metadata.useFixedAmount': foodData.useFixedAmount,
+    'metadata.fixedAmount': foodData.fixedAmount,
+    'metadata.fixedAmounts': foodData.fixedAmounts || [foodData.fixedAmount],
+    'metadata.hidden': foodData.hidden,
+    'metadata.favorite': foodData.favorite,
+    'metadata.proteinEfficiency': proteinEfficiency,
+    'metadata.lastUpdated': timestamp,
+  };
+
+  // Update recipe fields if they are explicitly provided
+  if (foodData.isRecipe !== undefined) {
+    metadataUpdates['metadata.isRecipe'] = foodData.isRecipe;
+  }
+  
+  if (foodData.recipeId !== undefined && foodData.recipeId !== null && foodData.recipeId !== '') {
+    metadataUpdates['metadata.recipeId'] = foodData.recipeId;
+  }
+
   const updateData = {
     name: foodData.name,
     nutrition: foodData.nutrition,
@@ -132,17 +166,7 @@ export const updateFood = async (firestoreId: string, foodData: FoodFormData): P
       unit: 'kg',
       costEfficiency: null,
     },
-    metadata: {
-      category: foodData.category,
-      isUnitFood: foodData.isUnitFood,
-      useFixedAmount: foodData.useFixedAmount,
-      fixedAmount: foodData.fixedAmount,
-      fixedAmounts: foodData.fixedAmounts || [foodData.fixedAmount], // Store array, fallback to single value
-      hidden: foodData.hidden,
-      favorite: foodData.favorite,
-      proteinEfficiency: proteinEfficiency,
-      lastUpdated: timestamp,
-    },
+    ...metadataUpdates
   };
 
   const foodRef = doc(db, 'foods', firestoreId);

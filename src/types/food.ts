@@ -152,6 +152,8 @@ export interface FirebaseFoodItem {
     fixedAmounts?: number[]; // New: Array of up to 3 portion sizes
     hidden: boolean;
     favorite: boolean;
+    isRecipe?: boolean; // True if this food is a recipe
+    recipeId?: string; // Reference to the recipe document ID
   };
 }
 /**
@@ -178,6 +180,8 @@ export interface FoodMetadata {
   fixedAmounts?: number[]; // New: Array of up to 3 portion sizes
   hidden: boolean;
   favorite: boolean;
+  isRecipe?: boolean; // True if this food is a recipe
+  recipeId?: string; // Reference to the recipe document ID if this is a recipe
   addedAt?: Date;
   lastUpdated?: Date;
 }
@@ -205,6 +209,8 @@ export interface FoodFormData {
   fixedAmounts?: number[]; // New: Array of up to 3 portion sizes
   hidden: boolean;
   favorite: boolean;
+  isRecipe?: boolean; // True if this food is a recipe
+  recipeId?: string; // Reference to the recipe document ID
 }
 
 // Firestore food item

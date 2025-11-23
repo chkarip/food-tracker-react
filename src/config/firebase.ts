@@ -35,6 +35,7 @@ import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { getAnalytics } from 'firebase/analytics';
+import { getFunctions } from 'firebase/functions';
 
 // Global Request Logger - Logs all HTTP requests in the app with operation context
 const originalFetch = window.fetch;
@@ -133,7 +134,6 @@ if (analytics && process.env.NODE_ENV === 'development') {
 }
 
 // Initialize Firebase Functions for error reporting email notifications
-import { getFunctions } from 'firebase/functions';
 export const functions = getFunctions(app);
 
 // Export the app instance

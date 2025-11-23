@@ -216,9 +216,15 @@ const RecipeManager: React.FC = () => {
       const loadedRecipes: Recipe[] = [];
       querySnapshot.forEach((doc) => {
         const data = doc.data();
+        const firestoreDocId = doc.id; // The actual Firestore document ID
+        const dataId = data.id; // The id field stored in the document (might be empty)
+        
+        // Use Firestore document ID if the stored id field is empty
+        const recipeId = (dataId && dataId.trim() !== '') ? dataId : firestoreDocId;
+        
         loadedRecipes.push({ 
-          id: doc.id, 
           ...cleanObject(data),
+          id: recipeId, // Override with correct ID AFTER spreading data
           // Ensure all required fields exist to avoid undefined errors
           createdAt: data.createdAt || new Date(),
           updatedAt: data.updatedAt || new Date(),
@@ -242,9 +248,26 @@ const RecipeManager: React.FC = () => {
       setLoading(true);
       setError(null);
       
-      // Clean the recipe data to avoid undefined issues
-      const cleanRecipeData = cleanObject({
+      let recipeDocRef;
+      let finalRecipeId: string;
+      
+      // Determine if this is create or update
+      const isUpdate = recipeData.id && recipeData.id.trim() !== '' && editingRecipe;
+      
+      if (isUpdate) {
+        // Update existing recipe
+        finalRecipeId = recipeData.id;
+        recipeDocRef = doc(recipesCollection, finalRecipeId);
+      } else {
+        // Create new recipe - generate doc ref to get ID first
+        recipeDocRef = doc(recipesCollection);
+        finalRecipeId = recipeDocRef.id;
+      }
+      
+      // Build recipe data with the correct ID
+      const recipeDataToSave = {
         ...recipeData,
+        id: finalRecipeId, // ALWAYS set the ID
         createdAt: recipeData.createdAt || new Date(),
         updatedAt: new Date(),
         tags: Array.isArray(recipeData.tags) ? recipeData.tags : [],
@@ -253,19 +276,13 @@ const RecipeManager: React.FC = () => {
         ingredients: Array.isArray(recipeData.ingredients) ? recipeData.ingredients : [],
         totalNutrition: ensureNutritionComplete(recipeData.totalNutrition),
         nutritionPerServing: ensureNutritionComplete(recipeData.nutritionPerServing)
-      });
+      };
       
-      let recipeDocRef;
+      // Clean the data
+      const cleanRecipeData = cleanObject(recipeDataToSave);
       
-      if (recipeData.id && editingRecipe) {
-        // Update existing recipe
-        recipeDocRef = doc(recipesCollection, recipeData.id);
-        await setDoc(recipeDocRef, cleanRecipeData);
-      } else {
-        // Create new recipe
-        recipeDocRef = await addDoc(recipesCollection, cleanRecipeData);
-        cleanRecipeData.id = recipeDocRef.id;
-      }
+      // Save to Firestore
+      await setDoc(recipeDocRef, cleanRecipeData);
 
       // Calculate total weight and normalize nutrition
       const totalWeight = calculateTotalWeight(cleanRecipeData.ingredients);
@@ -279,19 +296,21 @@ const RecipeManager: React.FC = () => {
 
       // Create food data using the same structure as foodService expects
       const foodFormData: FoodFormData = {
-        name: `${cleanRecipeData.name} (Recipe)`,
+        name: cleanRecipeData.name, // Don't add (Recipe) suffix, use isRecipe flag instead
         nutrition: ensureNutritionComplete(nutritionPer100g),
         cost: {
           costPerKg: recipeCostPerKg,
           unit: 'kg'
         },
-        category: cleanRecipeData.category || 'Other',
+        category: cleanRecipeData.category || 'Recipes',
         isUnitFood: false,
-        useFixedAmount: false,
-        fixedAmount: 100,
-        fixedAmounts: [100], // Initialize with default portion
+        useFixedAmount: cleanRecipeData.isFixedServing,
+        fixedAmount: cleanRecipeData.isFixedServing ? totalWeight / cleanRecipeData.servings : 100,
+        fixedAmounts: cleanRecipeData.isFixedServing ? [totalWeight / cleanRecipeData.servings] : [100],
         hidden: false,
-        favorite: false
+        favorite: false,
+        isRecipe: true, // Mark as recipe
+        recipeId: cleanRecipeData.id // Store recipe reference
       };
 
       // Use the foodService.addFood function to create the food item
@@ -554,12 +573,19 @@ const RecipeManager: React.FC = () => {
       setLoading(true);
       setError(null);
       
+      // Validate recipe ID
+      if (!recipe.id || recipe.id.trim() === '') {
+        throw new Error('Recipe ID is missing or empty');
+      }
+      
+      console.log('🗑️ Deleting recipe:', { id: recipe.id, name: recipe.name });
+      
       // Delete from recipes collection
       await deleteDoc(doc(recipesCollection, recipe.id));
       
-      // Delete from foods collection using the foodService naming pattern
-      const recipeFoodName = `${recipe.name} (Recipe)`;
-      const foodDocId = recipeFoodName.toLowerCase().replace(/[^a-z0-9]/g, '-');
+      // Delete from foods collection - convert recipe name to document ID
+      const foodDocId = recipe.name.toLowerCase().replace(/[^a-z0-9]/g, '-');
+      console.log('🗑️ Deleting food:', foodDocId);
       await deleteFood(foodDocId);
       
       // Reload recipes
@@ -572,6 +598,7 @@ const RecipeManager: React.FC = () => {
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
       // Error deleting recipe
+      console.error('❌ Delete recipe error:', err);
       setError(`Failed to delete recipe: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
       setLoading(false);

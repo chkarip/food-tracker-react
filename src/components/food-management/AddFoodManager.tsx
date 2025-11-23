@@ -306,7 +306,9 @@ const AddFoodManager: React.FC = () => {
         ? food.metadata.fixedAmounts 
         : [food.metadata?.fixedAmount ?? 100], // Migrate single fixedAmount to array
       hidden: typeof food.metadata?.hidden === 'boolean' ? food.metadata.hidden : false,
-      favorite: typeof food.metadata?.favorite === 'boolean' ? food.metadata.favorite : false
+      favorite: typeof food.metadata?.favorite === 'boolean' ? food.metadata.favorite : false,
+      isRecipe: food.metadata?.isRecipe,
+      recipeId: food.metadata?.recipeId
     });
     setEditingFood(food);
     setError(null);

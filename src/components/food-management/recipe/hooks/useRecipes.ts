@@ -14,6 +14,7 @@ import { collection, query, orderBy, getDocs, doc, setDoc, addDoc, deleteDoc } f
 import { db } from '../../../../config/firebase';
 import { Recipe, RecipeIngredient } from '../../../../types/recipe';
 import { addFood, deleteFood } from '../../../../services/firebase/nutrition/foodService';
+import { useQueryClient } from '@tanstack/react-query';
 
 // Helper functions
 const cleanObject = (obj: any): any => {
@@ -41,6 +42,7 @@ export const useRecipes = () => {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   // Load all recipes
   const loadRecipes = useCallback(async () => {
@@ -120,9 +122,29 @@ export const useRecipes = () => {
       setLoading(true);
       setError(null);
       
-      // Clean the recipe data
-      const cleanRecipeData = cleanObject({
+      const recipesCollection = collection(db, 'recipes');
+      let recipeDocRef;
+      let finalRecipeId: string;
+      
+      // Determine if this is create or update
+      const isUpdate = recipeData.id && recipeData.id.trim() !== '';
+      
+      if (isUpdate) {
+        // Update existing recipe
+        finalRecipeId = recipeData.id;
+        recipeDocRef = doc(recipesCollection, finalRecipeId);
+        console.log('📝 Updating existing recipe:', finalRecipeId);
+      } else {
+        // Create new recipe - generate a temporary doc ref to get the ID
+        recipeDocRef = doc(recipesCollection);
+        finalRecipeId = recipeDocRef.id;
+        console.log('✨ Creating new recipe with ID:', finalRecipeId);
+      }
+      
+      // Build the recipe data object directly without cleanObject initially to preserve ID
+      const recipeDataToSave = {
         ...recipeData,
+        id: finalRecipeId, // CRITICAL: Always set the ID
         createdAt: recipeData.createdAt || new Date(),
         updatedAt: new Date(),
         tags: Array.isArray(recipeData.tags) ? recipeData.tags : [],
@@ -131,23 +153,23 @@ export const useRecipes = () => {
         ingredients: Array.isArray(recipeData.ingredients) ? recipeData.ingredients : [],
         totalNutrition: ensureNutritionComplete(recipeData.totalNutrition),
         nutritionPerServing: ensureNutritionComplete(recipeData.nutritionPerServing)
-      });
+      };
       
-      const recipesCollection = collection(db, 'recipes');
-      let recipeDocRef;
+      console.log('💾 Saving recipe with ID:', recipeDataToSave.id, 'Name:', recipeDataToSave.name);
       
-      if (recipeData.id && recipeData.id !== '') {
-        // Update existing recipe
-        recipeDocRef = doc(recipesCollection, recipeData.id);
-        await setDoc(recipeDocRef, cleanRecipeData);
-      } else {
-        // Create new recipe
-        recipeDocRef = await addDoc(recipesCollection, cleanRecipeData);
-        cleanRecipeData.id = recipeDocRef.id;
-      }
+      // Clean the data (but ID should already be set)
+      const cleanRecipeData = cleanObject(recipeDataToSave);
+      
+      console.log('✅ After cleaning, ID is:', cleanRecipeData.id);
+      
+      // Save to Firestore (works for both create and update)
+      await setDoc(recipeDocRef, cleanRecipeData);
 
       // Create/update corresponding food item
       await saveFoodItemForRecipe(cleanRecipeData);
+
+      // Invalidate food cache to refresh the food database
+      queryClient.invalidateQueries({ queryKey: ['foods'] });
 
       // Reload recipes
       await loadRecipes();
@@ -169,21 +191,30 @@ export const useRecipes = () => {
       setLoading(true);
       setError(null);
 
+      // Validate recipe ID
+      if (!recipeId || recipeId.trim() === '') {
+        throw new Error('Recipe ID is missing or empty');
+      }
+
+      console.log('🗑️ Deleting recipe:', { id: recipeId, name: recipeName });
+
       const recipesCollection = collection(db, 'recipes');
       // Delete from recipes collection
       await deleteDoc(doc(recipesCollection, recipeId));
 
-      // Delete corresponding food item
-      await deleteFood(recipeName);
+      // Delete corresponding food item - convert recipe name to document ID
+      const foodDocId = recipeName.toLowerCase().replace(/[^a-z0-9]/g, '-');
+      console.log('🗑️ Deleting food:', foodDocId);
+      await deleteFood(foodDocId);
 
       // Reload recipes
       await loadRecipes();
 
       return { success: true };
     } catch (err: any) {
-      const errorMsg = 'Failed to delete recipe';
+      const errorMsg = `Failed to delete recipe: ${err.message || 'Unknown error'}`;
       setError(errorMsg);
-      console.error('Delete recipe error:', err);
+      console.error('❌ Delete recipe error:', err);
       return { success: false, error: errorMsg };
     } finally {
       setLoading(false);
@@ -207,10 +238,21 @@ export const useRecipes = () => {
       isUnitFood: false,
       useFixedAmount: recipe.isFixedServing,
       fixedAmount: recipe.isFixedServing ? totalWeight / recipe.servings : 100,
+      fixedAmounts: recipe.isFixedServing ? [totalWeight / recipe.servings] : [100],
       hidden: false,
-      favorite: false
+      favorite: false,
+      isRecipe: true, // Mark as recipe
+      recipeId: recipe.id // Store recipe reference
     };
 
+    console.log('🍳 [useRecipes] Saving food for recipe:', {
+      name: foodData.name,
+      isRecipe: foodData.isRecipe,
+      recipeId: foodData.recipeId,
+      category: foodData.category
+    });
+
+    // addFood uses setDoc which will create or update
     await addFood(foodData);
   };
 
