@@ -15,10 +15,52 @@
     <script>
       // Cache busting and service worker management
       (function() {
+        var APP_VERSION = 'v2025-11-23-mobile-nav-fix'; // Match service worker version
+        
+        // Check stored version
+        var storedVersion = localStorage.getItem('app_version');
+        if (storedVersion && storedVersion !== APP_VERSION) {
+          console.log('[Cache] Version mismatch detected! Clearing cache...');
+          console.log('[Cache] Old:', storedVersion, '→ New:', APP_VERSION);
+          
+          // Clear everything
+          if ('caches' in window) {
+            caches.keys().then(function(names) {
+              names.forEach(function(name) {
+                console.log('[Cache] Deleting cache:', name);
+                caches.delete(name);
+              });
+            });
+          }
+          if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+              registrations.forEach(function(registration) {
+                console.log('[Cache] Unregistering SW:', registration.scope);
+                registration.unregister();
+              });
+            });
+          }
+          
+          // Update version
+          localStorage.setItem('app_version', APP_VERSION);
+          
+          // Force hard reload
+          console.log('[Cache] Forcing hard reload...');
+          setTimeout(function() {
+            window.location.reload(true);
+          }, 500);
+          return;
+        }
+        
+        // Store current version if not set
+        if (!storedVersion) {
+          localStorage.setItem('app_version', APP_VERSION);
+        }
+        
         // Check for force refresh parameter
         var urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('clear-cache') === 'true') {
-          console.log('[Cache] Clearing all caches...');
+          console.log('[Cache] Manual clear requested...');
           if ('caches' in window) {
             caches.keys().then(function(names) {
               names.forEach(function(name) {
