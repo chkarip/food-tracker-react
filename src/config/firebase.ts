@@ -122,8 +122,15 @@ const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 export const auth = getAuth(app);
 
-// Initialize Analytics only in production and when measurement ID is available
+// Initialize Analytics with debug mode for development
 export const analytics = process.env.REACT_APP_FIREBASE_MEASUREMENT_ID ? getAnalytics(app) : null;
+
+// Enable debug mode in development by setting debug_mode parameter
+if (analytics && process.env.NODE_ENV === 'development') {
+  // Debug mode shows real-time events in DebugView (Firebase Console → Analytics → DebugView)
+  console.log('🔍 Firebase Analytics Debug Mode: ENABLED');
+  console.log('View real-time events at: https://console.firebase.google.com → Analytics → DebugView');
+}
 
 // Initialize Firebase Functions for error reporting email notifications
 import { getFunctions } from 'firebase/functions';

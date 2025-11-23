@@ -12,6 +12,38 @@
     <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
     <title>Food Tracker</title>
+    
+    <!-- Firebase Analytics Debug Mode -->
+    <script>
+      // Enable debug mode for Analytics by checking URL parameter or localStorage
+      // Usage: Add ?debug_analytics=true to URL, or run in console: localStorage.setItem('debug_analytics', 'true')
+      const urlParams = new URLSearchParams(window.location.search);
+      const debugParam = urlParams.get('debug_analytics');
+      const debugStored = localStorage.getItem('debug_analytics');
+      
+      if (debugParam === 'true' || debugStored === 'true') {
+        console.log('🔍 Firebase Analytics Debug Mode: ENABLED');
+        console.log('📊 View real-time events: https://console.firebase.google.com → Analytics → DebugView');
+        
+        // Store preference
+        if (debugParam === 'true') {
+          localStorage.setItem('debug_analytics', 'true');
+        }
+        
+        // Enable debug mode by setting gtag parameters
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-S5KEEtHYC2', {
+          'debug_mode': true
+        });
+      } else if (debugParam === 'false') {
+        // Disable debug mode
+        localStorage.removeItem('debug_analytics');
+        console.log('🔍 Firebase Analytics Debug Mode: DISABLED');
+      }
+    </script>
+    
     <script>
       // Cache busting and service worker management
       (function() {
