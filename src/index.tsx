@@ -4,6 +4,7 @@ import './index.css';
 import './styles/layout.css';
 import AppRoot from './AppRoot';
 import reportWebVitals from './reportWebVitals';
+import { initializeErrorReporting } from './services/errorReporting';
 
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
@@ -13,6 +14,9 @@ root.render(
     <AppRoot />
   </React.StrictMode>
 );
+
+// Initialize global error handlers
+initializeErrorReporting();
 
 // Register service worker with aggressive update detection for PWA
 if ('serviceWorker' in navigator) {
@@ -27,29 +31,23 @@ if ('serviceWorker' in navigator) {
       console.log('[PWA] Old:', storedVersion, '→ New:', APP_VERSION);
       
       // Unregister ALL service workers immediately
-      navigator.serviceWorker.getRegistrations().then(registrations => {
+      navigator.serviceWorker.getRegistrations().then(async registrations => {
         console.log(`[PWA] Unregistering ${registrations.length} service worker(s)...`);
-        Promise.all(registrations.map(reg => reg.unregister()))
-          .then(() => {
-            console.log('[PWA] All service workers unregistered');
-            
-            // Clear all caches
-            if ('caches' in window) {
-              caches.keys().then(cacheNames => {
-                console.log(`[PWA] Deleting ${cacheNames.length} cache(s)...`);
-                return Promise.all(cacheNames.map(name => caches.delete(name)));
-              }).then(() => {
-                console.log('[PWA] All caches cleared');
-                localStorage.setItem('pwa_app_version', APP_VERSION);
-                
-                // Force hard reload
-                window.location.reload();
-              });
-            } else {
-              localStorage.setItem('pwa_app_version', APP_VERSION);
-              window.location.reload();
-            }
-          });
+        await Promise.all(registrations.map(reg => reg.unregister()));
+        console.log('[PWA] All service workers unregistered');
+        
+        // Clear all caches
+        if ('caches' in window) {
+          const cacheNames = await caches.keys();
+          console.log(`[PWA] Deleting ${cacheNames.length} cache(s)...`);
+          await Promise.all(cacheNames.map(name => caches.delete(name)));
+          console.log('[PWA] All caches cleared');
+        }
+        
+        localStorage.setItem('pwa_app_version', APP_VERSION);
+        
+        // Force hard reload
+        window.location.reload();
       });
       return; // Don't register SW yet, will happen after reload
     }

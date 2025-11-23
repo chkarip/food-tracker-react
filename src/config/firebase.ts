@@ -125,5 +125,9 @@ export const auth = getAuth(app);
 // Initialize Analytics only in production and when measurement ID is available
 export const analytics = process.env.REACT_APP_FIREBASE_MEASUREMENT_ID ? getAnalytics(app) : null;
 
+// Initialize Firebase Functions for error reporting email notifications
+import { getFunctions } from 'firebase/functions';
+export const functions = getFunctions(app);
+
 // Export the app instance
 export default app;

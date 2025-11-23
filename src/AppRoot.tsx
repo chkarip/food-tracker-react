@@ -34,6 +34,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { FoodProvider } from './contexts/FoodContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { getDefaultLocalPath } from './config/navConfig';
+import ErrorBoundary from './components/shared/ErrorBoundary';
 
 // Food module components
 import FoodTrack from './components/food-management/FoodTrack';
@@ -203,16 +204,18 @@ function App() {
   }, []);
 
   return (
-    <AuthProvider>
-      <QueryClientProvider client={queryClient}>
-        <FoodTrackerApp />
-        
-        {/* Dev tools - only in development */}
-        {process.env.NODE_ENV === 'development' && (
-          <ReactQueryDevtools initialIsOpen={false} />
-        )}
-      </QueryClientProvider>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <QueryClientProvider client={queryClient}>
+          <FoodTrackerApp />
+          
+          {/* Dev tools - only in development */}
+          {process.env.NODE_ENV === 'development' && (
+            <ReactQueryDevtools initialIsOpen={false} />
+          )}
+        </QueryClientProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
 
