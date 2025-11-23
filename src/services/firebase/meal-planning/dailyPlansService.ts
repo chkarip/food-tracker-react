@@ -155,13 +155,16 @@ export const saveDailyPlan = async (
 
     console.log('  📊 Combined macros calculated:', combinedMacros);
 
+    // Sanitize timeslot data to remove undefined values (Firebase doesn't accept undefined)
+    const sanitizedTimeslots = {
+      '6pm': sanitizeForFirestore(timeslotData['6pm']) || { selectedFoods: [], externalNutrition: { protein: 0, fats: 0, carbs: 0, calories: 0 } },
+      '9:30pm': sanitizeForFirestore(timeslotData['9:30pm']) || { selectedFoods: [], externalNutrition: { protein: 0, fats: 0, carbs: 0, calories: 0 } }
+    };
+
     const planData: Omit<DailyPlanDocument, 'id'> = {
       userId,
       date: planDate,
-      timeslots: {
-        '6pm': timeslotData['6pm'] || { selectedFoods: [], externalNutrition: { protein: 0, fats: 0, carbs: 0, calories: 0 } },
-        '9:30pm': timeslotData['9:30pm'] || { selectedFoods: [], externalNutrition: { protein: 0, fats: 0, carbs: 0, calories: 0 } }
-      },
+      timeslots: sanitizedTimeslots,
       totalMacros: combinedMacros,
       completionStatus: completionStatus || {
         '6pm': false,
@@ -213,6 +216,25 @@ export const saveDailyPlan = async (
   }
 };
 
+// Helper function to remove undefined values from objects (Firebase doesn't accept undefined)
+const sanitizeForFirestore = (obj: any): any => {
+  if (obj === null || obj === undefined) return null;
+  if (Array.isArray(obj)) {
+    return obj.map(item => sanitizeForFirestore(item));
+  }
+  if (typeof obj === 'object') {
+    const sanitized: any = {};
+    for (const key in obj) {
+      const value = obj[key];
+      if (value !== undefined) {
+        sanitized[key] = sanitizeForFirestore(value);
+      }
+    }
+    return sanitized;
+  }
+  return obj;
+};
+
 // NEW: Save meal plan to mealPlans collection (replaces dailyPlans)
 export const saveMealPlan = async (
   userId: string,
@@ -243,13 +265,16 @@ export const saveMealPlan = async (
 
     console.log('  📊 Combined macros calculated:', combinedMacros);
 
+    // Sanitize timeslot data to remove undefined values (Firebase doesn't accept undefined)
+    const sanitizedTimeslots = {
+      '6pm': sanitizeForFirestore(timeslotData['6pm']) || { selectedFoods: [], externalNutrition: { protein: 0, fats: 0, carbs: 0, calories: 0 } },
+      '9:30pm': sanitizeForFirestore(timeslotData['9:30pm']) || { selectedFoods: [], externalNutrition: { protein: 0, fats: 0, carbs: 0, calories: 0 } }
+    };
+
     const mealPlanData: Omit<MealPlanDocument, 'id'> = {
       userId,
       date: planDate,
-      timeslots: {
-        '6pm': timeslotData['6pm'] || { selectedFoods: [], externalNutrition: { protein: 0, fats: 0, carbs: 0, calories: 0 } },
-        '9:30pm': timeslotData['9:30pm'] || { selectedFoods: [], externalNutrition: { protein: 0, fats: 0, carbs: 0, calories: 0 } }
-      },
+      timeslots: sanitizedTimeslots,
       totalMacros: combinedMacros,
       completionStatus: completionStatus || {
         '6pm': false,

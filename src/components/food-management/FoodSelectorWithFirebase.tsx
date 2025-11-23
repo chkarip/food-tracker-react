@@ -34,7 +34,11 @@ import {
   Alert,
   CircularProgress,
   Stack,
+  IconButton,
+  Tooltip,
 } from '@mui/material';
+import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
+import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 
 import  AccentButton  from '../shared/AccentButton';
 import { NumberStepper } from '../shared/inputs';
@@ -506,7 +510,7 @@ const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = React.
 
       <GenericCard
         variant="default"
-        title={viewMode === 'available' ? `Browse & Add Foods` : `Manage Selected Foods (${totalSelectedFoods})`}
+        title={viewMode === 'available' ? `Browse & Add Foods` : `Selected Foods (${totalSelectedFoods})`}
         content={
           <Box ref={scrollContainerRef} sx={{ position: 'relative' }}>
             {/* Main Content */}
@@ -1151,7 +1155,16 @@ const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = React.
                                   justifyContent="space-between"
                                   spacing={1.5}
                                 >
-                                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                                  <Box 
+                                    sx={{ 
+                                      flex: 1, 
+                                      minWidth: 0,
+                                      background: 'var(--meal-chip-bg)',
+                                      padding: '6px 12px',
+                                      borderRadius: '20px',
+                                      border: '1px solid var(--meal-chip-outline)',
+                                    }}
+                                  >
                                     <Typography 
                                       sx={{ 
                                         fontWeight: 600,
@@ -1163,30 +1176,6 @@ const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = React.
                                       }}
                                     >
                                       {food.name}
-                                      {(() => {
-                                        // Show portion size label if applicable
-                                        const foodItem = foodDatabase[food.name];
-                                        if (food.portionIndex !== undefined && foodItem?.fixedAmounts && foodItem.fixedAmounts[food.portionIndex]) {
-                                          return (
-                                            <Chip
-                                              label={`Size ${food.portionIndex + 1}`}
-                                              size="small"
-                                              sx={{
-                                                ml: 1,
-                                                height: '18px',
-                                                fontSize: '0.65rem',
-                                                backgroundColor: 'var(--accent-blue)',
-                                                color: 'white',
-                                                fontWeight: 600,
-                                                '& .MuiChip-label': {
-                                                  padding: '0 6px'
-                                                }
-                                              }}
-                                            />
-                                          );
-                                        }
-                                        return null;
-                                      })()}
                                     </Typography>
                                   </Box>
 
@@ -1206,63 +1195,33 @@ const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = React.
                                     size="small"
                                   />
 
-                                  <Typography 
-                                    variant="body2" 
-                                    sx={{ 
-                                      width: 110, 
-                                      textAlign: 'center',
-                                      background: 'var(--meal-chip-bg)',
-                                      padding: '4px 8px',
-                                      borderRadius: 'var(--radius-sm)',
-                                      color: 'var(--text-primary)',
-                                      fontWeight: 600,
-                                      fontSize: '0.75rem',
-                                      border: '1px solid var(--meal-chip-outline)',
-                                      position: 'relative',
-                                      zIndex: 1
-                                    }}
-                                  >
-                                    {formatMacroValue(macros.protein)}g P ·{' '}
-                                    {formatMacroValue(macros.fats)}g F ·{' '}
-                                    {formatMacroValue(macros.carbs)}g C
-                                  </Typography>
-
-                                  {cost !== null && (
-                                    <Typography 
-                                      variant="body2" 
-                                      sx={{ 
-                                        width: 60, 
-                                        textAlign: 'center',
-                                        background: 'var(--meal-chip-bg)',
-                                        padding: '4px 6px',
-                                        borderRadius: 'var(--radius-sm)',
-                                        color: 'var(--text-primary)',
-                                        fontWeight: 600,
-                                        fontSize: '0.8rem',
-                                        border: '1px solid var(--meal-chip-outline)',
-                                        position: 'relative',
-                                        zIndex: 1
-                                      }}
-                                    >
-                                      {formatCost(cost)}
-                                    </Typography>
-                                  )}
-
                                   {onSwapFood && (
-                                    <AccentButton
-                                      onClick={() => {
-                                        if (onSwapFoodForTimeslot && timeslotId) {
-                                          onSwapFoodForTimeslot(timeslotId, idx);
-                                        } else {
-                                          onSwapFood(idx);
-                                        }
-                                      }}
-                                      size="small"
-                                      variant="secondary"
-                                      style={{ minWidth: '50px', fontSize: '0.7rem', padding: '4px 8px' }}
-                                    >
-                                      Swap
-                                    </AccentButton>
+                                    <Box sx={{ display: 'flex', gap: 0.5 }}>
+                                      <Tooltip title="Move to other timeslot">
+                                        <IconButton
+                                          onClick={() => {
+                                            if (onSwapFoodForTimeslot && timeslotId) {
+                                              onSwapFoodForTimeslot(timeslotId, idx);
+                                            } else {
+                                              onSwapFood(idx);
+                                            }
+                                          }}
+                                          size="small"
+                                          sx={{
+                                            color: 'var(--text-secondary)',
+                                            backgroundColor: 'var(--meal-chip-bg)',
+                                            border: '1px solid var(--border-color)',
+                                            '&:hover': {
+                                              color: 'var(--accent-blue)',
+                                              backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                                              borderColor: 'var(--accent-blue)',
+                                            }
+                                          }}
+                                        >
+                                          {timeslotId === '6pm' ? <ArrowDownwardIcon fontSize="small" /> : <ArrowUpwardIcon fontSize="small" />}
+                                        </IconButton>
+                                      </Tooltip>
+                                    </Box>
                                   )}
 
                                   <AccentButton

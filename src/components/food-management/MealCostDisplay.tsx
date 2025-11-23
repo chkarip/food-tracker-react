@@ -126,12 +126,24 @@ const MealCostDisplay: React.FC<MealCostDisplayProps> = ({ timeslotData, preview
           onClick={(event) => toggleExpanded(event)}
         >
           <Typography
-            variant="subtitle1"
+            variant="h6"
             sx={{
               color: 'var(--text-primary)',
               fontWeight: 700,
               opacity: 0.94,
-              fontSize: '0.9rem'
+              fontSize: '0.9rem',
+              position: 'relative',
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                left: -16,
+                top: 0,
+                bottom: 0,
+                width: '3px',
+                backgroundColor: 'var(--accent-green)',
+                borderRadius: '2px'
+              },
+              paddingLeft: '12px'
             }}
           >
             Daily Cost

@@ -1,5 +1,6 @@
 import React from 'react';
-import { Box, Typography, useTheme } from '@mui/material';
+import { Box, Typography, useTheme, IconButton, Tooltip } from '@mui/material';
+import SettingsIcon from '@mui/icons-material/Settings';
 import { GenericCard } from '../shared/cards/GenericCard';
 import { NutritionData, ExternalNutrition } from '../../types/nutrition';
 import { SelectedFood } from '../../types/nutrition';
@@ -192,6 +193,7 @@ interface MacroProgressProps {
     carbs: number;
     calories: number;
   };
+  onSettingsClick?: () => void;
 }
 
 const MacroProgress: React.FC<MacroProgressProps> = ({
@@ -201,6 +203,7 @@ const MacroProgress: React.FC<MacroProgressProps> = ({
   foodMacros,
   externalMacros,
   goals,
+  onSettingsClick,
 }) => {
   const theme = useTheme();
 
@@ -276,7 +279,7 @@ const MacroProgress: React.FC<MacroProgressProps> = ({
     <GenericCard
       variant="summary"
       headerSlot={
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 2, py: 1.5 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2, py: 1.5 }}>
           <Typography 
             variant="h6" 
             sx={{ 
@@ -284,6 +287,9 @@ const MacroProgress: React.FC<MacroProgressProps> = ({
               fontWeight: 700,
               opacity: 0.94,
               position: 'relative',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
               '&::before': {
                 content: '""',
                 position: 'absolute',
@@ -303,7 +309,6 @@ const MacroProgress: React.FC<MacroProgressProps> = ({
                 component="span"
                 sx={{
                   display: 'inline-block',
-                  ml: 1,
                   px: 0.75,
                   py: 0.2,
                   backgroundColor: 'var(--accent-green)',
@@ -330,6 +335,23 @@ const MacroProgress: React.FC<MacroProgressProps> = ({
               </Box>
             )}
           </Typography>
+          {onSettingsClick && (
+            <Tooltip title="Configure Macro Targets">
+              <IconButton
+                onClick={onSettingsClick}
+                size="small"
+                sx={{
+                  color: 'var(--text-secondary)',
+                  '&:hover': {
+                    color: 'var(--accent-blue)',
+                    backgroundColor: 'rgba(33, 150, 243, 0.1)'
+                  }
+                }}
+              >
+                <SettingsIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
         </Box>
       }
       content={

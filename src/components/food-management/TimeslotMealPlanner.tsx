@@ -680,36 +680,6 @@ const TimeslotMealPlanner: React.FC = () => {
       >
         {/* Macro progress with settings gear */}
         <Box sx={{ mb: 1.5 }}>
-          <Box sx={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'space-between',
-            mb: 1,
-            px: 2
-          }}>
-            <Typography variant="h6" sx={{ 
-              color: 'var(--text-primary)', 
-              fontWeight: 600,
-              fontSize: '1rem'
-            }}>
-              Macro Progress
-            </Typography>
-            <Tooltip title="Configure Macro Targets">
-              <IconButton
-                onClick={() => navigate('/profile#macros')}
-                size="small"
-                sx={{
-                  color: 'var(--text-secondary)',
-                  '&:hover': {
-                    color: 'var(--accent-blue)',
-                    backgroundColor: 'rgba(33, 150, 243, 0.1)'
-                  }
-                }}
-              >
-                <SettingsIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-          </Box>
           {macroTargets ? (
             <MacroProgress
               current={getTotalMacros}
@@ -718,6 +688,7 @@ const TimeslotMealPlanner: React.FC = () => {
               foodMacros={getCombinedFoodMacros}
               externalMacros={getCombinedExternal}
               goals={macroTargets}
+              onSettingsClick={() => navigate('/profile#macros')}
             />
           ) : (
             <Typography>Loading macro targets...</Typography>

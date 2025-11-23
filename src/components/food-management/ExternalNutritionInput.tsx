@@ -168,7 +168,7 @@ const ExternalNutritionInput: React.FC<ExternalNutritionInputProps> = ({
           '&::before': {
             content: '""',
             position: 'absolute',
-            left: -16,
+            left: -8,
             top: 0,
             bottom: 0,
             width: '3px',
