@@ -19,14 +19,6 @@ export interface SelectedFood {
   portionIndex?: number; // Index of selected portion size from fixedAmounts array (0, 1, or 2)
 }
 
-export interface MacroTargets {
-  protein: number;
-  fats: number;
-  carbs: number;
-  caloriesMin: number;
-  caloriesMax: number;
-}
-
 export interface ExternalNutrition {
   protein: number;
   fats: number;
@@ -43,4 +35,22 @@ export interface DailyPlan {
 export interface MealCost {
   individualCosts: Record<string, number>;
   totalCost: number;
+}
+
+// Timeslot configuration for dynamic meal planning
+export interface TimeslotConfig {
+  id: string;
+  time: string; // e.g., "6:00 PM"
+  icon: string; // emoji or icon name, e.g., "🌅", "🌙"
+  name: string; // e.g., "Afternoon", "Evening"
+}
+
+// User's macro targets (replaces nutritionGoals table, supports both old and new format)
+export interface MacroTargets {
+  protein: number;
+  fats: number;
+  carbs: number;
+  calories: number;
+  caloriesMin?: number; // Legacy format support
+  caloriesMax?: number; // Legacy format support
 }

@@ -83,10 +83,39 @@ const CollapsiblePanel: React.FC<ExtendedCollapsiblePanelProps> = ({
       
       // Use setTimeout to ensure DOM is fully updated
       setTimeout(measureHeight, 0);
+      
+      // Also remeasure after a delay to catch async content loading
+      setTimeout(measureHeight, 150);
+      setTimeout(measureHeight, 300);
+      setTimeout(measureHeight, 500);
     } else if (!isExpanded) {
       setHeight('0px');
     }
   }, [isExpanded, children]); // Keep children dependency to react to content changes
+
+  // Listen for custom content change events
+  useEffect(() => {
+    if (!isExpanded) return;
+
+    const handleContentChanged = () => {
+      if (contentRef.current) {
+        // Temporarily set height to auto to measure natural height
+        const originalHeight = contentRef.current.style.height;
+        contentRef.current.style.height = 'auto';
+        const measuredHeight = contentRef.current.scrollHeight;
+        contentRef.current.style.height = originalHeight;
+        
+        const newHeight = `${measuredHeight}px`;
+        setHeight(newHeight);
+      }
+    };
+
+    window.addEventListener('collapsibleContentChanged', handleContentChanged);
+    
+    return () => {
+      window.removeEventListener('collapsibleContentChanged', handleContentChanged);
+    };
+  }, [isExpanded]);
 
   const toggleExpanded = (event?: React.MouseEvent) => {
     if (disabled) return;

@@ -38,6 +38,8 @@ const UserProfileManager: React.FC = () => {
   const [includeBodyFat, setIncludeBodyFat] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saved, setSaved] = useState(false);
+  const [initialProfile, setInitialProfile] = useState<UserProfileFormData | null>(null);
+  const [hasChanges, setHasChanges] = useState(false);
 
   // Goal options for the dropdown
   const goalOptions = [
@@ -68,6 +70,7 @@ const UserProfileManager: React.FC = () => {
         const userProfile = await getUserProfile(user.uid);
         if (userProfile) {
           setProfile(userProfile);
+          setInitialProfile(userProfile);
           setIncludeBodyFat(!!userProfile.bodyFatPercentage);
         }
       } catch (error) {
@@ -87,6 +90,13 @@ const UserProfileManager: React.FC = () => {
       waterIntakeGoal: waterGoal
     }));
   }, [waterGoal]);
+
+  // Check for changes
+  useEffect(() => {
+    if (!initialProfile) return;
+    const changed = JSON.stringify(profile) !== JSON.stringify(initialProfile);
+    setHasChanges(changed);
+  }, [profile, initialProfile]);
 
   const handleInputChange = (field: keyof UserProfileFormData, value: string | number | undefined) => {
     setProfile(prev => ({
@@ -125,6 +135,8 @@ const UserProfileManager: React.FC = () => {
       }
 
       console.log('🎉 Profile save completed successfully');
+      setInitialProfile(profileToSave);
+      setHasChanges(false);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch (error) {
@@ -219,128 +231,24 @@ const UserProfileManager: React.FC = () => {
               />
             </Box>
 
-            {/* Body Fat Toggle */}
-            <Box sx={{
-              backgroundColor: 'var(--meal-row-bg)',
-              borderRadius: 2,
-              border: '1px solid var(--border-color)',
-              p: 2
-            }}>
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={includeBodyFat}
-                    onChange={(e) => {
-                      const checked = e.target.checked;
-                      setIncludeBodyFat(checked);
-                      if (!checked) {
-                        setProfile(prev => ({ ...prev, bodyFatPercentage: undefined }));
-                      }
-                    }}
-                    sx={{
-                      color: 'var(--accent-green)',
-                      '&.Mui-checked': {
-                        color: 'var(--accent-green)'
-                      }
-                    }}
-                  />
-                }
-                label="Include Body Fat Percentage for More Accurate Calculation"
-              />
-
-              {includeBodyFat && (
-                <TextField
-                  label="Body Fat %"
-                  type="number"
-                  size="small"
-                  value={profile.bodyFatPercentage ?? ''}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    handleInputChange('bodyFatPercentage', value === '' ? undefined : Number(value));
+            {/* Save Profile Button - Only show if there are changes */}
+            {hasChanges && (
+              <Box sx={{ mt: 2 }}>
+                <AccentButton
+                  onClick={handleSaveProfile}
+                  disabled={!user?.uid}
+                  variant="primary"
+                  style={{
+                    backgroundColor: !user?.uid ? '#ccc' : 'var(--accent-green)',
+                    borderRadius: '8px',
+                    fontWeight: 600,
+                    cursor: !user?.uid ? 'not-allowed' : 'pointer'
                   }}
-                  inputProps={{ min: 0, max: 100, step: 0.1 }}
-                  InputProps={{
-                    endAdornment: <InputAdornment position="end">%</InputAdornment>
-                  }}
-                  helperText="Enter if known (0-100%)"
-                  sx={{
-                    mt: 2,
-                    backgroundColor: 'var(--surface-bg)',
-                    '& .MuiOutlinedInput-notchedOutline': {
-                      borderColor: 'var(--border-color)'
-                    }
-                  }}
-                />
-              )}
-            </Box>
-
-            {/* Activity Level */}
-            <CustomSelect
-              value={profile.activityLevel}
-              options={[
-                { value: 'sedentary', label: 'Sedentary (Little/no exercise)' },
-                { value: 'light', label: 'Light (1-3 days/week)' },
-                { value: 'moderate', label: 'Moderate (3-5 days/week)' },
-                { value: 'active', label: 'Active (6-7 days/week)' },
-                { value: 'very_active', label: 'Very Active (2x/day, intense)' }
-              ]}
-              onChange={(value) => handleInputChange('activityLevel', value)}
-              placeholder="Select activity level"
-              label="Activity Level"
-              size="small"
-            />
-
-            {/* Goal Selection */}
-            <CustomSelect
-              value={profile.goal}
-              options={goalOptions}
-              onChange={(value) => handleInputChange('goal', value)}
-              placeholder="Select your goal"
-              label="Goal"
-              size="small"
-            />
-
-            {/* Water Intake Goal */}
-            <TextField
-              label="Daily Water Intake Goal (ml)"
-              type="number"
-              size="small"
-              value={profile.waterIntakeGoal ?? waterGoal}
-              onChange={(e) => {
-                const value = Number(e.target.value);
-                updateWaterGoal(value);
-                handleInputChange('waterIntakeGoal', value);
-              }}
-              inputProps={{ min: 500, max: 5000, step: 100 }}
-              helperText={waterError || "Recommended: 2500-3500ml per day"}
-              error={!!waterError}
-              InputProps={{
-                endAdornment: <InputAdornment position="end">ml</InputAdornment>
-              }}
-              sx={{
-                backgroundColor: 'var(--surface-bg)',
-                '& .MuiOutlinedInput-notchedOutline': {
-                  borderColor: waterError ? 'red' : 'var(--border-color)'
-                }
-              }}
-            />
-
-            {/* Save Profile Button */}
-            <Box sx={{ mt: 2 }}>
-              <AccentButton
-                onClick={handleSaveProfile}
-                disabled={!user?.uid}
-                variant="primary"
-                style={{
-                  backgroundColor: !user?.uid ? '#ccc' : 'var(--accent-green)',
-                  borderRadius: '8px',
-                  fontWeight: 600,
-                  cursor: !user?.uid ? 'not-allowed' : 'pointer'
-                }}
-              >
-                {!user?.uid ? 'Login Required to Save' : 'Save Profile'}
-              </AccentButton>
-            </Box>
+                >
+                  {!user?.uid ? 'Login Required to Save' : 'Save Profile'}
+                </AccentButton>
+              </Box>
+            )}
 
             {/* Success Message */}
             {saved && (

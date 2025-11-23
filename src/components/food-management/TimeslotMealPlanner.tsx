@@ -32,12 +32,13 @@
  */
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import { subscribeToNutritionGoal } from '../../services/firebase/nutrition/nutritionGoalService';
 import { useAuth } from '../../contexts/AuthContext';
-import { Box, Typography, Paper } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+import { Box, Typography, Paper, IconButton, Tooltip } from '@mui/material';
 import {
   WbSunny as AfternoonIcon,
   Nightlight as EveningIcon,
+  Settings as SettingsIcon,
 } from '@mui/icons-material';
 
 import MacroProgress from './MacroProgress';
@@ -53,29 +54,19 @@ import {
   SelectedFood,
   ExternalNutrition,
   NutritionData,
+  TimeslotConfig,
+  MacroTargets,
 } from '../../types/nutrition';
 import { calculateTotalMacros } from '../../utils/nutritionCalculations';
 import { useFoodDatabase, convertToLegacyFoodFormat } from '../../services/firebase/nutrition/foodService';
+import { getUserTimeslots, DEFAULT_TIMESLOTS } from '../../services/firebase/nutrition/timeslotService';
+import { getUserMacroTargets, DEFAULT_MACRO_TARGETS } from '../../services/firebase/nutrition/macroTargetService';
 
 /* ---------- local types ---------- */
 interface TimeslotData {
   selectedFoods: SelectedFood[];
   externalNutrition: ExternalNutrition;
 }
-
-/* ---------- constants ---------- */
-const TIMESLOTS = [
-  {
-    id: '6pm',
-    label: '6:00 PM',
-    icon: <AfternoonIcon />,
-  },
-  {
-    id: '9:30pm',
-    label: '9:30 PM',
-    icon: <EveningIcon />,
-  },
-];
 
 /* ================================================================== */
 interface PreviewFood {
@@ -88,6 +79,9 @@ const TimeslotMealPlanner: React.FC = () => {
   const [currentTimeslot, setCurrentTimeslot] = useState(0);
   const { data: firestoreFoods = [] } = useFoodDatabase();
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const [timeslots, setTimeslots] = useState<TimeslotConfig[]>(DEFAULT_TIMESLOTS);
+  const [loadingTimeslots, setLoadingTimeslots] = useState(true);
 
   // Convert Firestore foods to legacy format for compatibility
   const foodDatabase = useMemo(() => {
@@ -95,28 +89,26 @@ const TimeslotMealPlanner: React.FC = () => {
     return convertToLegacyFoodFormat(firestoreFoods);
   }, [firestoreFoods]);
 
+  // Initialize with default timeslots
+  const getInitialTimeslotData = () => {
+    const initialData: Record<string, TimeslotData> = {};
+    DEFAULT_TIMESLOTS.forEach(slot => {
+      initialData[slot.id] = {
+        selectedFoods: [],
+        externalNutrition: { protein: 0, fats: 0, carbs: 0, calories: 0 }
+      };
+    });
+    return initialData;
+  };
+
   const [timeslotData, setTimeslotData] = useLocalStorageWithExpiry<Record<string, TimeslotData>>(
-    'mealPlanner_timeslotData', // ✅ Use the correct key name
-    {
-      '6pm': {
-        selectedFoods: [],
-        externalNutrition: { protein: 0, fats: 0, carbs: 0, calories: 0 },
-      },
-      '9:30pm': {
-        selectedFoods: [],
-        externalNutrition: { protein: 0, fats: 0, carbs: 0, calories: 0 },
-      },
-    },
-    { expiresOnNewDay: true } // ✅ Fresh start each day
+    'mealPlanner_timeslotData',
+    getInitialTimeslotData(),
+    { expiresOnNewDay: true }
   );
 
-  // Nutrition goals state
-  const [nutritionGoals, setNutritionGoals] = useState<{
-    protein: number;
-    fats: number;
-    carbs: number;
-    calories: number;
-  } | null>(null);
+  // Macro targets state (from userProfiles, not nutritionGoals table)
+  const [macroTargets, setMacroTargets] = useState<MacroTargets | null>(null);
 
   // Live preview state
   const [previewFood, setPreviewFood] = useState<PreviewFood | null>(null);
@@ -127,34 +119,72 @@ const TimeslotMealPlanner: React.FC = () => {
   const [isSwapping, setIsSwapping] = useState(false);
   const [targetCategory, setTargetCategory] = useState<string>('');
 
-  // Subscribe to nutrition goals from Firebase
+  // Load user's timeslots from Firebase
   useEffect(() => {
-    if (!user?.uid) return;
-
-    const unsubscribe = subscribeToNutritionGoal(
-      user.uid,
-      (goals) => {
-        if (goals) {
-          setNutritionGoals({
-            protein: goals.protein,
-            fats: goals.fats,
-            carbs: goals.carbs,
-            calories: goals.calories
-          });
-        }
-      },
-      (error) => {
-        console.error('Failed to load nutrition goals:', error);
+    const loadTimeslots = async () => {
+      if (!user?.uid) {
+        setLoadingTimeslots(false);
+        return;
       }
-    );
 
-    return () => unsubscribe();
+      try {
+        const userTimeslots = await getUserTimeslots(user.uid);
+        setTimeslots(userTimeslots);
+        
+        // Initialize timeslotData with all user's timeslots
+        const initialData: Record<string, TimeslotData> = {};
+        userTimeslots.forEach(slot => {
+          initialData[slot.id] = {
+            selectedFoods: [],
+            externalNutrition: { protein: 0, fats: 0, carbs: 0, calories: 0 }
+          };
+        });
+        
+        // Merge with existing data to preserve any selections
+        setTimeslotData(prev => {
+          const merged = { ...initialData };
+          Object.keys(prev).forEach(key => {
+            if (merged[key]) {
+              merged[key] = prev[key];
+            }
+          });
+          return merged;
+        });
+      } catch (error) {
+        console.error('Error loading timeslots:', error);
+        setTimeslots(DEFAULT_TIMESLOTS);
+      } finally {
+        setLoadingTimeslots(false);
+      }
+    };
+
+    loadTimeslots();
+  }, [user?.uid]);
+
+  // Load user's macro targets from Firebase (userProfiles, not nutritionGoals)
+  useEffect(() => {
+    const loadMacroTargets = async () => {
+      if (!user?.uid) {
+        setMacroTargets(DEFAULT_MACRO_TARGETS);
+        return;
+      }
+
+      try {
+        const targets = await getUserMacroTargets(user.uid);
+        setMacroTargets(targets);
+      } catch (error) {
+        console.error('Failed to load macro targets:', error);
+        setMacroTargets(DEFAULT_MACRO_TARGETS);
+      }
+    };
+
+    loadMacroTargets();
   }, [user?.uid]);
 
   /* ---------- helpers ---------- */
   const getCurrentTimeslotId = useCallback(
-    () => TIMESLOTS[currentTimeslot].id,
-    [currentTimeslot],
+    () => timeslots[currentTimeslot]?.id || timeslots[0]?.id,
+    [currentTimeslot, timeslots],
   );
 
   const getCurrentData = useCallback(
@@ -439,33 +469,60 @@ const TimeslotMealPlanner: React.FC = () => {
           border: '1px solid var(--border-color)',
           boxShadow: 'var(--elevation-1)'
         }}>
-          <Typography variant="h6" sx={{ 
-            mb: 1.5, 
-            color: 'var(--text-primary)', 
-            fontWeight: 600,
-            opacity: 0.94,
-            position: 'relative',
-            '&::before': {
-              content: '""',
-              position: 'absolute',
-              left: 0,
-              top: 0,
-              bottom: 0,
-              width: '3px',
-              backgroundColor: 'var(--accent-green)',
-              borderRadius: '2px'
-            },
-            paddingLeft: '12px'
-          }}>
-            Select Timeslot
-          </Typography>
-          <Box sx={{ 
-            display: 'grid', 
-            gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, 
-            gap: 2,
-            overflow: 'visible'
-          }}>
-            {TIMESLOTS.map((timeslot, index) => (
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
+            <Typography variant="h6" sx={{ 
+              color: 'var(--text-primary)', 
+              fontWeight: 600,
+              opacity: 0.94,
+              position: 'relative',
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                left: 0,
+                top: 0,
+                bottom: 0,
+                width: '3px',
+                backgroundColor: 'var(--accent-green)',
+                borderRadius: '2px'
+              },
+              paddingLeft: '12px'
+            }}>
+              Select Timeslot
+            </Typography>
+            <Tooltip title="Configure Timeslots">
+              <IconButton
+                onClick={() => navigate('/profile#timeslots')}
+                size="small"
+                sx={{
+                  color: 'var(--text-secondary)',
+                  '&:hover': {
+                    color: 'var(--accent-blue)',
+                    backgroundColor: 'rgba(33, 150, 243, 0.1)'
+                  }
+                }}
+              >
+                <SettingsIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </Box>
+          {loadingTimeslots ? (
+            <Typography sx={{ color: 'var(--text-secondary)', textAlign: 'center', py: 2 }}>
+              Loading timeslots...
+            </Typography>
+          ) : (
+            <Box sx={{ 
+              display: 'grid',
+              // Responsive grid: odd count = single row up to 3, even count = 2 per row
+              gridTemplateColumns: {
+                xs: '1fr',
+                sm: timeslots.length % 2 === 0 
+                  ? '1fr 1fr'
+                  : `repeat(${Math.min(timeslots.length, 3)}, 1fr)`
+              },
+              gap: 2,
+              overflow: 'visible'
+            }}>
+              {timeslots.map((timeslot, index) => (
               <Box
                 key={timeslot.id}
                 onClick={() => setCurrentTimeslot(index)}
@@ -500,11 +557,11 @@ const TimeslotMealPlanner: React.FC = () => {
                   minHeight: '60px'
                 }}
               >
-                {/* Icon */}
+                {/* Icon - now supports emoji from config */}
                 <Box sx={{ 
                   mb: 0.5,
                   color: currentTimeslot === index 
-                    ? (index === 0 ? 'var(--timeslot-afternoon)' : 'var(--timeslot-evening)')
+                    ? 'var(--accent-blue)'
                     : 'var(--text-secondary)',
                   transition: 'color 200ms ease',
                   fontSize: '1.5rem'
@@ -512,12 +569,12 @@ const TimeslotMealPlanner: React.FC = () => {
                   {timeslot.icon}
                 </Box>
 
-                {/* Label */}
+                {/* Time Label */}
                 <Typography 
                   variant="body1" 
                   sx={{ 
                     color: currentTimeslot === index 
-                      ? (index === 0 ? 'var(--timeslot-afternoon)' : 'var(--timeslot-evening)')
+                      ? 'var(--accent-blue)'
                       : 'var(--text-primary)',
                     fontWeight: currentTimeslot === index ? 700 : 600,
                     fontSize: '0.9rem',
@@ -526,23 +583,20 @@ const TimeslotMealPlanner: React.FC = () => {
                     lineHeight: 1.2
                   }}
                 >
-                  {timeslot.label}
+                  {timeslot.time}
                 </Typography>
-
-                {/* Subtitle */}
+                
+                {/* Name Label */}
                 <Typography 
                   variant="caption" 
                   sx={{ 
-                    color: currentTimeslot === index 
-                      ? (index === 0 ? 'var(--timeslot-afternoon)' : 'var(--timeslot-evening)')
-                      : 'var(--text-secondary)',
-                    mt: 0.25,
+                    color: 'var(--text-secondary)',
+                    fontSize: '0.75rem',
                     textAlign: 'center',
-                    transition: 'color 200ms ease',
-                    fontSize: '0.7rem'
+                    mt: 0.5
                   }}
                 >
-                  {timeslot.id === '6pm' ? 'Afternoon' : 'Evening'}
+                  {timeslot.name}
                 </Typography>
 
                 {/* Food count badge */}
@@ -569,8 +623,9 @@ const TimeslotMealPlanner: React.FC = () => {
                   {timeslotData[timeslot.id]?.selectedFoods?.length || 0}
                 </Box>
               </Box>
-            ))}
-          </Box>
+              ))}
+            </Box>
+          )}
         </Paper>
 
         {/* Food selector - your existing component */}
@@ -623,19 +678,49 @@ const TimeslotMealPlanner: React.FC = () => {
           height: { md: 'fit-content' }
         }}
       >
-        {/* Macro progress - your existing component */}
+        {/* Macro progress with settings gear */}
         <Box sx={{ mb: 1.5 }}>
-          {nutritionGoals ? (
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'space-between',
+            mb: 1,
+            px: 2
+          }}>
+            <Typography variant="h6" sx={{ 
+              color: 'var(--text-primary)', 
+              fontWeight: 600,
+              fontSize: '1rem'
+            }}>
+              Macro Progress
+            </Typography>
+            <Tooltip title="Configure Macro Targets">
+              <IconButton
+                onClick={() => navigate('/profile#macros')}
+                size="small"
+                sx={{
+                  color: 'var(--text-secondary)',
+                  '&:hover': {
+                    color: 'var(--accent-blue)',
+                    backgroundColor: 'rgba(33, 150, 243, 0.1)'
+                  }
+                }}
+              >
+                <SettingsIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </Box>
+          {macroTargets ? (
             <MacroProgress
               current={getTotalMacros}
               preview={getPreviewMacros}
               showPreview={!!previewFood}
               foodMacros={getCombinedFoodMacros}
               externalMacros={getCombinedExternal}
-              goals={nutritionGoals}
+              goals={macroTargets}
             />
           ) : (
-            <Typography>Loading nutrition goals...</Typography>
+            <Typography>Loading macro targets...</Typography>
           )}
         </Box>
 

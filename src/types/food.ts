@@ -81,6 +81,8 @@ export interface UserProfile {
   goal: GoalType;
   bodyFatPercentage?: number;
   waterIntakeGoal?: number; // ml per day
+  timeslots?: import('../types/nutrition').TimeslotConfig[]; // Dynamic timeslot configuration (up to 5)
+  macroTargets?: import('../types/nutrition').MacroTargets; // Custom macro targets
   createdAt: Date;
   updatedAt: Date;
 }
