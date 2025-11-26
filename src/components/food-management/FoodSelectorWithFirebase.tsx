@@ -1382,6 +1382,15 @@ const FoodSelectorWithFirebase: React.FC<FoodSelectorWithFirebaseProps> = React.
         anchorEl={tooltipAnchorEl}
         open={tooltipOpen}
         onClose={handleTooltipClose}
+        currentAmount={amount}
+        baseServingSize={
+          recipeDetails?.ingredients
+            ? recipeDetails.ingredients.reduce((total, ing) => {
+                // Only count g/ml ingredients for total weight
+                return (ing.unit === 'g' || ing.unit === 'ml') ? total + ing.amount : total;
+              }, 0)
+            : undefined
+        }
       />
     </Box>
   );

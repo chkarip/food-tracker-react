@@ -15,6 +15,8 @@ interface RecipeTooltipProps {
   anchorEl: HTMLElement | null;
   open: boolean;
   onClose: () => void;
+  currentAmount?: number; // Current portion size user selected (in grams)
+  baseServingSize?: number; // Original serving size from recipe (in grams)
 }
 
 export const RecipeTooltip: React.FC<RecipeTooltipProps> = ({
@@ -23,8 +25,15 @@ export const RecipeTooltip: React.FC<RecipeTooltipProps> = ({
   anchorEl,
   open,
   onClose,
+  currentAmount,
+  baseServingSize,
 }) => {
   const [position, setPosition] = useState({ top: 0, left: 0 });
+
+  // Calculate scaling factor
+  const scalingFactor = (currentAmount && baseServingSize && baseServingSize > 0)
+    ? currentAmount / baseServingSize
+    : 1;
 
   useEffect(() => {
     if (!anchorEl || !open) return;
@@ -168,46 +177,57 @@ export const RecipeTooltip: React.FC<RecipeTooltipProps> = ({
                 letterSpacing: '0.5px',
               }}
             >
-              🥕 Ingredients
+              🥕 Ingredients {scalingFactor !== 1 && (
+                <span style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', fontWeight: 500 }}>
+                  (×{scalingFactor.toFixed(2)})
+                </span>
+              )}
             </Typography>
             <Box sx={{ mb: 2 }}>
-              {recipe.ingredients.map((ingredient, idx) => (
-                <Box
-                  key={ingredient.id || idx}
-                  sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    py: 0.5,
-                    borderBottom: '1px solid var(--border-color)',
-                    '&:last-child': { borderBottom: 'none' },
-                  }}
-                >
-                  <Typography
-                    variant="body2"
+              {recipe.ingredients.map((ingredient, idx) => {
+                const scaledAmount = ingredient.amount * scalingFactor;
+                const displayAmount = scaledAmount % 1 === 0 
+                  ? scaledAmount.toFixed(0) 
+                  : scaledAmount.toFixed(1);
+
+                return (
+                  <Box
+                    key={ingredient.id || idx}
                     sx={{
-                      color: 'var(--text-primary)',
-                      fontSize: '0.85rem',
-                      fontWeight: 500,
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      py: 0.5,
+                      borderBottom: '1px solid var(--border-color)',
+                      '&:last-child': { borderBottom: 'none' },
                     }}
                   >
-                    {ingredient.foodName}
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      color: 'var(--text-secondary)',
-                      fontSize: '0.8rem',
-                      fontWeight: 600,
-                      ml: 1,
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {ingredient.amount}
-                    {ingredient.unit}
-                  </Typography>
-                </Box>
-              ))}
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: 'var(--text-primary)',
+                        fontSize: '0.85rem',
+                        fontWeight: 500,
+                      }}
+                    >
+                      {ingredient.foodName}
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: scalingFactor !== 1 ? 'var(--accent-green)' : 'var(--text-secondary)',
+                        fontSize: '0.8rem',
+                        fontWeight: scalingFactor !== 1 ? 700 : 600,
+                        ml: 1,
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {displayAmount}
+                      {ingredient.unit}
+                    </Typography>
+                  </Box>
+                );
+              })}
             </Box>
 
             {/* Instructions */}
